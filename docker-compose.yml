@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/code          # Hot-reload en desarrollo
+    depends_on:
+      db:
+        condition: service_healthy
+    command: fastapi dev app/main.py --host 0.0.0.0 --port 8000
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./web:/code
+    depends_on:
+      - api
+    command: flask --app run.py run --host 0.0.0.0 --port 5000 --debug
+
+  adminer:                        # GUI ligera para inspeccionar la BD
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
