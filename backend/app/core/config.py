@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "changeme"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 días
-    ADMIN_CORREO: str = "admin@cafeteria.local"
+    ADMIN_CORREO: str = "admin@cafeteria.com"
     ADMIN_PASSWORD: str = "cambiar_en_local"
     ADMIN_NOMBRE: str = "Administrador"
 

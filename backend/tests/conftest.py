@@ -59,12 +59,12 @@ def _crear_usuario(db, nombre_usuario, correo, rol_nombre, password="secret123")
 
 @pytest.fixture()
 def admin(db):
-    return _crear_usuario(db, "admintest", "admin.test@caf.local", "Administrador")
+    return _crear_usuario(db, "admintest", "admin.test@cafeteria.com", "Administrador")
 
 
 @pytest.fixture()
 def mesero(db):
-    return _crear_usuario(db, "meserotest", "mesero.test@caf.local", "Mesero")
+    return _crear_usuario(db, "meserotest", "mesero.test@cafeteria.com", "Mesero")
 
 
 def _headers(client, correo, password="secret123"):
@@ -76,9 +76,9 @@ def _headers(client, correo, password="secret123"):
 
 @pytest.fixture()
 def admin_headers(client, admin):
-    return _headers(client, "admin.test@caf.local")
+    return _headers(client, "admin.test@cafeteria.com")
 
 
 @pytest.fixture()
 def mesero_headers(client, mesero):
-    return _headers(client, "mesero.test@caf.local")
+    return _headers(client, "mesero.test@cafeteria.com")

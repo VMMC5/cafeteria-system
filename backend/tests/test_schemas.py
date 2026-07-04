@@ -8,7 +8,7 @@ def _datos_validos(**over):
     base = dict(
         nombre="Ana",
         apellido_paterno="López",
-        correo="ana@caf.local",
+        correo="ana@cafeteria.com",
         nombre_usuario="ana",
         id_rol=1,
         password="secret123",
