@@ -3,6 +3,8 @@
 Ejecutar:  docker compose exec api python -m app.db.seed
 """
 
+from app.core.config import settings
+from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models import (
     Categoria,
@@ -11,6 +13,7 @@ from app.models import (
     MetodoPago,
     Rol,
     UnidadMedida,
+    Usuario,
 )
 
 SEED = [
@@ -77,6 +80,27 @@ SEED = [
 ]
 
 
+def seed_admin(db) -> int:
+    """Crea el Administrador inicial desde .env si no existe. Idempotente."""
+    existe = db.query(Usuario).filter(Usuario.correo == settings.ADMIN_CORREO).first()
+    if existe:
+        return 0
+    admin_rol = db.query(Rol).filter(Rol.nombre_rol == "Administrador").one()
+    db.add(
+        Usuario(
+            nombre=settings.ADMIN_NOMBRE,
+            apellido_paterno="Sistema",
+            apellido_materno=None,
+            correo=settings.ADMIN_CORREO,
+            nombre_usuario="admin",
+            contrasena_hash=hash_password(settings.ADMIN_PASSWORD),
+            id_rol=admin_rol.id_rol,
+        )
+    )
+    db.flush()
+    return 1
+
+
 def run():
     db = SessionLocal()
     try:
@@ -89,6 +113,7 @@ def run():
                 if not existe:
                     db.add(model(**row))
                     total += 1
+        total += seed_admin(db)
         db.commit()
         print(f"Seed completado: {total} filas nuevas insertadas.")
     finally:
