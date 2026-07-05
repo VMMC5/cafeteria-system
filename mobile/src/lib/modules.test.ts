@@ -29,7 +29,7 @@ test("cada modulo apunta a su ruta", () => {
 
 test("homeRoute: rol de un solo modulo va directo a su home", () => {
   expect(homeRoute("Mesero")).toBe("/mesero/mesas");
-  expect(homeRoute("Cajero")).toBe("/modulo/caja");
+  expect(homeRoute("Cajero")).toBe("/caja");
 });
 
 test("homeRoute: rol con varios modulos va a seleccion", () => {

@@ -99,6 +99,29 @@ export type Pedido = {
   total: number;
 };
 
+export type MetodoPago = { id_metodo_pago: number; nombre_metodo: string };
+
+export type PagoOut = {
+  id_pago: number;
+  id_metodo_pago: number;
+  metodo: { nombre_metodo: string };
+  monto: number;
+  referencia: string | null;
+};
+
+export type Venta = {
+  id_venta: number;
+  id_pedido: number;
+  folio: string;
+  estado_venta: string;
+  fecha_venta: string;
+  total: number;
+  subtotal: number;
+  iva: number;
+  cambio: number;
+  pagos: PagoOut[];
+};
+
 export async function getMesas(access: string, estado?: string): Promise<Mesa[]> {
   const { data } = await http.get("/mesas", {
     ...authCfg(access),
@@ -135,11 +158,12 @@ export async function getEstados(access: string): Promise<Estado[]> {
 
 export async function getPedidos(
   access: string,
-  opts?: { estados?: number[]; mias?: boolean }
+  opts?: { estados?: number[]; mias?: boolean; por_cobrar?: boolean }
 ): Promise<Pedido[]> {
   const params: Record<string, string | boolean> = {};
   if (opts?.estados) params.estados = opts.estados.join(",");
   if (opts?.mias) params.mias = true;
+  if (opts?.por_cobrar) params.por_cobrar = true;
   const { data } = await http.get("/pedidos", {
     ...authCfg(access),
     params: Object.keys(params).length ? params : undefined,
@@ -157,5 +181,24 @@ export async function cambiarEstadoPedido(
     { id_estado },
     authCfg(access)
   );
+  return data;
+}
+
+export async function getMetodosPago(access: string): Promise<MetodoPago[]> {
+  const { data } = await http.get("/metodos_pago", authCfg(access));
+  return data;
+}
+
+export async function getPedido(access: string, id: number): Promise<Pedido> {
+  const { data } = await http.get(`/pedidos/${id}`, authCfg(access));
+  return data;
+}
+
+export async function cobrarVenta(
+  access: string,
+  id_pedido: number,
+  pagos: { id_metodo_pago: number; monto: number }[]
+): Promise<Venta> {
+  const { data } = await http.post("/ventas", { id_pedido, pagos }, authCfg(access));
   return data;
 }
