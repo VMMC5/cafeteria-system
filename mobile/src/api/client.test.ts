@@ -53,3 +53,34 @@ test("crearPedido postea a /pedidos con el payload", async () => {
   expect(body).toEqual(payload);
   expect(config.headers.Authorization).toBe("Bearer tok");
 });
+
+test("getEstados pega a /estados con bearer", async () => {
+  const spy = jest
+    .spyOn(client.http, "get")
+    .mockResolvedValue({ data: [{ id_estado: 1, nombre_estado: "Pendiente" }] } as any);
+  const out = await client.getEstados("tok");
+  expect(out).toEqual([{ id_estado: 1, nombre_estado: "Pendiente" }]);
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/estados");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("getPedidos manda estados como CSV", async () => {
+  const spy = jest.spyOn(client.http, "get").mockResolvedValue({ data: [] } as any);
+  await client.getPedidos("tok", { estados: [1, 2] });
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/pedidos");
+  expect(config.params).toEqual({ estados: "1,2" });
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("cambiarEstadoPedido hace PATCH con id_estado", async () => {
+  const spy = jest
+    .spyOn(client.http, "patch")
+    .mockResolvedValue({ data: { id_pedido: 5 } } as any);
+  await client.cambiarEstadoPedido("tok", 5, 3);
+  const [url, body, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/pedidos/5/estado");
+  expect(body).toEqual({ id_estado: 3 });
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
