@@ -122,6 +122,18 @@ export type Venta = {
   pagos: PagoOut[];
 };
 
+export type CategoriaGasto = { id_categoria_gasto: number; nombre_categoria: string };
+
+export type Gasto = {
+  id_gasto: number;
+  id_categoria_gasto: number;
+  categoria: { nombre_categoria: string };
+  concepto: string;
+  monto: number;
+  fecha_gasto: string;
+  id_usuario: number;
+};
+
 export async function getMesas(access: string, estado?: string): Promise<Mesa[]> {
   const { data } = await http.get("/mesas", {
     ...authCfg(access),
@@ -201,4 +213,22 @@ export async function cobrarVenta(
 ): Promise<Venta> {
   const { data } = await http.post("/ventas", { id_pedido, pagos }, authCfg(access));
   return data;
+}
+
+export async function getCategoriasGasto(access: string): Promise<CategoriaGasto[]> {
+  const { data } = await http.get("/gastos/categorias", authCfg(access));
+  return data;
+}
+
+export async function getGastos(access: string): Promise<Gasto[]> {
+  const { data } = await http.get("/gastos", authCfg(access));
+  return data;
+}
+
+export async function crearGasto(
+  access: string,
+  data: { id_categoria_gasto: number; concepto: string; monto: number }
+): Promise<Gasto> {
+  const { data: res } = await http.post("/gastos", data, authCfg(access));
+  return res;
 }

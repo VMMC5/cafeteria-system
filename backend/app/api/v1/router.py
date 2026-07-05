@@ -4,6 +4,7 @@ from app.api.v1 import (
     auth,
     categorias,
     estados,
+    gastos,
     mesas,
     metodos_pago,
     pedidos,
@@ -24,3 +25,4 @@ api_router.include_router(pedidos.router)
 api_router.include_router(estados.router)
 api_router.include_router(ventas.router)
 api_router.include_router(metodos_pago.router)
+api_router.include_router(gastos.router)
