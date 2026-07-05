@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<div class="header-row">
+  <h1>Usuarios</h1>
+  <a class="btn" href="{{ url_for('usuarios.nuevo') }}">Nuevo usuario</a>
+</div>
+<form method="get" class="search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre o correo">
+  <button type="submit">Buscar</button>
+</form>
+<table class="table">
+  <thead>
+    <tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for u in usuarios %}
+    <tr>
+      <td>{{ u.nombre }} {{ u.apellido_paterno }}</td>
+      <td>{{ u.correo }}</td>
+      <td>{{ u.rol.nombre_rol }}</td>
+      <td>
+        <span class="badge {{ 'badge--on' if u.activo else 'badge--off' }}">
+          {{ 'Activo' if u.activo else 'Inactivo' }}
+        </span>
+      </td>
+      <td class="actions">
+        <a href="{{ url_for('usuarios.editar', id_usuario=u.id_usuario) }}">Editar</a>
+        {% if u.activo %}
+        <form method="post" action="{{ url_for('usuarios.desactivar', id_usuario=u.id_usuario) }}" onsubmit="return confirm('¿Desactivar a {{ u.nombre }}?')">
+          <button class="link-danger" type="submit">Desactivar</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">Sin usuarios.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
