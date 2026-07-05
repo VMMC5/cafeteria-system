@@ -17,3 +17,23 @@ def crear(
     current: Usuario = Depends(deps.get_current_user),
 ):
     return pedido_service.crear(db, data, current.id_usuario)
+
+
+@router.get("", response_model=list[PedidoOut])
+def listar(
+    id_estado: int | None = None,
+    mias: bool = False,
+    db: Session = Depends(get_db),
+    current: Usuario = Depends(deps.get_current_user),
+):
+    id_usuario = current.id_usuario if mias else None
+    return pedido_service.list_pedidos(db, id_estado, id_usuario)
+
+
+@router.get("/{id_pedido}", response_model=PedidoOut)
+def detalle(
+    id_pedido: int,
+    db: Session = Depends(get_db),
+    current: Usuario = Depends(deps.get_current_user),
+):
+    return pedido_service.get_or_404(db, id_pedido)
