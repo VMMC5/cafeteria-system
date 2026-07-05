@@ -135,3 +135,69 @@ def test_avanzar_sin_token_401(client, db):
         json={"id_estado": _estado_id(db, "En preparación")},
     )
     assert r.status_code == 401
+
+
+def _cancelar(client, headers, id_pedido, motivo="Cliente se fue"):
+    return client.post(
+        f"/api/v1/pedidos/{id_pedido}/cancelar",
+        headers=headers,
+        json={"motivo": motivo},
+    )
+
+
+def test_cancelar_ok_libera_mesa_y_registra(client, db, admin_headers, mesero_headers):
+    pedido = _pedido_pendiente(client, db, admin_headers, numero=320)
+    pid = pedido["id_pedido"]
+    id_mesa = pedido["id_mesa"]
+
+    r = _cancelar(client, mesero_headers, pid, motivo="Cliente se fue")
+    assert r.status_code == 200
+    assert r.json()["estado"]["nombre_estado"] == "Cancelado"
+
+    # la mesa vuelve a Disponible
+    m = client.get(f"/api/v1/mesas/{id_mesa}", headers=admin_headers).json()
+    assert m["estado"] == "Disponible"
+
+    # se registró la cancelación con el motivo
+    from app.models import Cancelacion
+
+    fila = db.query(Cancelacion).filter(Cancelacion.id_pedido == pid).one()
+    assert fila.motivo == "Cliente se fue"
+
+
+def test_cancelar_sin_motivo_422(client, db, admin_headers, mesero_headers):
+    pedido = _pedido_pendiente(client, db, admin_headers, numero=321)
+    r = client.post(
+        f"/api/v1/pedidos/{pedido['id_pedido']}/cancelar",
+        headers=mesero_headers,
+        json={"motivo": ""},
+    )
+    assert r.status_code == 422
+
+
+def test_cancelar_entregado_409(
+    client, db, admin_headers, cocinero_headers, mesero_headers
+):
+    pedido = _pedido_pendiente(client, db, admin_headers, numero=322)
+    pid = pedido["id_pedido"]
+    _patch_estado(client, cocinero_headers, pid, "En preparación", db)
+    _patch_estado(client, cocinero_headers, pid, "Listo", db)
+    _patch_estado(client, mesero_headers, pid, "Entregado", db)
+    r = _cancelar(client, mesero_headers, pid)
+    assert r.status_code == 409
+
+
+def test_cancelar_rol_no_autorizado_403(client, db, admin_headers, cocinero_headers):
+    pedido = _pedido_pendiente(client, db, admin_headers, numero=323)
+    # el cocinero no puede cancelar
+    r = _cancelar(client, cocinero_headers, pedido["id_pedido"])
+    assert r.status_code == 403
+
+
+def test_cancelar_pedido_inexistente_404(client, mesero_headers):
+    r = client.post(
+        "/api/v1/pedidos/999999/cancelar",
+        headers=mesero_headers,
+        json={"motivo": "x"},
+    )
+    assert r.status_code == 404

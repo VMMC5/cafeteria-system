@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import DetallePedido, EstadoPedido, Mesa, Pedido, Producto
+from app.models import Cancelacion, DetallePedido, EstadoPedido, Mesa, Pedido, Producto
 from app.schemas.pedido import PedidoCreate
 
 
@@ -25,6 +25,9 @@ _FLUJO: dict[str, tuple[str, set[str]]] = {
     "En preparación": ("Listo", {"Cocinero", "Administrador"}),
     "Listo": ("Entregado", {"Mesero", "Administrador"}),
 }
+
+_CANCELABLE_ROLES = {"Mesero", "Administrador"}
+_TERMINALES = {"Entregado", "Cancelado"}
 
 
 def _estado_por_nombre(db: Session, nombre: str) -> EstadoPedido:
@@ -103,6 +106,32 @@ def crear(db: Session, data: PedidoCreate, id_usuario: int) -> Pedido:
     )
     mesa.estado = "Ocupada"
     db.add(pedido)
+    db.commit()
+    db.refresh(pedido)
+    return pedido
+
+
+def cancelar(db: Session, id_pedido: int, motivo: str, usuario) -> Pedido:
+    pedido = get_or_404(db, id_pedido)
+    if pedido.estado.nombre_estado in _TERMINALES:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El pedido no se puede cancelar en su estado actual",
+        )
+    if usuario.rol.nombre_rol not in _CANCELABLE_ROLES:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Rol no autorizado para cancelar"
+        )
+
+    db.add(
+        Cancelacion(
+            id_pedido=pedido.id_pedido,
+            id_usuario=usuario.id_usuario,
+            motivo=motivo,
+        )
+    )
+    pedido.id_estado = _estado_por_nombre(db, "Cancelado").id_estado
+    pedido.mesa.estado = "Disponible"
     db.commit()
     db.refresh(pedido)
     return pedido
