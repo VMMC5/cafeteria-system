@@ -8,6 +8,7 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -35,3 +36,5 @@ class Usuario(Base):
     fecha_registro = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+    rol = relationship("Rol", lazy="joined")

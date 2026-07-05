@@ -60,3 +60,9 @@ def test_refresh_usuario_desactivado_falla(client, db, admin):
     db.flush()
     r = client.post("/api/v1/auth/refresh", json={"refresh_token": token})
     assert r.status_code == 401
+
+
+def test_me_incluye_nombre_rol(client, admin_headers):
+    r = client.get("/api/v1/auth/me", headers=admin_headers)
+    assert r.status_code == 200
+    assert r.json()["rol"]["nombre_rol"] == "Administrador"
