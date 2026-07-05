@@ -10,7 +10,9 @@ from app.models import (
     Categoria,
     CategoriaGasto,
     EstadoPedido,
+    Mesa,
     MetodoPago,
+    Producto,
     Rol,
     UnidadMedida,
     Usuario,
@@ -80,6 +82,60 @@ SEED = [
 ]
 
 
+MESAS_DEMO = [
+    {"numero_mesa": n, "capacidad": cap, "ubicacion": ubic, "estado": "Disponible"}
+    for n, cap, ubic in [
+        (1, 2, "Interior"),
+        (2, 2, "Interior"),
+        (3, 4, "Interior"),
+        (4, 4, "Interior"),
+        (5, 4, "Terraza"),
+        (6, 6, "Terraza"),
+        (7, 6, "Terraza"),
+        (8, 8, "Salón"),
+        (9, 4, "Salón"),
+        (10, 2, "Barra"),
+    ]
+]
+
+PRODUCTOS_DEMO = [
+    ("Bebidas", "Café Americano", "Café negro", 30.0),
+    ("Bebidas", "Capuchino", "Con espuma de leche", 42.0),
+    ("Bebidas", "Jugo de Naranja", "Natural", 38.0),
+    ("Comidas", "Sándwich de Jamón", "Con queso", 65.0),
+    ("Comidas", "Ensalada César", "Con pollo", 85.0),
+    ("Postres", "Pastel de Chocolate", "Rebanada", 55.0),
+    ("Postres", "Flan Napolitano", "Casero", 45.0),
+]
+
+
+def seed_catalogo(db) -> int:
+    """Siembra mesas y productos demo. Idempotente."""
+    total = 0
+    for m in MESAS_DEMO:
+        existe = db.query(Mesa).filter(Mesa.numero_mesa == m["numero_mesa"]).first()
+        if not existe:
+            db.add(Mesa(**m))
+            total += 1
+    for cat_nombre, nombre, desc, precio in PRODUCTOS_DEMO:
+        existe = db.query(Producto).filter(Producto.nombre_producto == nombre).first()
+        if existe:
+            continue
+        cat = db.query(Categoria).filter(Categoria.nombre_categoria == cat_nombre).one()
+        db.add(
+            Producto(
+                id_categoria=cat.id_categoria,
+                nombre_producto=nombre,
+                descripcion=desc,
+                precio_venta=precio,
+                disponible=True,
+            )
+        )
+        total += 1
+    db.flush()
+    return total
+
+
 def seed_admin(db) -> int:
     """Crea el Administrador inicial desde .env si no existe. Idempotente."""
     existe = db.query(Usuario).filter(Usuario.correo == settings.ADMIN_CORREO).first()
@@ -114,6 +170,7 @@ def run():
                     db.add(model(**row))
                     total += 1
         total += seed_admin(db)
+        total += seed_catalogo(db)
         db.commit()
         print(f"Seed completado: {total} filas nuevas insertadas.")
     finally:
