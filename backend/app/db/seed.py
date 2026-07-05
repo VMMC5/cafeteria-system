@@ -9,6 +9,7 @@ from app.db.session import SessionLocal
 from app.models import (
     Categoria,
     CategoriaGasto,
+    Configuracion,
     EstadoPedido,
     Mesa,
     MetodoPago,
@@ -77,6 +78,17 @@ SEED = [
             {"nombre_categoria": "Servicios"},
             {"nombre_categoria": "Nómina"},
             {"nombre_categoria": "Mantenimiento"},
+        ],
+    ),
+    (
+        Configuracion,
+        "clave",
+        [
+            {
+                "clave": "iva_tasa",
+                "valor": "0.16",
+                "descripcion": "Tasa de IVA (fracción)",
+            },
         ],
     ),
 ]
