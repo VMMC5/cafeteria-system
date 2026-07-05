@@ -92,3 +92,13 @@ def cocinero(db):
 @pytest.fixture()
 def cocinero_headers(client, cocinero):
     return _headers(client, "cocinero.test@cafeteria.com")
+
+
+@pytest.fixture()
+def cajero(db):
+    return _crear_usuario(db, "cajerotest", "cajero.test@cafeteria.com", "Cajero")
+
+
+@pytest.fixture()
+def cajero_headers(client, cajero):
+    return _headers(client, "cajero.test@cafeteria.com")

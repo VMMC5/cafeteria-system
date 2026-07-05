@@ -8,6 +8,7 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -40,6 +41,9 @@ class Venta(Base):
         String(20), nullable=False, server_default=text("'Completada'")
     )
 
+    pagos = relationship("Pago", lazy="selectin")
+    ticket = relationship("Ticket", uselist=False, lazy="joined")
+
 
 class Ticket(Base):
     __tablename__ = "tickets"
@@ -69,3 +73,5 @@ class Pago(Base):
     fecha_pago = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+    metodo = relationship("MetodoPago", lazy="joined")

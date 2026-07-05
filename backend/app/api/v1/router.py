@@ -9,6 +9,7 @@ from app.api.v1 import (
     productos,
     roles,
     usuarios,
+    ventas,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -20,3 +21,4 @@ api_router.include_router(mesas.router)
 api_router.include_router(productos.router)
 api_router.include_router(pedidos.router)
 api_router.include_router(estados.router)
+api_router.include_router(ventas.router)
