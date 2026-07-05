@@ -84,3 +84,12 @@ test("cambiarEstadoPedido hace PATCH con id_estado", async () => {
   expect(body).toEqual({ id_estado: 3 });
   expect(config.headers.Authorization).toBe("Bearer tok");
 });
+
+test("getPedidos con mias manda mias y estados", async () => {
+  const spy = jest.spyOn(client.http, "get").mockResolvedValue({ data: [] } as any);
+  await client.getPedidos("tok", { mias: true, estados: [1, 2, 3] });
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/pedidos");
+  expect(config.params).toEqual({ estados: "1,2,3", mias: true });
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});

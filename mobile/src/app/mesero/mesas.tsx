@@ -56,9 +56,14 @@ export default function Mesas() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Mesas</Text>
-        <TouchableOpacity onPress={salir}>
-          <Text style={styles.salir}>Salir</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => router.push("/mesero/mis-pedidos" as any)}>
+            <Text style={styles.link}>Mis pedidos</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={salir}>
+            <Text style={styles.salir}>Salir</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       {loading && <ActivityIndicator size="large" color="#2b6cb0" />}
       {error && (
@@ -104,6 +109,8 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 24, fontWeight: "700", color: "#2d3748" },
   salir: { color: "#c53030", fontWeight: "600" },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 16 },
+  link: { color: "#2b6cb0", fontWeight: "600" },
   grid: { gap: 12 },
   rowGap: { gap: 12 },
   card: {

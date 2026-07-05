@@ -135,10 +135,15 @@ export async function getEstados(access: string): Promise<Estado[]> {
 
 export async function getPedidos(
   access: string,
-  opts?: { estados?: number[] }
+  opts?: { estados?: number[]; mias?: boolean }
 ): Promise<Pedido[]> {
-  const params = opts?.estados ? { estados: opts.estados.join(",") } : undefined;
-  const { data } = await http.get("/pedidos", { ...authCfg(access), params });
+  const params: Record<string, string | boolean> = {};
+  if (opts?.estados) params.estados = opts.estados.join(",");
+  if (opts?.mias) params.mias = true;
+  const { data } = await http.get("/pedidos", {
+    ...authCfg(access),
+    params: Object.keys(params).length ? params : undefined,
+  });
   return data;
 }
 
