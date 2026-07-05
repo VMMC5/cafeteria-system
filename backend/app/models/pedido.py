@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from sqlalchemy import (
     Column,
     Computed,
@@ -8,6 +10,7 @@ from sqlalchemy import (
     String,
     func,
 )
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -36,6 +39,16 @@ class Pedido(Base):
     )
     observaciones = Column(String(255))
 
+    mesa = relationship("Mesa", lazy="joined")
+    estado = relationship("EstadoPedido", lazy="joined")
+    detalle = relationship(
+        "DetallePedido", lazy="selectin", cascade="all, delete-orphan"
+    )
+
+    @property
+    def total(self) -> Decimal:
+        return sum((d.subtotal for d in self.detalle), Decimal("0"))
+
 
 class DetallePedido(Base):
     __tablename__ = "detalle_pedido"
@@ -53,6 +66,8 @@ class DetallePedido(Base):
         Numeric(12, 2), Computed("cantidad * precio_unitario", persisted=True)
     )
     observaciones = Column(String(255))
+
+    producto = relationship("Producto", lazy="joined")
 
 
 class Cancelacion(Base):
