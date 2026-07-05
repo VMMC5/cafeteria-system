@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.schemas.rol import RolOut
+
 
 class UsuarioCreate(BaseModel):
     nombre: str
@@ -34,5 +36,6 @@ class UsuarioOut(BaseModel):
     correo: EmailStr
     nombre_usuario: str
     id_rol: int
+    rol: RolOut
     activo: bool
     fecha_registro: datetime

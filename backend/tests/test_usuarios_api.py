@@ -65,3 +65,9 @@ def test_admin_no_se_autodesactiva(client, admin, admin_headers):
         f"/api/v1/usuarios/{admin.id_usuario}", headers=admin_headers
     )
     assert r.status_code == 409
+
+
+def test_crear_devuelve_rol_anidado(client, db, admin_headers):
+    r = client.post("/api/v1/usuarios", headers=admin_headers, json=_nuevo(db))
+    assert r.status_code == 201
+    assert r.json()["rol"]["nombre_rol"] == "Mesero"
