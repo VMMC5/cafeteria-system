@@ -11,6 +11,7 @@ export default function RootLayout() {
       <Stack.Screen name="mesero/menu" />
       <Stack.Screen name="mesero/carrito" />
       <Stack.Screen name="cocina/index" />
+      <Stack.Screen name="mesero/mis-pedidos" />
     </Stack>
   );
 }
