@@ -80,11 +80,23 @@ export type CrearPedidoPayload = {
   items: PedidoItemPayload[];
 };
 
+export type Estado = { id_estado: number; nombre_estado: string };
+
+export type PedidoLinea = {
+  cantidad: number;
+  observaciones: string | null;
+  producto: { nombre_producto: string };
+};
+
 export type Pedido = {
   id_pedido: number;
   id_mesa: number;
+  mesa: { numero_mesa: number };
+  estado: { id_estado: number; nombre_estado: string };
+  fecha_pedido: string;
+  observaciones: string | null;
+  detalle: PedidoLinea[];
   total: number;
-  estado: { nombre_estado: string };
 };
 
 export async function getMesas(access: string, estado?: string): Promise<Mesa[]> {
@@ -113,5 +125,32 @@ export async function crearPedido(
   payload: CrearPedidoPayload
 ): Promise<Pedido> {
   const { data } = await http.post("/pedidos", payload, authCfg(access));
+  return data;
+}
+
+export async function getEstados(access: string): Promise<Estado[]> {
+  const { data } = await http.get("/estados", authCfg(access));
+  return data;
+}
+
+export async function getPedidos(
+  access: string,
+  opts?: { estados?: number[] }
+): Promise<Pedido[]> {
+  const params = opts?.estados ? { estados: opts.estados.join(",") } : undefined;
+  const { data } = await http.get("/pedidos", { ...authCfg(access), params });
+  return data;
+}
+
+export async function cambiarEstadoPedido(
+  access: string,
+  id_pedido: number,
+  id_estado: number
+): Promise<Pedido> {
+  const { data } = await http.patch(
+    `/pedidos/${id_pedido}/estado`,
+    { id_estado },
+    authCfg(access)
+  );
   return data;
 }

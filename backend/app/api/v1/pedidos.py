@@ -47,12 +47,19 @@ def cancelar(
 @router.get("", response_model=list[PedidoOut])
 def listar(
     id_estado: int | None = None,
+    estados: str | None = None,
     mias: bool = False,
     db: Session = Depends(get_db),
     current: Usuario = Depends(deps.get_current_user),
 ):
     id_usuario = current.id_usuario if mias else None
-    return pedido_service.list_pedidos(db, id_estado, id_usuario)
+    if estados:
+        ids = [int(x) for x in estados.split(",") if x.strip()]
+    elif id_estado is not None:
+        ids = [id_estado]
+    else:
+        ids = None
+    return pedido_service.list_pedidos(db, ids, id_usuario)
 
 
 @router.get("/{id_pedido}", response_model=PedidoOut)
