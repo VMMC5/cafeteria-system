@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-07-05
+**Última actualización:** 2026-07-05 (Sprint 3 completo)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -32,21 +32,25 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 
 **Estado:** flujo **mesa → pedido** funciona de punta a punta (móvil Mesero + API + BD). Todos los PRs mergeados a `main`.
 
+### Sprint 3 — Cocina y ciclo de estados
+| PR | Qué |
+|----|-----|
+| **#8** API transiciones | `PATCH /pedidos/{id}/estado` (flujo lineal Pendiente→En preparación→Listo→Entregado, autorización por rol) + `POST /pedidos/{id}/cancelar` (motivo, libera mesa) |
+| **#9** Móvil Cocina | `GET /estados` + `GET /pedidos?estados=1,2`; pantalla `/cocina` con lista de activos, polling 10s y avance de estado |
+| **#10** Móvil Mesero en vivo | `getPedidos?mias=true&estados=`; pantalla "Mis pedidos" con estado en vivo (polling), Listo resaltado y entrega (Listo→Entregado) |
+
+**Estado:** ciclo de vida del pedido completo **cocina ↔ mesero** en vivo. El pedido Entregado mantiene la mesa Ocupada (se libera en el cobro, Sprint 4).
+
 ### Cobertura de tests
-- **Backend:** 68 tests (`docker compose exec api pytest`).
-- **Móvil:** 23 tests jest (`cd mobile && npm test`) + `tsc` limpio.
+- **Backend:** 86 tests (`docker compose exec api pytest`).
+- **Móvil:** 33 tests jest (`cd mobile && npm test`) + `tsc` limpio.
 - **Web:** 13 tests (`docker compose exec web pytest`).
 
 ---
 
 ## ⏳ Pendiente
 
-### Sprint 3 — Cocina y ciclo de estados (SIGUIENTE)
-- API: transiciones de estado del pedido (Pendiente → En preparación → Listo → Entregado) con validación de flujo.
-- Móvil (Cocina): lista/filtro de pedidos, cambio de estado, notificación de "listo" al mesero (polling).
-- Móvil (Mesero): estado en vivo del pedido, entrega, "Mis pedidos" (RF-M18..M26).
-
-### Sprint 4 — Caja: cobro y ventas *(hito crítico)*
+### Sprint 4 — Caja: cobro y ventas *(hito crítico, SIGUIENTE)*
 - API: cobrar pedido (venta 1:1), pagos con método y pago dividido, IVA y cambio, gastos.
 - Móvil (Caja): pendientes de cobro, detalle con impuestos, flujo de pago, comprobante.
 
@@ -57,7 +61,7 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 - Web: KPIs + gráficas (Chart.js), reportes con filtros y export PDF/XLSX.
 
 ### Deuda técnica / mejoras conocidas
-- Módulos móviles **Caja** y **Cocina** siguen como placeholder (`modulo/[key].tsx`).
+- Módulo móvil **Caja** sigue como placeholder (`modulo/[key].tsx`); **Cocina** ya implementado.
 - CRUD de catálogo en la **web admin** (hoy solo vía API/Swagger).
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
 - RF-M03 (recuperar contraseña) solo como nota; sin implementar.
