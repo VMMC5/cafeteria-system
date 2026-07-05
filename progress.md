@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-07-05 (Sprint 3 completo)
+**Última actualización:** 2026-07-05 (Sprint 4 completo)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -41,27 +41,33 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 
 **Estado:** ciclo de vida del pedido completo **cocina ↔ mesero** en vivo. El pedido Entregado mantiene la mesa Ocupada (se libera en el cobro, Sprint 4).
 
+### Sprint 4 — Caja: cobro y ventas *(hito crítico)*
+| PR | Qué |
+|----|-----|
+| **#11** API cobro | `POST /ventas` (venta 1:1, pagos con método, IVA desglosado, cambio, ticket/folio, libera mesa) + `GET /ventas/{id}` + `GET /pedidos?por_cobrar=true`; IVA en `configuracion.iva_tasa` |
+| **#12** Móvil Caja | `GET /metodos_pago`; `/caja` (pendientes, polling) → cobro (método + monto + cambio) → comprobante inline con desglose |
+| **#13** Gastos | API `GET /gastos/categorias`, `POST/GET /gastos` (guard Cajero/Admin) + pantalla `/caja/gastos` (formulario + lista) |
+
+**Estado:** flujo de negocio completo **pedido → cocina → mesero → cobro** de punta a punta. Cobro con IVA desglosado, pago (un método) y cambio; egresos registrables. Pago dividido en UI queda pendiente (la API ya lo soporta).
+
 ### Cobertura de tests
-- **Backend:** 86 tests (`docker compose exec api pytest`).
-- **Móvil:** 33 tests jest (`cd mobile && npm test`) + `tsc` limpio.
+- **Backend:** 108 tests (`docker compose exec api pytest`).
+- **Móvil:** 42 tests jest (`cd mobile && npm test`) + `tsc` limpio.
 - **Web:** 13 tests (`docker compose exec web pytest`).
 
 ---
 
 ## ⏳ Pendiente
 
-### Sprint 4 — Caja: cobro y ventas *(hito crítico, SIGUIENTE)*
-- API: cobrar pedido (venta 1:1), pagos con método y pago dividido, IVA y cambio, gastos.
-- Móvil (Caja): pendientes de cobro, detalle con impuestos, flujo de pago, comprobante.
-
-### Sprint 5 — Inventario y compras
+### Sprint 5 — Inventario y compras *(SIGUIENTE)*
 - Recetas (`producto_insumo`), descuento automático de stock al confirmar pedido (kárdex), compras a proveedores.
 
 ### Sprint 6 — Dashboard y reportes
 - Web: KPIs + gráficas (Chart.js), reportes con filtros y export PDF/XLSX.
 
 ### Deuda técnica / mejoras conocidas
-- Módulo móvil **Caja** sigue como placeholder (`modulo/[key].tsx`); **Cocina** ya implementado.
+- Módulos móviles Mesero/Cocina/Caja implementados; el placeholder `modulo/[key].tsx` ya no se usa por ningún rol.
+- **Pago dividido** en la Caja móvil: la API lo soporta, pero la UI cobra con un solo método.
 - CRUD de catálogo en la **web admin** (hoy solo vía API/Swagger).
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
 - RF-M03 (recuperar contraseña) solo como nota; sin implementar.
