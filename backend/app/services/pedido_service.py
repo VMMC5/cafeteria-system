@@ -19,6 +19,46 @@ def get_or_404(db: Session, id_pedido: int) -> Pedido:
     return obj
 
 
+# estado_origen -> (estado_destino permitido, {roles autorizados})
+_FLUJO: dict[str, tuple[str, set[str]]] = {
+    "Pendiente": ("En preparación", {"Cocinero", "Administrador"}),
+    "En preparación": ("Listo", {"Cocinero", "Administrador"}),
+    "Listo": ("Entregado", {"Mesero", "Administrador"}),
+}
+
+
+def _estado_por_nombre(db: Session, nombre: str) -> EstadoPedido:
+    return db.execute(
+        select(EstadoPedido).where(EstadoPedido.nombre_estado == nombre)
+    ).scalar_one()
+
+
+def cambiar_estado(
+    db: Session, id_pedido: int, id_estado_destino: int, usuario
+) -> Pedido:
+    pedido = get_or_404(db, id_pedido)
+    destino = db.get(EstadoPedido, id_estado_destino)
+    if destino is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Estado inválido")
+
+    transicion = _FLUJO.get(pedido.estado.nombre_estado)
+    if transicion is None or destino.nombre_estado != transicion[0]:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Transición de estado no permitida"
+        )
+
+    _, roles = transicion
+    if usuario.rol.nombre_rol not in roles:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Rol no autorizado para esta transición"
+        )
+
+    pedido.id_estado = destino.id_estado
+    db.commit()
+    db.refresh(pedido)
+    return pedido
+
+
 def list_pedidos(
     db: Session, id_estado: int | None = None, id_usuario: int | None = None
 ) -> list[Pedido]:

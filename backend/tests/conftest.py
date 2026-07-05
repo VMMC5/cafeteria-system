@@ -82,3 +82,13 @@ def admin_headers(client, admin):
 @pytest.fixture()
 def mesero_headers(client, mesero):
     return _headers(client, "mesero.test@cafeteria.com")
+
+
+@pytest.fixture()
+def cocinero(db):
+    return _crear_usuario(db, "cocinerotest", "cocinero.test@cafeteria.com", "Cocinero")
+
+
+@pytest.fixture()
+def cocinero_headers(client, cocinero):
+    return _headers(client, "cocinero.test@cafeteria.com")

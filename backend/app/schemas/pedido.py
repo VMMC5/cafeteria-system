@@ -16,6 +16,10 @@ class PedidoCreate(BaseModel):
     items: list[PedidoItemCreate] = Field(min_length=1)
 
 
+class EstadoUpdate(BaseModel):
+    id_estado: int
+
+
 class ProductoResumen(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
