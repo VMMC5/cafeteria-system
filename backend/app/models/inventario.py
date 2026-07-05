@@ -8,6 +8,7 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -35,6 +36,8 @@ class Insumo(Base):
     fecha_registro = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+    unidad = relationship("UnidadMedida", lazy="joined")
 
 
 class MovimientoInventario(Base):
