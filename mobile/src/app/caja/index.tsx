@@ -54,9 +54,14 @@ export default function Caja() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Caja — por cobrar</Text>
-        <TouchableOpacity onPress={salir}>
-          <Text style={styles.salir}>Salir</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => router.push("/caja/gastos" as any)}>
+            <Text style={styles.link}>Gastos</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={salir}>
+            <Text style={styles.salir}>Salir</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       {loading && <ActivityIndicator size="large" color="#2b6cb0" />}
       {error && (
@@ -101,6 +106,8 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 22, fontWeight: "700", color: "#2d3748" },
   salir: { color: "#c53030", fontWeight: "600" },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 16 },
+  link: { color: "#2b6cb0", fontWeight: "600" },
   list: { gap: 12, paddingBottom: 24 },
   card: {
     flexDirection: "row",
