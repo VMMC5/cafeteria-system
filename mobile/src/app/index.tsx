@@ -2,10 +2,12 @@ import { Redirect } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
+import { modulesForRole } from "@/lib/modules";
 import { useAuth } from "@/store/auth";
 
 export default function Index() {
   const status = useAuth((s) => s.status);
+  const user = useAuth((s) => s.user);
   const bootstrap = useAuth((s) => s.bootstrap);
 
   useEffect(() => {
@@ -20,7 +22,12 @@ export default function Index() {
       </View>
     );
   }
-  return <Redirect href={(status === "auth" ? "/seleccion-modulo" : "/login") as any} />;
+  if (status === "auth") {
+    const modulos = user ? modulesForRole(user.rol.nombre_rol) : [];
+    const destino = modulos.length === 1 ? modulos[0].ruta : "/seleccion-modulo";
+    return <Redirect href={destino as any} />;
+  }
+  return <Redirect href={"/login" as any} />;
 }
 
 const styles = StyleSheet.create({
