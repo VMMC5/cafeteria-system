@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if usuario else 'Nuevo' }} usuario{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>{{ 'Editar' if usuario else 'Nuevo' }} usuario</h1>
+  <form method="post"
+        action="{{ url_for('usuarios.actualizar', id_usuario=usuario.id_usuario) if usuario else url_for('usuarios.crear') }}">
+    <label>Nombre
+      <input name="nombre" value="{{ form.get('nombre', '') }}" required>
+    </label>
+    <label>Apellido paterno
+      <input name="apellido_paterno" value="{{ form.get('apellido_paterno', '') }}" required>
+    </label>
+    <label>Apellido materno
+      <input name="apellido_materno" value="{{ form.get('apellido_materno', '') or '' }}">
+    </label>
+    <label>Correo
+      <input type="email" name="correo" value="{{ form.get('correo', '') }}" required>
+    </label>
+    <label>Nombre de usuario
+      <input name="nombre_usuario" value="{{ form.get('nombre_usuario', '') }}" required>
+    </label>
+    <label>Rol
+      <select name="id_rol" required>
+        {% for r in roles %}
+        <option value="{{ r.id_rol }}" {{ 'selected' if form.get('id_rol')|string == r.id_rol|string else '' }}>
+          {{ r.nombre_rol }}
+        </option>
+        {% endfor %}
+      </select>
+      <small class="muted">El rol define los permisos del usuario en el sistema.</small>
+    </label>
+    <label>Contraseña {{ '(dejar en blanco para no cambiar)' if usuario else '(mínimo 8 caracteres)' }}
+      <input type="password" name="password" id="password" {{ '' if usuario else 'required' }}>
+    </label>
+    <label class="inline">
+      <input type="checkbox" onclick="document.getElementById('password').type = this.checked ? 'text' : 'password'">
+      Mostrar contraseña
+    </label>
+    <div class="header-row">
+      <button type="submit">Guardar</button>
+      <a class="btn btn--ghost" href="{{ url_for('usuarios.listar') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
