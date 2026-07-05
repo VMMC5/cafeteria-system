@@ -4,7 +4,12 @@ from sqlalchemy.orm import Session
 from app.core import deps
 from app.db.session import get_db
 from app.models import Usuario
-from app.schemas.pedido import PedidoCreate, PedidoOut
+from app.schemas.pedido import (
+    CancelacionCreate,
+    EstadoUpdate,
+    PedidoCreate,
+    PedidoOut,
+)
 from app.services import pedido_service
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
@@ -17,6 +22,26 @@ def crear(
     current: Usuario = Depends(deps.get_current_user),
 ):
     return pedido_service.crear(db, data, current.id_usuario)
+
+
+@router.patch("/{id_pedido}/estado", response_model=PedidoOut)
+def cambiar_estado(
+    id_pedido: int,
+    data: EstadoUpdate,
+    db: Session = Depends(get_db),
+    current: Usuario = Depends(deps.get_current_user),
+):
+    return pedido_service.cambiar_estado(db, id_pedido, data.id_estado, current)
+
+
+@router.post("/{id_pedido}/cancelar", response_model=PedidoOut)
+def cancelar(
+    id_pedido: int,
+    data: CancelacionCreate,
+    db: Session = Depends(get_db),
+    current: Usuario = Depends(deps.get_current_user),
+):
+    return pedido_service.cancelar(db, id_pedido, data.motivo, current)
 
 
 @router.get("", response_model=list[PedidoOut])

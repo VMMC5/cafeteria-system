@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import DetallePedido, EstadoPedido, Mesa, Pedido, Producto
+from app.models import Cancelacion, DetallePedido, EstadoPedido, Mesa, Pedido, Producto
 from app.schemas.pedido import PedidoCreate
 
 
@@ -17,6 +17,49 @@ def get_or_404(db: Session, id_pedido: int) -> Pedido:
     if obj is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pedido no encontrado")
     return obj
+
+
+# estado_origen -> (estado_destino permitido, {roles autorizados})
+_FLUJO: dict[str, tuple[str, set[str]]] = {
+    "Pendiente": ("En preparación", {"Cocinero", "Administrador"}),
+    "En preparación": ("Listo", {"Cocinero", "Administrador"}),
+    "Listo": ("Entregado", {"Mesero", "Administrador"}),
+}
+
+_CANCELABLE_ROLES = {"Mesero", "Administrador"}
+_TERMINALES = {"Entregado", "Cancelado"}
+
+
+def _estado_por_nombre(db: Session, nombre: str) -> EstadoPedido:
+    return db.execute(
+        select(EstadoPedido).where(EstadoPedido.nombre_estado == nombre)
+    ).scalar_one()
+
+
+def cambiar_estado(
+    db: Session, id_pedido: int, id_estado_destino: int, usuario
+) -> Pedido:
+    pedido = get_or_404(db, id_pedido)
+    destino = db.get(EstadoPedido, id_estado_destino)
+    if destino is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Estado inválido")
+
+    transicion = _FLUJO.get(pedido.estado.nombre_estado)
+    if transicion is None or destino.nombre_estado != transicion[0]:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Transición de estado no permitida"
+        )
+
+    _, roles = transicion
+    if usuario.rol.nombre_rol not in roles:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Rol no autorizado para esta transición"
+        )
+
+    pedido.id_estado = destino.id_estado
+    db.commit()
+    db.refresh(pedido)
+    return pedido
 
 
 def list_pedidos(
@@ -63,6 +106,32 @@ def crear(db: Session, data: PedidoCreate, id_usuario: int) -> Pedido:
     )
     mesa.estado = "Ocupada"
     db.add(pedido)
+    db.commit()
+    db.refresh(pedido)
+    return pedido
+
+
+def cancelar(db: Session, id_pedido: int, motivo: str, usuario) -> Pedido:
+    pedido = get_or_404(db, id_pedido)
+    if pedido.estado.nombre_estado in _TERMINALES:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El pedido no se puede cancelar en su estado actual",
+        )
+    if usuario.rol.nombre_rol not in _CANCELABLE_ROLES:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Rol no autorizado para cancelar"
+        )
+
+    db.add(
+        Cancelacion(
+            id_pedido=pedido.id_pedido,
+            id_usuario=usuario.id_usuario,
+            motivo=motivo,
+        )
+    )
+    pedido.id_estado = _estado_por_nombre(db, "Cancelado").id_estado
+    pedido.mesa.estado = "Disponible"
     db.commit()
     db.refresh(pedido)
     return pedido
