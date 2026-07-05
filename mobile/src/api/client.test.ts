@@ -124,3 +124,33 @@ test("cobrarVenta postea a /ventas con id_pedido y pagos", async () => {
   expect(body).toEqual({ id_pedido: 7, pagos: [{ id_metodo_pago: 1, monto: 200 }] });
   expect(config.headers.Authorization).toBe("Bearer tok");
 });
+
+test("getCategoriasGasto pega a /gastos/categorias con bearer", async () => {
+  const spy = jest
+    .spyOn(client.http, "get")
+    .mockResolvedValue({ data: [{ id_categoria_gasto: 1, nombre_categoria: "Servicios" }] } as any);
+  const out = await client.getCategoriasGasto("tok");
+  expect(out).toEqual([{ id_categoria_gasto: 1, nombre_categoria: "Servicios" }]);
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/gastos/categorias");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("getGastos pega a /gastos con bearer", async () => {
+  const spy = jest.spyOn(client.http, "get").mockResolvedValue({ data: [] } as any);
+  await client.getGastos("tok");
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/gastos");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("crearGasto postea a /gastos con el cuerpo", async () => {
+  const spy = jest
+    .spyOn(client.http, "post")
+    .mockResolvedValue({ data: { id_gasto: 5 } } as any);
+  await client.crearGasto("tok", { id_categoria_gasto: 1, concepto: "Luz", monto: 500 });
+  const [url, body, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/gastos");
+  expect(body).toEqual({ id_categoria_gasto: 1, concepto: "Luz", monto: 500 });
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
