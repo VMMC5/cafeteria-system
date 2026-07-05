@@ -365,3 +365,7 @@ vite.config.ts.timestamp-*
 # Proyecto
 .env
 *.sqlite3
+
+# El Python.gitignore ignora lib/ (venvs); permitir el codigo fuente del movil
+!mobile/src/lib/
+!mobile/src/lib/**
