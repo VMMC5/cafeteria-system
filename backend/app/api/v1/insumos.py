@@ -4,7 +4,12 @@ from sqlalchemy.orm import Session
 from app.core import deps
 from app.db.session import get_db
 from app.models import Usuario
-from app.schemas.insumo import InsumoCreate, InsumoOut, InsumoUpdate
+from app.schemas.insumo import (
+    InsumoCreate,
+    InsumoOut,
+    InsumoUpdate,
+    MovimientoCreate,
+)
 from app.services import insumo_service
 
 router = APIRouter(prefix="/insumos", tags=["insumos"])
@@ -44,3 +49,13 @@ def editar(
     current: Usuario = Depends(deps.get_current_user),
 ):
     return insumo_service.actualizar(db, id_insumo, data, current)
+
+
+@router.post("/{id_insumo}/movimientos", response_model=InsumoOut)
+def registrar_movimiento(
+    id_insumo: int,
+    data: MovimientoCreate,
+    db: Session = Depends(get_db),
+    current: Usuario = Depends(deps.get_current_user),
+):
+    return insumo_service.registrar_movimiento(db, id_insumo, data, current)

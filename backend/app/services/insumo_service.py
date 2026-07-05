@@ -2,10 +2,12 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Insumo, UnidadMedida
-from app.schemas.insumo import InsumoCreate, InsumoUpdate
+from app.models import Insumo, MovimientoInventario, UnidadMedida
+from app.schemas.insumo import InsumoCreate, InsumoUpdate, MovimientoCreate
 
 _ROLES_INV = {"Cocinero", "Administrador"}
+_TIPOS = {"Entrada", "Salida"}
+_MOTIVOS_MANUAL = {"Ajuste", "Merma"}
 
 
 def _check_rol(usuario) -> None:
@@ -71,6 +73,35 @@ def actualizar(db: Session, id_insumo: int, data: InsumoUpdate, usuario) -> Insu
         insumo.stock_minimo = data.stock_minimo
     if data.costo_unitario is not None:
         insumo.costo_unitario = data.costo_unitario
+    db.commit()
+    db.refresh(insumo)
+    return insumo
+
+
+def registrar_movimiento(
+    db: Session, id_insumo: int, data: MovimientoCreate, usuario
+) -> Insumo:
+    _check_rol(usuario)
+    insumo = get_or_404(db, id_insumo)
+    if data.tipo not in _TIPOS or data.motivo not in _MOTIVOS_MANUAL:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Tipo o motivo inválido"
+        )
+    if data.tipo == "Salida" and data.cantidad > insumo.stock_actual:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Stock insuficiente"
+        )
+    delta = data.cantidad if data.tipo == "Entrada" else -data.cantidad
+    insumo.stock_actual = insumo.stock_actual + delta
+    db.add(
+        MovimientoInventario(
+            id_insumo=insumo.id_insumo,
+            id_usuario=usuario.id_usuario,
+            tipo_movimiento=data.tipo,
+            motivo=data.motivo,
+            cantidad=data.cantidad,
+        )
+    )
     db.commit()
     db.refresh(insumo)
     return insumo

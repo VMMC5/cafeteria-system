@@ -27,6 +27,12 @@ class InsumoUpdate(BaseModel):
     costo_unitario: Decimal | None = Field(default=None, ge=0)
 
 
+class MovimientoCreate(BaseModel):
+    tipo: str
+    motivo: str
+    cantidad: Decimal = Field(gt=0)
+
+
 class InsumoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

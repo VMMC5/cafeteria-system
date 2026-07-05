@@ -80,3 +80,49 @@ def test_editar_insumo(client, db, cocinero_headers):
 
 def test_detalle_insumo_404(client, cocinero_headers):
     assert client.get("/api/v1/insumos/999999", headers=cocinero_headers).status_code == 404
+
+
+def _movimiento(client, headers, id_insumo, tipo, motivo, cantidad):
+    return client.post(
+        f"/api/v1/insumos/{id_insumo}/movimientos",
+        headers=headers,
+        json={"tipo": tipo, "motivo": motivo, "cantidad": cantidad},
+    )
+
+
+def test_movimiento_entrada_suma(client, db, cocinero_headers):
+    insumo = _crear_insumo(client, db, cocinero_headers, nombre="Harina", stock=10.0).json()
+    r = _movimiento(client, cocinero_headers, insumo["id_insumo"], "Entrada", "Ajuste", 5.0)
+    assert r.status_code == 200
+    assert float(r.json()["stock_actual"]) == 15.0
+
+
+def test_movimiento_salida_resta(client, db, cocinero_headers):
+    insumo = _crear_insumo(client, db, cocinero_headers, nombre="Sal", stock=10.0).json()
+    r = _movimiento(client, cocinero_headers, insumo["id_insumo"], "Salida", "Merma", 4.0)
+    assert r.status_code == 200
+    assert float(r.json()["stock_actual"]) == 6.0
+
+
+def test_movimiento_salida_mayor_stock_422(client, db, cocinero_headers):
+    insumo = _crear_insumo(client, db, cocinero_headers, nombre="Aceite", stock=10.0).json()
+    r = _movimiento(client, cocinero_headers, insumo["id_insumo"], "Salida", "Merma", 20.0)
+    assert r.status_code == 422
+
+
+def test_movimiento_cantidad_cero_422(client, db, cocinero_headers):
+    insumo = _crear_insumo(client, db, cocinero_headers, nombre="Pan").json()
+    r = _movimiento(client, cocinero_headers, insumo["id_insumo"], "Entrada", "Ajuste", 0)
+    assert r.status_code == 422
+
+
+def test_movimiento_tipo_invalido_422(client, db, cocinero_headers):
+    insumo = _crear_insumo(client, db, cocinero_headers, nombre="Té").json()
+    r = _movimiento(client, cocinero_headers, insumo["id_insumo"], "Foo", "Ajuste", 1.0)
+    assert r.status_code == 422
+
+
+def test_movimiento_rol_mesero_403(client, db, cocinero_headers, mesero_headers):
+    insumo = _crear_insumo(client, db, cocinero_headers, nombre="Miel").json()
+    r = _movimiento(client, mesero_headers, insumo["id_insumo"], "Entrada", "Ajuste", 1.0)
+    assert r.status_code == 403
