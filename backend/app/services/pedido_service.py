@@ -63,11 +63,13 @@ def cambiar_estado(
 
 
 def list_pedidos(
-    db: Session, id_estado: int | None = None, id_usuario: int | None = None
+    db: Session,
+    estados: list[int] | None = None,
+    id_usuario: int | None = None,
 ) -> list[Pedido]:
     stmt = select(Pedido).order_by(Pedido.id_pedido.desc())
-    if id_estado is not None:
-        stmt = stmt.where(Pedido.id_estado == id_estado)
+    if estados:
+        stmt = stmt.where(Pedido.id_estado.in_(estados))
     if id_usuario is not None:
         stmt = stmt.where(Pedido.id_usuario == id_usuario)
     return list(db.execute(stmt).scalars())
