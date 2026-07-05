@@ -93,3 +93,34 @@ test("getPedidos con mias manda mias y estados", async () => {
   expect(config.params).toEqual({ estados: "1,2,3", mias: true });
   expect(config.headers.Authorization).toBe("Bearer tok");
 });
+
+test("getMetodosPago pega a /metodos_pago con bearer", async () => {
+  const spy = jest
+    .spyOn(client.http, "get")
+    .mockResolvedValue({ data: [{ id_metodo_pago: 1, nombre_metodo: "Efectivo" }] } as any);
+  const out = await client.getMetodosPago("tok");
+  expect(out).toEqual([{ id_metodo_pago: 1, nombre_metodo: "Efectivo" }]);
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/metodos_pago");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("getPedidos con por_cobrar manda el flag", async () => {
+  const spy = jest.spyOn(client.http, "get").mockResolvedValue({ data: [] } as any);
+  await client.getPedidos("tok", { por_cobrar: true });
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/pedidos");
+  expect(config.params).toEqual({ por_cobrar: true });
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("cobrarVenta postea a /ventas con id_pedido y pagos", async () => {
+  const spy = jest
+    .spyOn(client.http, "post")
+    .mockResolvedValue({ data: { id_venta: 3 } } as any);
+  await client.cobrarVenta("tok", 7, [{ id_metodo_pago: 1, monto: 200 }]);
+  const [url, body, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/ventas");
+  expect(body).toEqual({ id_pedido: 7, pagos: [{ id_metodo_pago: 1, monto: 200 }] });
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
