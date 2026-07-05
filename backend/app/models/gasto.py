@@ -7,6 +7,7 @@ from sqlalchemy import (
     String,
     func,
 )
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -39,3 +40,5 @@ class Gasto(Base):
     fecha_gasto = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+    categoria = relationship("CategoriaGasto", lazy="joined")
