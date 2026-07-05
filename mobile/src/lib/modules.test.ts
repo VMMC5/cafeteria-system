@@ -1,4 +1,4 @@
-import { modulesForRole } from "./modules";
+import { homeRoute, modulesForRole } from "./modules";
 
 test("mesero ve solo su modulo", () => {
   const m = modulesForRole("Mesero");
@@ -24,4 +24,13 @@ test("rol desconocido no ve modulos", () => {
 
 test("cada modulo apunta a su ruta", () => {
   expect(modulesForRole("Mesero")[0].ruta).toBe("/mesero/mesas");
+});
+
+test("homeRoute: rol de un solo modulo va directo a su home", () => {
+  expect(homeRoute("Mesero")).toBe("/mesero/mesas");
+  expect(homeRoute("Cajero")).toBe("/modulo/caja");
+});
+
+test("homeRoute: rol con varios modulos va a seleccion", () => {
+  expect(homeRoute("Administrador")).toBe("/seleccion-modulo");
 });

@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 
+import { homeRoute } from "@/lib/modules";
 import { useAuth } from "@/store/auth";
 
 export default function Login() {
@@ -23,7 +24,9 @@ export default function Login() {
     setLoading(true);
     try {
       await login(correo.trim(), password);
-      router.replace("/seleccion-modulo" as any);
+      const user = useAuth.getState().user;
+      const destino = user ? homeRoute(user.rol.nombre_rol) : "/seleccion-modulo";
+      router.replace(destino as any);
     } catch (e: any) {
       if (e?.response?.status === 401) setError("Correo o contraseña incorrectos.");
       else setError("No se pudo conectar con el servidor.");
