@@ -10,7 +10,7 @@ from app.schemas.pedido import (
     PedidoCreate,
     PedidoOut,
 )
-from app.services import pedido_service
+from app.services import pedido_service, venta_service
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
@@ -49,9 +49,12 @@ def listar(
     id_estado: int | None = None,
     estados: str | None = None,
     mias: bool = False,
+    por_cobrar: bool = False,
     db: Session = Depends(get_db),
     current: Usuario = Depends(deps.get_current_user),
 ):
+    if por_cobrar:
+        return venta_service.listar_por_cobrar(db)
     id_usuario = current.id_usuario if mias else None
     if estados:
         ids = [int(x) for x in estados.split(",") if x.strip()]
