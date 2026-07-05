@@ -152,3 +152,78 @@ def test_precio_persiste_tras_cambiar_producto(client, db, admin_headers):
 
 def test_detalle_inexistente_404(client, admin_headers):
     assert client.get("/api/v1/pedidos/999999", headers=admin_headers).status_code == 404
+
+
+def test_listar_mias_y_estados(
+    client, db, admin, admin_headers, mesero, mesero_headers, cocinero_headers
+):
+    from app.models import EstadoPedido
+
+    def eid(nombre):
+        return (
+            db.query(EstadoPedido)
+            .filter(EstadoPedido.nombre_estado == nombre)
+            .one()
+            .id_estado
+        )
+
+    prod = _producto(client, db, admin_headers)
+
+    # pedido activo del mesero (Pendiente)
+    mesa_a = _mesa(client, admin_headers, numero=501)
+    p_mesero = client.post(
+        "/api/v1/pedidos",
+        headers=mesero_headers,
+        json={
+            "id_mesa": mesa_a["id_mesa"],
+            "items": [{"id_producto": prod["id_producto"], "cantidad": 1}],
+        },
+    ).json()
+
+    # pedido de otro usuario (admin)
+    mesa_b = _mesa(client, admin_headers, numero=502)
+    p_admin = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={
+            "id_mesa": mesa_b["id_mesa"],
+            "items": [{"id_producto": prod["id_producto"], "cantidad": 1}],
+        },
+    ).json()
+
+    # pedido del mesero llevado hasta Entregado
+    mesa_c = _mesa(client, admin_headers, numero=503)
+    p_entregado = client.post(
+        "/api/v1/pedidos",
+        headers=mesero_headers,
+        json={
+            "id_mesa": mesa_c["id_mesa"],
+            "items": [{"id_producto": prod["id_producto"], "cantidad": 1}],
+        },
+    ).json()
+    pid = p_entregado["id_pedido"]
+    client.patch(
+        f"/api/v1/pedidos/{pid}/estado",
+        headers=cocinero_headers,
+        json={"id_estado": eid("En preparación")},
+    )
+    client.patch(
+        f"/api/v1/pedidos/{pid}/estado",
+        headers=cocinero_headers,
+        json={"id_estado": eid("Listo")},
+    )
+    client.patch(
+        f"/api/v1/pedidos/{pid}/estado",
+        headers=mesero_headers,
+        json={"id_estado": eid("Entregado")},
+    )
+
+    r = client.get(
+        f"/api/v1/pedidos?mias=true&estados={eid('Pendiente')},{eid('Listo')}",
+        headers=mesero_headers,
+    )
+    assert r.status_code == 200
+    ids = {p["id_pedido"] for p in r.json()}
+    assert p_mesero["id_pedido"] in ids
+    assert p_admin["id_pedido"] not in ids
+    assert p_entregado["id_pedido"] not in ids
