@@ -24,6 +24,7 @@ test("rol desconocido no ve modulos", () => {
 
 test("cada modulo apunta a su ruta", () => {
   expect(modulesForRole("Mesero")[0].ruta).toBe("/mesero/mesas");
+  expect(modulesForRole("Cocinero")[0].ruta).toBe("/cocina");
 });
 
 test("homeRoute: rol de un solo modulo va directo a su home", () => {

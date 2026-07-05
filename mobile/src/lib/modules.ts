@@ -6,7 +6,7 @@ export type Modulo = {
 
 const MESERO: Modulo = { key: "mesero", label: "Mesero", ruta: "/mesero/mesas" };
 const CAJA: Modulo = { key: "caja", label: "Caja", ruta: "/modulo/caja" };
-const COCINA: Modulo = { key: "cocina", label: "Cocina", ruta: "/modulo/cocina" };
+const COCINA: Modulo = { key: "cocina", label: "Cocina", ruta: "/cocina" };
 
 export function modulesForRole(rol: string): Modulo[] {
   switch (rol) {
