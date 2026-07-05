@@ -4,7 +4,15 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Configuracion, MetodoPago, Pago, Pedido, Ticket, Venta
+from app.models import (
+    Configuracion,
+    EstadoPedido,
+    MetodoPago,
+    Pago,
+    Pedido,
+    Ticket,
+    Venta,
+)
 from app.schemas.venta import PagoOut, VentaCreate, VentaOut
 
 _IVA_DEFAULT = Decimal("0.16")
@@ -98,3 +106,18 @@ def to_out(db: Session, venta: Venta) -> VentaOut:
         cambio=suma - venta.total,
         pagos=[PagoOut.model_validate(p) for p in venta.pagos],
     )
+
+
+def listar_por_cobrar(db: Session) -> list[Pedido]:
+    cancelado = db.execute(
+        select(EstadoPedido.id_estado).where(
+            EstadoPedido.nombre_estado == "Cancelado"
+        )
+    ).scalar_one()
+    con_venta = select(Venta.id_pedido)
+    stmt = (
+        select(Pedido)
+        .where(Pedido.id_estado != cancelado, Pedido.id_pedido.not_in(con_venta))
+        .order_by(Pedido.id_pedido.desc())
+    )
+    return list(db.execute(stmt).scalars())

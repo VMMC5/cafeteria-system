@@ -185,3 +185,32 @@ def test_get_venta_detalle_y_404(client, db, admin_headers, cajero_headers):
     assert float(r.json()["iva"]) == 16.0
     assert len(r.json()["pagos"]) == 1
     assert client.get("/api/v1/ventas/999999", headers=cajero_headers).status_code == 404
+
+
+def test_pedidos_por_cobrar(client, db, admin_headers, cajero_headers):
+    p_activo = _pedido(client, db, admin_headers, numero=610)
+
+    p_cobrado = _pedido(client, db, admin_headers, numero=611, precio=116.0)
+    ef = _metodo_id(db, "Efectivo")
+    client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={
+            "id_pedido": p_cobrado["id_pedido"],
+            "pagos": [{"id_metodo_pago": ef, "monto": 200.0}],
+        },
+    )
+
+    p_cancel = _pedido(client, db, admin_headers, numero=612)
+    client.post(
+        f"/api/v1/pedidos/{p_cancel['id_pedido']}/cancelar",
+        headers=admin_headers,
+        json={"motivo": "prueba"},
+    )
+
+    r = client.get("/api/v1/pedidos?por_cobrar=true", headers=cajero_headers)
+    assert r.status_code == 200
+    ids = {p["id_pedido"] for p in r.json()}
+    assert p_activo["id_pedido"] in ids
+    assert p_cobrado["id_pedido"] not in ids
+    assert p_cancel["id_pedido"] not in ids
