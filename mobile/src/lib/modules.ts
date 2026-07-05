@@ -4,7 +4,7 @@ export type Modulo = {
   ruta: string;
 };
 
-const MESERO: Modulo = { key: "mesero", label: "Mesero", ruta: "/modulo/mesero" };
+const MESERO: Modulo = { key: "mesero", label: "Mesero", ruta: "/mesero/mesas" };
 const CAJA: Modulo = { key: "caja", label: "Caja", ruta: "/modulo/caja" };
 const COCINA: Modulo = { key: "cocina", label: "Cocina", ruta: "/modulo/cocina" };
 

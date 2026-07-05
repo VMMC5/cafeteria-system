@@ -7,6 +7,9 @@ export default function RootLayout() {
       <Stack.Screen name="login" />
       <Stack.Screen name="seleccion-modulo" />
       <Stack.Screen name="modulo/[key]" />
+      <Stack.Screen name="mesero/mesas" />
+      <Stack.Screen name="mesero/menu" />
+      <Stack.Screen name="mesero/carrito" />
     </Stack>
   );
 }

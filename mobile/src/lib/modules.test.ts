@@ -22,6 +22,6 @@ test("rol desconocido no ve modulos", () => {
   expect(modulesForRole("Otro")).toEqual([]);
 });
 
-test("cada modulo apunta a /modulo/<key>", () => {
-  expect(modulesForRole("Mesero")[0].ruta).toBe("/modulo/mesero");
+test("cada modulo apunta a su ruta", () => {
+  expect(modulesForRole("Mesero")[0].ruta).toBe("/mesero/mesas");
 });
