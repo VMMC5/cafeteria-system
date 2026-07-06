@@ -129,6 +129,15 @@ PRODUCTOS_DEMO = [
     ("Postres", "Flan Napolitano", "Casero", 45.0),
 ]
 
+# Cuentas demo no-admin para probar los módulos móviles (contraseña conocida,
+# igual que el resto de datos demo). El Administrador se crea aparte desde .env.
+DEMO_PASSWORD = "cafeteria123"
+USUARIOS_DEMO = [
+    ("Mesero", "Demo", "mesero@cafeteria.com", "mesero", "Mesero"),
+    ("Cajero", "Demo", "cajero@cafeteria.com", "cajero", "Cajero"),
+    ("Cocinero", "Demo", "cocinero@cafeteria.com", "cocinero", "Cocinero"),
+]
+
 
 def seed_catalogo(db) -> int:
     """Siembra mesas y productos demo. Idempotente."""
@@ -178,6 +187,30 @@ def seed_admin(db) -> int:
     return 1
 
 
+def seed_usuarios_demo(db) -> int:
+    """Crea las cuentas demo no-admin (Mesero/Cajero/Cocinero). Idempotente."""
+    total = 0
+    for nombre, apellido, correo, usuario, rol_nombre in USUARIOS_DEMO:
+        existe = db.query(Usuario).filter(Usuario.correo == correo).first()
+        if existe:
+            continue
+        rol = db.query(Rol).filter(Rol.nombre_rol == rol_nombre).one()
+        db.add(
+            Usuario(
+                nombre=nombre,
+                apellido_paterno=apellido,
+                apellido_materno=None,
+                correo=correo,
+                nombre_usuario=usuario,
+                contrasena_hash=hash_password(DEMO_PASSWORD),
+                id_rol=rol.id_rol,
+            )
+        )
+        total += 1
+    db.flush()
+    return total
+
+
 def run():
     db = SessionLocal()
     try:
@@ -191,6 +224,7 @@ def run():
                     db.add(model(**row))
                     total += 1
         total += seed_admin(db)
+        total += seed_usuarios_demo(db)
         total += seed_catalogo(db)
         db.commit()
         print(f"Seed completado: {total} filas nuevas insertadas.")
