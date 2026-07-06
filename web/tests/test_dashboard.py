@@ -49,3 +49,14 @@ def test_index_redirige_a_dashboard(client, monkeypatch):
     r = client.get("/")
     assert r.status_code == 302
     assert "/dashboard" in r.headers["Location"]
+
+
+def test_dashboard_incluye_graficas(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    r = client.get("/dashboard")
+    cuerpo = r.get_data(as_text=True)
+    assert 'id="chart-ventas"' in cuerpo
+    assert 'id="chart-top"' in cuerpo
+    assert "chart.umd.min.js" in cuerpo
+    assert "Café" in cuerpo          # dato del top embebido en el JSON

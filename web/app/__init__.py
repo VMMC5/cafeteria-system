@@ -12,6 +12,7 @@ login_manager.login_view = "auth.login"
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
+    app.json.ensure_ascii = False
 
     login_manager.init_app(app)
 
