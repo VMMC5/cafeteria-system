@@ -1,22 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Estadísticas — Cafetería Aroma{% endblock %}
 {% block content %}
-<div class="header-row">
-  <h1>Dashboard</h1>
+<div class="page-head">
+  <div>
+    <h1>Estadísticas</h1>
+    <p class="sub">Panel de indicadores</p>
+  </div>
 </div>
 
 <form method="get" class="filtros">
-  <label>Periodo:
-    <select name="preset" onchange="this.form.submit()">
-      <option value="hoy" {{ 'selected' if preset == 'hoy' }}>Hoy</option>
-      <option value="7dias" {{ 'selected' if preset == '7dias' }}>Últimos 7 días</option>
-      <option value="mes" {{ 'selected' if preset == 'mes' }}>Este mes</option>
-      <option value="rango" {{ 'selected' if preset == 'rango' }}>Rango…</option>
-    </select>
-  </label>
+  <button type="submit" name="preset" value="hoy"   class="pill {{ 'active' if preset == 'hoy' }}">Hoy</button>
+  <button type="submit" name="preset" value="7dias" class="pill {{ 'active' if preset == '7dias' }}">7 días</button>
+  <button type="submit" name="preset" value="mes"   class="pill {{ 'active' if preset == 'mes' }}">Este mes</button>
   <input type="date" name="desde" value="{{ desde }}">
   <input type="date" name="hasta" value="{{ hasta }}">
-  <button type="submit">Aplicar</button>
+  <button type="submit" name="preset" value="rango" class="pill {{ 'active' if preset == 'rango' }}">Aplicar rango</button>
 </form>
 
 <section class="kpis">
@@ -50,7 +48,8 @@
     data: {
       labels: serie.map(p => p.fecha),
       datasets: [{ label: "Ventas ($)", data: serie.map(p => Number(p.total)),
-                   borderColor: "#2563eb", tension: 0.2 }],
+                   borderColor: "#c8862f", backgroundColor: "rgba(200,134,47,.15)",
+                   fill: true, tension: 0.3 }],
     },
     options: { responsive: true, plugins: { legend: { display: false } } },
   });
@@ -59,7 +58,7 @@
     data: {
       labels: top.map(p => p.nombre),
       datasets: [{ label: "Cantidad", data: top.map(p => Number(p.cantidad)),
-                   backgroundColor: "#16a34a" }],
+                   backgroundColor: "#3a2a20" }],
     },
     options: { responsive: true, plugins: { legend: { display: false } } },
   });
