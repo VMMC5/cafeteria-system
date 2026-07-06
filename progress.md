@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-07-05 (Sprint 4 completo)
+**Última actualización:** 2026-07-05 (Sprint 5 completo)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -50,24 +50,32 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 
 **Estado:** flujo de negocio completo **pedido → cocina → mesero → cobro** de punta a punta. Cobro con IVA desglosado, pago (un método) y cambio; egresos registrables. Pago dividido en UI queda pendiente (la API ya lo soporta).
 
+### Sprint 5 — Inventario y compras
+| PR | Qué |
+|----|-----|
+| **#14** Insumos | `GET /unidades`, CRUD de insumos, `POST /insumos/{id}/movimientos` (ajuste/merma con kárdex, bloqueo de negativo); móvil Cocina `/cocina/inventario` (alerta de mínimo) + `/cocina/ajuste` |
+| **#15** Recetas + descuento | CRUD `producto_insumo`; descuento automático de stock al confirmar pedido (kárdex Salida/Venta, **bloquea 422** si falta) y **reposición** al cancelar. Backend-only |
+| **#16** Compras | `GET/POST /proveedores` (+ seed demo), `POST/GET /compras` (entrada de stock, kárdex Compra, actualiza costo al último); móvil `/cocina/compras` + `/cocina/compra-nueva` (multi-línea) |
+
+**Estado:** inventario cerrado el ciclo: **compra sube stock**, **pedido descuenta** por receta, ajustes/mermas manuales, todo con kárdex. Recetas se gestionan por API.
+
 ### Cobertura de tests
-- **Backend:** 108 tests (`docker compose exec api pytest`).
-- **Móvil:** 42 tests jest (`cd mobile && npm test`) + `tsc` limpio.
+- **Backend:** 144 tests (`docker compose exec api pytest`).
+- **Móvil:** 53 tests jest (`cd mobile && npm test`) + `tsc` limpio.
 - **Web:** 13 tests (`docker compose exec web pytest`).
 
 ---
 
 ## ⏳ Pendiente
 
-### Sprint 5 — Inventario y compras *(SIGUIENTE)*
-- Recetas (`producto_insumo`), descuento automático de stock al confirmar pedido (kárdex), compras a proveedores.
-
-### Sprint 6 — Dashboard y reportes
+### Sprint 6 — Dashboard y reportes *(SIGUIENTE)*
 - Web: KPIs + gráficas (Chart.js), reportes con filtros y export PDF/XLSX.
 
 ### Deuda técnica / mejoras conocidas
 - Módulos móviles Mesero/Cocina/Caja implementados; el placeholder `modulo/[key].tsx` ya no se usa por ningún rol.
 - **Pago dividido** en la Caja móvil: la API lo soporta, pero la UI cobra con un solo método.
+- **Recetas** se gestionan solo por API (Swagger); sin pantalla móvil.
+- **Costo de insumo** por compra = último costo (no promedio ponderado).
 - CRUD de catálogo en la **web admin** (hoy solo vía API/Swagger).
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
 - RF-M03 (recuperar contraseña) solo como nota; sin implementar.
