@@ -1,0 +1,111 @@
+from app.services import api_client
+
+ADMIN_TOKENS = {"access_token": "a", "refresh_token": "r", "token_type": "bearer"}
+ADMIN_ME = {
+    "id_usuario": 1, "nombre": "Admin", "apellido_paterno": "Sistema",
+    "apellido_materno": None, "correo": "admin@cafeteria.com",
+    "nombre_usuario": "admin", "id_rol": 1, "activo": True,
+    "fecha_registro": "2026-07-04T00:00:00Z",
+    "rol": {"id_rol": 1, "nombre_rol": "Administrador", "descripcion": None},
+}
+
+
+def _login(client, monkeypatch):
+    monkeypatch.setattr(api_client, "login", lambda c, p: ADMIN_TOKENS)
+    monkeypatch.setattr(api_client, "get_me", lambda a: ADMIN_ME)
+    client.post("/login", data={"correo": "admin@cafeteria.com", "password": "x"})
+
+
+def test_shell_tiene_sidebar_con_marca_y_enlaces(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: [])
+    cuerpo = client.get("/usuarios").get_data(as_text=True)
+    assert "sidebar" in cuerpo
+    assert "Café" in cuerpo and "Admin" in cuerpo      # marca
+    assert "Estadísticas" in cuerpo                     # enlace nav
+    assert "Usuarios y Roles" in cuerpo                 # enlace nav
+
+
+def test_shell_tiene_enlace_salir(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: [])
+    cuerpo = client.get("/usuarios").get_data(as_text=True)
+    assert "/logout" in cuerpo       # href de cierre de sesión
+    assert "Salir" in cuerpo          # texto del enlace
+
+
+def test_login_usa_layout_publico_sin_sidebar(client):
+    cuerpo = client.get("/login").get_data(as_text=True)
+    assert "Iniciar" in cuerpo
+    assert 'class="sidebar"' not in cuerpo              # el login no muestra sidebar
+
+
+def test_login_split_marca_y_subtitulo(client):
+    cuerpo = client.get("/login").get_data(as_text=True)
+    assert "login__brand" in cuerpo
+    assert "Aroma" in cuerpo                                  # marca completa
+    assert "Acceso exclusivo para administradores" in cuerpo  # subtítulo del card
+    assert "Ingresar" in cuerpo                               # botón
+
+
+def _users():
+    return [
+        {"id_usuario": 1, "nombre": "Eduardo", "apellido_paterno": "Gutiérrez",
+         "correo": "eduardo@cafeteria.com", "activo": True,
+         "rol": {"nombre_rol": "Mesero"}},
+        {"id_usuario": 2, "nombre": "Rafael", "apellido_paterno": "Baltazar",
+         "correo": "rafael@cafeteria.com", "activo": False,
+         "rol": {"nombre_rol": "Cocinero"}},
+    ]
+
+
+def test_lista_muestra_badges_de_rol(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: _users())
+    cuerpo = client.get("/usuarios").get_data(as_text=True)
+    assert "badge--mesero" in cuerpo
+    assert "badge--cocinero" in cuerpo
+
+
+def test_lista_filtra_por_rol(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: _users())
+    cuerpo = client.get("/usuarios?rol=Mesero").get_data(as_text=True)
+    assert "Eduardo" in cuerpo
+    assert "Rafael" not in cuerpo
+
+
+def test_lista_filtra_por_estado(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: _users())
+    cuerpo = client.get("/usuarios?estado=inactivo").get_data(as_text=True)
+    assert "Rafael" in cuerpo
+    assert "Eduardo" not in cuerpo
+
+
+ROLES = [
+    {"id_rol": 1, "nombre_rol": "Administrador", "descripcion": None},
+    {"id_rol": 3, "nombre_rol": "Cocinero", "descripcion": None},
+    {"id_rol": 4, "nombre_rol": "Mesero", "descripcion": None},
+]
+
+
+def test_form_nuevo_tarjetas_rol_y_permisos(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_roles", lambda a: ROLES)
+    cuerpo = client.get("/usuarios/nuevo").get_data(as_text=True)
+    assert "role-card" in cuerpo
+    assert "Permisos del rol" in cuerpo
+    assert "Mesero" in cuerpo                 # opción de rol renderizada
+    assert 'name="id_rol"' in cuerpo          # el radio conserva el campo real
+    assert 'name="nombre_usuario"' in cuerpo  # campo real, no se pierde
+
+
+def test_form_nuevo_radios_rol_requeridos(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_roles", lambda a: ROLES)
+    cuerpo = client.get("/usuarios/nuevo").get_data(as_text=True)
+    import re
+    radios = re.findall(r'<input[^>]*type="radio"[^>]*>', cuerpo)
+    assert radios, "debe haber radios de rol"
+    assert all("required" in tag for tag in radios)  # no se puede enviar sin rol

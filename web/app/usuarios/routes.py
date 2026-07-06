@@ -27,8 +27,19 @@ def _payload(form, incluir_password=True):
 @login_required
 def listar():
     q = request.args.get("q")
+    rol = request.args.get("rol") or ""
+    estado = request.args.get("estado") or ""
     usuarios = api_gateway.call(api_client.list_usuarios, q)
-    return render_template("usuarios/list.html", usuarios=usuarios, q=q or "")
+    if rol:
+        usuarios = [u for u in usuarios if u.get("rol", {}).get("nombre_rol") == rol]
+    if estado in ("activo", "inactivo"):
+        activo = estado == "activo"
+        usuarios = [u for u in usuarios if bool(u.get("activo")) == activo]
+    return render_template(
+        "usuarios/list.html",
+        usuarios=usuarios, q=q or "", rol=rol, estado=estado,
+        roles=["Administrador", "Cajero", "Cocinero", "Mesero"],
+    )
 
 
 @bp.route("/usuarios/nuevo")
