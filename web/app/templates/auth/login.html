@@ -1,15 +1,14 @@
-{% extends "base.html" %}
+{% extends "base_public.html" %}
 {% block title %}Iniciar sesión{% endblock %}
-{% block content %}
-<div class="card card--narrow">
+{% block fullpage %}
+<div class="card--narrow">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, msg in messages %}<div class="flash flash--{{ category }}">{{ msg }}</div>{% endfor %}
+  {% endwith %}
   <h1>Iniciar sesión</h1>
   <form method="post" action="{{ url_for('auth.login') }}">
-    <label>Correo
-      <input type="email" name="correo" required autofocus>
-    </label>
-    <label>Contraseña
-      <input type="password" name="password" required>
-    </label>
+    <label>Correo <input type="email" name="correo" required autofocus></label>
+    <label>Contraseña <input type="password" name="password" required></label>
     <button type="submit">Entrar</button>
   </form>
   <p class="muted"><a href="{{ support_url }}">¿Problemas para entrar? Contacta soporte</a></p>
