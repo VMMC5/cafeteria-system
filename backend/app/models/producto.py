@@ -53,3 +53,5 @@ class ProductoInsumo(Base):
         Integer, ForeignKey("insumos.id_insumo"), nullable=False, index=True
     )
     cantidad_requerida = Column(Numeric(10, 3), nullable=False)
+
+    insumo = relationship("Insumo", lazy="joined")
