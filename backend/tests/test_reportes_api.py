@@ -107,3 +107,35 @@ def test_ventas_por_dia_requiere_admin_403(client, db, mesero_headers):
     assert client.get(
         "/api/v1/reportes/ventas-por-dia", headers=mesero_headers
     ).status_code == 403
+
+
+def test_top_productos_ordena_por_cantidad(
+    client, db, admin_headers, cajero_headers
+):
+    # _cobrar crea un producto distinto por número y vende cantidad=2 de cada uno.
+    _cobrar(client, db, admin_headers, cajero_headers, numero=720, precio=30.0)
+    _cobrar(client, db, admin_headers, cajero_headers, numero=721, precio=50.0)
+    r = client.get("/api/v1/reportes/top-productos?limite=5", headers=admin_headers)
+    assert r.status_code == 200
+    top = r.json()
+    assert len(top) == 2
+    # cada producto: cantidad 2, importe = 2 * precio
+    importes = {p["nombre"]: float(p["importe"]) for p in top}
+    assert importes["Item720"] == 60.0
+    assert importes["Item721"] == 100.0
+    assert all(p["cantidad"] == 2 for p in top)
+
+
+def test_top_productos_respeta_limite(
+    client, db, admin_headers, cajero_headers
+):
+    for n in range(730, 733):
+        _cobrar(client, db, admin_headers, cajero_headers, numero=n, precio=20.0)
+    r = client.get("/api/v1/reportes/top-productos?limite=2", headers=admin_headers)
+    assert len(r.json()) == 2
+
+
+def test_top_productos_requiere_admin_403(client, db, mesero_headers):
+    assert client.get(
+        "/api/v1/reportes/top-productos", headers=mesero_headers
+    ).status_code == 403

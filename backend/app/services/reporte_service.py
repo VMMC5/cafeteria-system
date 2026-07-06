@@ -4,7 +4,14 @@ from decimal import Decimal
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Compra, Gasto, Venta
+from app.models import (
+    Compra,
+    DetallePedido,
+    Gasto,
+    Pedido,
+    Producto,
+    Venta,
+)
 
 _CERO = Decimal("0.00")
 
@@ -76,6 +83,42 @@ def ventas_por_dia(db: Session, desde: date, hasta: date) -> list[dict]:
             "fecha": f.fecha,
             "total": Decimal(str(f.total)),
             "num_ventas": f.num_ventas,
+        }
+        for f in filas
+    ]
+
+
+def top_productos(
+    db: Session, desde: date, hasta: date, limite: int = 10
+) -> list[dict]:
+    dia = func.date(Venta.fecha_venta)
+    filas = (
+        db.query(
+            Producto.id_producto.label("id_producto"),
+            Producto.nombre_producto.label("nombre"),
+            func.sum(DetallePedido.cantidad).label("cantidad"),
+            func.sum(DetallePedido.subtotal).label("importe"),
+        )
+        .select_from(Venta)
+        .join(Pedido, Pedido.id_pedido == Venta.id_pedido)
+        .join(DetallePedido, DetallePedido.id_pedido == Pedido.id_pedido)
+        .join(Producto, Producto.id_producto == DetallePedido.id_producto)
+        .filter(
+            dia >= desde,
+            dia <= hasta,
+            Venta.estado_venta == "Completada",
+        )
+        .group_by(Producto.id_producto, Producto.nombre_producto)
+        .order_by(func.sum(DetallePedido.cantidad).desc())
+        .limit(limite)
+        .all()
+    )
+    return [
+        {
+            "id_producto": f.id_producto,
+            "nombre": f.nombre,
+            "cantidad": int(f.cantidad),
+            "importe": Decimal(str(f.importe)),
         }
         for f in filas
     ]
