@@ -5,11 +5,13 @@ from app.api.v1 import (
     categorias,
     estados,
     gastos,
+    insumos,
     mesas,
     metodos_pago,
     pedidos,
     productos,
     roles,
+    unidades,
     usuarios,
     ventas,
 )
@@ -26,3 +28,5 @@ api_router.include_router(estados.router)
 api_router.include_router(ventas.router)
 api_router.include_router(metodos_pago.router)
 api_router.include_router(gastos.router)
+api_router.include_router(insumos.router)
+api_router.include_router(unidades.router)

@@ -154,3 +154,36 @@ test("crearGasto postea a /gastos con el cuerpo", async () => {
   expect(body).toEqual({ id_categoria_gasto: 1, concepto: "Luz", monto: 500 });
   expect(config.headers.Authorization).toBe("Bearer tok");
 });
+
+test("getInsumos pega a /insumos con bearer", async () => {
+  const spy = jest.spyOn(client.http, "get").mockResolvedValue({ data: [] } as any);
+  await client.getInsumos("tok");
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/insumos");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("getInsumo pega a /insumos/{id} con bearer", async () => {
+  const spy = jest
+    .spyOn(client.http, "get")
+    .mockResolvedValue({ data: { id_insumo: 3 } } as any);
+  await client.getInsumo("tok", 3);
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/insumos/3");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("registrarMovimiento postea a /insumos/{id}/movimientos", async () => {
+  const spy = jest
+    .spyOn(client.http, "post")
+    .mockResolvedValue({ data: { id_insumo: 3 } } as any);
+  await client.registrarMovimiento("tok", 3, {
+    tipo: "Salida",
+    motivo: "Merma",
+    cantidad: 2,
+  });
+  const [url, body, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/insumos/3/movimientos");
+  expect(body).toEqual({ tipo: "Salida", motivo: "Merma", cantidad: 2 });
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
