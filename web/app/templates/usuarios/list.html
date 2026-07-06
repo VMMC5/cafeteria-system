@@ -1,41 +1,65 @@
 {% extends "base.html" %}
-{% block title %}Usuarios{% endblock %}
+{% block title %}Usuarios y Roles — Cafetería Aroma{% endblock %}
+{% set badge_de = {'Administrador':'admin','Cajero':'cajero','Cocinero':'cocinero','Mesero':'mesero'} %}
 {% block content %}
-<div class="header-row">
-  <h1>Usuarios</h1>
-  <a class="btn" href="{{ url_for('usuarios.nuevo') }}">Nuevo usuario</a>
+<div class="page-head">
+  <div>
+    <h1>Usuarios y Roles</h1>
+    <p class="sub">{{ usuarios|length }} usuario(s)</p>
+  </div>
+  <a class="btn btn--accent" href="{{ url_for('usuarios.nuevo') }}">+ Nuevo usuario</a>
 </div>
-<form method="get" class="search">
-  <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre o correo">
-  <button type="submit">Buscar</button>
+
+<form method="get" class="toolbar">
+  <div class="search">
+    <input type="search" name="q" value="{{ q }}" placeholder="Buscar usuario por nombre o correo…">
+    <button type="submit">Buscar</button>
+  </div>
+  <select name="rol" onchange="this.form.submit()">
+    <option value="">Rol: Todos</option>
+    {% for r in roles %}<option value="{{ r }}" {{ 'selected' if rol == r }}>{{ r }}</option>{% endfor %}
+  </select>
+  <select name="estado" onchange="this.form.submit()">
+    <option value="">Estado: Todos</option>
+    <option value="activo" {{ 'selected' if estado == 'activo' }}>Activo</option>
+    <option value="inactivo" {{ 'selected' if estado == 'inactivo' }}>Inactivo</option>
+  </select>
 </form>
+
+<div class="card" style="padding:0;overflow:hidden;">
 <table class="table">
   <thead>
-    <tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr>
+    <tr><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr>
   </thead>
   <tbody>
   {% for u in usuarios %}
     <tr>
-      <td>{{ u.nombre }} {{ u.apellido_paterno }}</td>
-      <td>{{ u.correo }}</td>
-      <td>{{ u.rol.nombre_rol }}</td>
       <td>
-        <span class="badge {{ 'badge--on' if u.activo else 'badge--off' }}">
-          {{ 'Activo' if u.activo else 'Inactivo' }}
+        <div class="userline">
+          <span class="avatar">{{ (u.nombre[0] ~ u.apellido_paterno[0])|upper }}</span>
+          <div>{{ u.nombre }} {{ u.apellido_paterno }}<br><small>{{ u.correo }}</small></div>
+        </div>
+      </td>
+      <td><span class="badge badge--{{ badge_de.get(u.rol.nombre_rol, 'cajero') }}">{{ u.rol.nombre_rol }}</span></td>
+      <td>
+        <span class="{{ 'state--on' if u.activo else 'state--off' }}">
+          <span class="dot {{ 'dot--on' if u.activo else 'dot--off' }}"></span>{{ 'Activo' if u.activo else 'Inactivo' }}
         </span>
       </td>
       <td class="actions">
-        <a href="{{ url_for('usuarios.editar', id_usuario=u.id_usuario) }}">Editar</a>
+        <a class="icon-btn" href="{{ url_for('usuarios.editar', id_usuario=u.id_usuario) }}" title="Editar">✎</a>
         {% if u.activo %}
-        <form method="post" action="{{ url_for('usuarios.desactivar', id_usuario=u.id_usuario) }}" onsubmit="return confirm('¿Desactivar a {{ u.nombre }}?')">
-          <button class="link-danger" type="submit">Desactivar</button>
+        <form method="post" action="{{ url_for('usuarios.desactivar', id_usuario=u.id_usuario) }}"
+              onsubmit="return confirm('¿Desactivar a {{ u.nombre }}?')">
+          <button class="link-danger" type="submit" title="Desactivar">Desactivar</button>
         </form>
         {% endif %}
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="5" class="muted">Sin usuarios.</td></tr>
+    <tr><td colspan="4" class="muted">Sin usuarios.</td></tr>
   {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %}

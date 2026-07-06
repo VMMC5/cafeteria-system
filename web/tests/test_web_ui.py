@@ -46,3 +46,38 @@ def test_login_split_marca_y_subtitulo(client):
     assert "Aroma" in cuerpo                                  # marca completa
     assert "Acceso exclusivo para administradores" in cuerpo  # subtítulo del card
     assert "Ingresar" in cuerpo                               # botón
+
+
+def _users():
+    return [
+        {"id_usuario": 1, "nombre": "Eduardo", "apellido_paterno": "Gutiérrez",
+         "correo": "eduardo@cafeteria.com", "activo": True,
+         "rol": {"nombre_rol": "Mesero"}},
+        {"id_usuario": 2, "nombre": "Rafael", "apellido_paterno": "Baltazar",
+         "correo": "rafael@cafeteria.com", "activo": False,
+         "rol": {"nombre_rol": "Cocinero"}},
+    ]
+
+
+def test_lista_muestra_badges_de_rol(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: _users())
+    cuerpo = client.get("/usuarios").get_data(as_text=True)
+    assert "badge--mesero" in cuerpo
+    assert "badge--cocinero" in cuerpo
+
+
+def test_lista_filtra_por_rol(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: _users())
+    cuerpo = client.get("/usuarios?rol=Mesero").get_data(as_text=True)
+    assert "Eduardo" in cuerpo
+    assert "Rafael" not in cuerpo
+
+
+def test_lista_filtra_por_estado(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: _users())
+    cuerpo = client.get("/usuarios?estado=inactivo").get_data(as_text=True)
+    assert "Rafael" in cuerpo
+    assert "Eduardo" not in cuerpo
