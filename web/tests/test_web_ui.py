@@ -38,3 +38,11 @@ def test_login_usa_layout_publico_sin_sidebar(client):
     cuerpo = client.get("/login").get_data(as_text=True)
     assert "Iniciar" in cuerpo
     assert 'class="sidebar"' not in cuerpo              # el login no muestra sidebar
+
+
+def test_login_split_marca_y_subtitulo(client):
+    cuerpo = client.get("/login").get_data(as_text=True)
+    assert "login__brand" in cuerpo
+    assert "Aroma" in cuerpo                                  # marca completa
+    assert "Acceso exclusivo para administradores" in cuerpo  # subtítulo del card
+    assert "Ingresar" in cuerpo                               # botón

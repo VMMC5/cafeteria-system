@@ -1,16 +1,36 @@
 {% extends "base_public.html" %}
-{% block title %}Iniciar sesión{% endblock %}
+{% block title %}Iniciar sesión — Cafetería Aroma{% endblock %}
 {% block fullpage %}
-<div class="card--narrow">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, msg in messages %}<div class="flash flash--{{ category }}">{{ msg }}</div>{% endfor %}
-  {% endwith %}
-  <h1>Iniciar sesión</h1>
-  <form method="post" action="{{ url_for('auth.login') }}">
-    <label>Correo <input type="email" name="correo" required autofocus></label>
-    <label>Contraseña <input type="password" name="password" required></label>
-    <button type="submit">Entrar</button>
-  </form>
-  <p class="muted"><a href="{{ support_url }}">¿Problemas para entrar? Contacta soporte</a></p>
+<div class="login">
+  <div class="login__brand">
+    <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="#c8862f" stroke-width="1.5">
+      <path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z"/>
+      <path d="M17 9h2a2 2 0 0 1 0 4h-2"/>
+      <path d="M8 3c0 1-1 1.5-1 2.5M11 3c0 1-1 1.5-1 2.5M14 3c0 1-1 1.5-1 2.5" stroke-linecap="round"/>
+    </svg>
+    <h1>Cafetería <b>Aroma</b></h1>
+    <p class="sub">Panel de Administración General</p>
+  </div>
+  <div class="login__panel">
+    <div class="login__card">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, msg in messages %}<div class="flash flash--{{ category }}">{{ msg }}</div>{% endfor %}
+      {% endwith %}
+      <h1>Iniciar sesión</h1>
+      <p class="sub">Acceso exclusivo para administradores</p>
+      <form method="post" action="{{ url_for('auth.login') }}">
+        <label>Correo electrónico
+          <input type="email" name="correo" placeholder="admin@cafeteria.com" required autofocus>
+        </label>
+        <label>Contraseña
+          <input type="password" name="password" required>
+        </label>
+        <button type="submit">Ingresar</button>
+      </form>
+      <p class="muted" style="text-align:center;margin-top:1rem;">
+        <a href="{{ support_url }}">¿Problemas para acceder? Contacta a soporte</a>
+      </p>
+    </div>
+  </div>
 </div>
 {% endblock %}
