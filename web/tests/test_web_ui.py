@@ -99,3 +99,13 @@ def test_form_nuevo_tarjetas_rol_y_permisos(client, monkeypatch):
     assert "Mesero" in cuerpo                 # opción de rol renderizada
     assert 'name="id_rol"' in cuerpo          # el radio conserva el campo real
     assert 'name="nombre_usuario"' in cuerpo  # campo real, no se pierde
+
+
+def test_form_nuevo_radios_rol_requeridos(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_roles", lambda a: ROLES)
+    cuerpo = client.get("/usuarios/nuevo").get_data(as_text=True)
+    import re
+    radios = re.findall(r'<input[^>]*type="radio"[^>]*>', cuerpo)
+    assert radios, "debe haber radios de rol"
+    assert all("required" in tag for tag in radios)  # no se puede enviar sin rol

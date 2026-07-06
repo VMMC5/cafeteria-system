@@ -41,7 +41,7 @@
       <div class="role-cards">
         {% for r in roles %}
         <label class="role-card" data-rol="{{ r.nombre_rol }}">
-          <input type="radio" name="id_rol" value="{{ r.id_rol }}"
+          <input type="radio" name="id_rol" value="{{ r.id_rol }}" required
                  {{ 'checked' if form.get('id_rol')|string == r.id_rol|string else '' }}>
           {{ r.nombre_rol }}
         </label>
