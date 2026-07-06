@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.v1 import (
     auth,
     categorias,
+    compras,
     estados,
     gastos,
     insumos,
@@ -34,3 +35,4 @@ api_router.include_router(gastos.router)
 api_router.include_router(insumos.router)
 api_router.include_router(unidades.router)
 api_router.include_router(proveedores.router)
+api_router.include_router(compras.router)
