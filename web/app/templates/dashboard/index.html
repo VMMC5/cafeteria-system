@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="header-row">
+  <h1>Dashboard</h1>
+</div>
+
+<form method="get" class="filtros">
+  <label>Periodo:
+    <select name="preset" onchange="this.form.submit()">
+      <option value="hoy" {{ 'selected' if preset == 'hoy' }}>Hoy</option>
+      <option value="7dias" {{ 'selected' if preset == '7dias' }}>Últimos 7 días</option>
+      <option value="mes" {{ 'selected' if preset == 'mes' }}>Este mes</option>
+      <option value="rango" {{ 'selected' if preset == 'rango' }}>Rango…</option>
+    </select>
+  </label>
+  <input type="date" name="desde" value="{{ desde }}">
+  <input type="date" name="hasta" value="{{ hasta }}">
+  <button type="submit">Aplicar</button>
+</form>
+
+<section class="kpis">
+  <div class="kpi"><span class="kpi__label">Total vendido</span>
+    <span class="kpi__value">${{ '%.2f'|format(resumen.total_vendido|float) }}</span></div>
+  <div class="kpi"><span class="kpi__label"># Ventas</span>
+    <span class="kpi__value">{{ resumen.num_ventas }}</span></div>
+  <div class="kpi"><span class="kpi__label">Ticket promedio</span>
+    <span class="kpi__value">${{ '%.2f'|format(resumen.ticket_promedio|float) }}</span></div>
+  <div class="kpi"><span class="kpi__label">Gastos</span>
+    <span class="kpi__value">${{ '%.2f'|format(resumen.total_gastos|float) }}</span></div>
+  <div class="kpi"><span class="kpi__label">Compras</span>
+    <span class="kpi__value">${{ '%.2f'|format(resumen.total_compras|float) }}</span></div>
+  <div class="kpi kpi--accent"><span class="kpi__label">Utilidad estimada</span>
+    <span class="kpi__value">${{ '%.2f'|format(resumen.utilidad_estimada|float) }}</span></div>
+</section>
+
+<section class="graficas">
+  <div class="grafica"><h2>Ventas por día</h2><canvas id="chart-ventas"></canvas></div>
+  <div class="grafica"><h2>Productos más vendidos</h2><canvas id="chart-top"></canvas></div>
+</section>
+
+<script id="serie-data" type="application/json">{{ serie|tojson }}</script>
+<script id="top-data" type="application/json">{{ top|tojson }}</script>
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script>
+  const serie = JSON.parse(document.getElementById("serie-data").textContent);
+  const top = JSON.parse(document.getElementById("top-data").textContent);
+  new Chart(document.getElementById("chart-ventas"), {
+    type: "line",
+    data: {
+      labels: serie.map(p => p.fecha),
+      datasets: [{ label: "Ventas ($)", data: serie.map(p => Number(p.total)),
+                   borderColor: "#2563eb", tension: 0.2 }],
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } },
+  });
+  new Chart(document.getElementById("chart-top"), {
+    type: "bar",
+    data: {
+      labels: top.map(p => p.nombre),
+      datasets: [{ label: "Cantidad", data: top.map(p => Number(p.cantidad)),
+                   backgroundColor: "#16a34a" }],
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } },
+  });
+</script>
+{% endblock %}

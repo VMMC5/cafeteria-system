@@ -12,6 +12,7 @@ login_manager.login_view = "auth.login"
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
+    app.json.ensure_ascii = False
 
     login_manager.init_app(app)
 
@@ -20,14 +21,16 @@ def create_app(config_object=Config):
         return load_user_from_session()
 
     from app.auth.routes import bp as auth_bp
+    from app.dashboard.routes import bp as dashboard_bp
     from app.usuarios.routes import bp as usuarios_bp
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(dashboard_bp)
     app.register_blueprint(usuarios_bp)
 
     @app.route("/")
     def index():
-        return redirect(url_for("usuarios.listar"))
+        return redirect(url_for("dashboard.index"))
 
     @app.errorhandler(ReloginRequired)
     def _relogin(_e):
