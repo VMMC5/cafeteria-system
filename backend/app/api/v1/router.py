@@ -13,6 +13,7 @@ from app.api.v1 import (
     productos,
     proveedores,
     recetas,
+    reportes,
     roles,
     unidades,
     usuarios,
@@ -36,3 +37,4 @@ api_router.include_router(insumos.router)
 api_router.include_router(unidades.router)
 api_router.include_router(proveedores.router)
 api_router.include_router(compras.router)
+api_router.include_router(reportes.router)
