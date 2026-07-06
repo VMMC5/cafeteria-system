@@ -1,46 +1,82 @@
 {% extends "base.html" %}
-{% block title %}{{ 'Editar' if usuario else 'Nuevo' }} usuario{% endblock %}
+{% block title %}{{ 'Editar' if usuario else 'Nuevo' }} usuario — Cafetería Aroma{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>{{ 'Editar' if usuario else 'Nuevo' }} usuario</h1>
-  <form method="post"
-        action="{{ url_for('usuarios.actualizar', id_usuario=usuario.id_usuario) if usuario else url_for('usuarios.crear') }}">
+<div class="page-head">
+  <div>
+    <h1>{{ 'Editar' if usuario else 'Nuevo' }} usuario</h1>
+    <p class="sub">Crea la cuenta y asigna su rol</p>
+  </div>
+</div>
+
+<form method="post"
+      action="{{ url_for('usuarios.actualizar', id_usuario=usuario.id_usuario) if usuario else url_for('usuarios.crear') }}">
+<div class="cols">
+  <div class="card">
+    <h2 class="card__title">Datos del usuario</h2>
     <label>Nombre
-      <input name="nombre" value="{{ form.get('nombre', '') }}" required>
-    </label>
+      <input name="nombre" value="{{ form.get('nombre', '') }}" required></label>
     <label>Apellido paterno
-      <input name="apellido_paterno" value="{{ form.get('apellido_paterno', '') }}" required>
-    </label>
+      <input name="apellido_paterno" value="{{ form.get('apellido_paterno', '') }}" required></label>
     <label>Apellido materno
-      <input name="apellido_materno" value="{{ form.get('apellido_materno', '') or '' }}">
-    </label>
-    <label>Correo
-      <input type="email" name="correo" value="{{ form.get('correo', '') }}" required>
-    </label>
+      <input name="apellido_materno" value="{{ form.get('apellido_materno', '') or '' }}"></label>
+    <label>Correo electrónico
+      <input type="email" name="correo" value="{{ form.get('correo', '') }}" required></label>
     <label>Nombre de usuario
-      <input name="nombre_usuario" value="{{ form.get('nombre_usuario', '') }}" required>
-    </label>
-    <label>Rol
-      <select name="id_rol" required>
-        {% for r in roles %}
-        <option value="{{ r.id_rol }}" {{ 'selected' if form.get('id_rol')|string == r.id_rol|string else '' }}>
-          {{ r.nombre_rol }}
-        </option>
-        {% endfor %}
-      </select>
-      <small class="muted">El rol define los permisos del usuario en el sistema.</small>
-    </label>
+      <input name="nombre_usuario" value="{{ form.get('nombre_usuario', '') }}" required></label>
     <label>Contraseña {{ '(dejar en blanco para no cambiar)' if usuario else '(mínimo 8 caracteres)' }}
-      <input type="password" name="password" id="password" {{ '' if usuario else 'required' }}>
-    </label>
+      <input type="password" name="password" id="password" {{ '' if usuario else 'required' }}></label>
     <label class="inline">
       <input type="checkbox" onclick="document.getElementById('password').type = this.checked ? 'text' : 'password'">
       Mostrar contraseña
     </label>
-    <div class="header-row">
-      <button type="submit">Guardar</button>
+    <div class="header-row" style="margin-top:1rem;">
+      <button type="submit">Guardar usuario</button>
       <a class="btn btn--ghost" href="{{ url_for('usuarios.listar') }}">Cancelar</a>
     </div>
-  </form>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <h2 class="card__title">Asignar rol</h2>
+      <div class="role-cards">
+        {% for r in roles %}
+        <label class="role-card" data-rol="{{ r.nombre_rol }}">
+          <input type="radio" name="id_rol" value="{{ r.id_rol }}"
+                 {{ 'checked' if form.get('id_rol')|string == r.id_rol|string else '' }}>
+          {{ r.nombre_rol }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <h2 class="card__title">Permisos del rol</h2>
+      <ul class="perms" id="perms"><li class="muted" style="color:var(--muted)">Selecciona un rol</li></ul>
+    </div>
+  </div>
 </div>
+</form>
+
+<script>
+  const PERMISOS = {
+    "Administrador": ["Acceso total al panel", "Gestión de usuarios y roles", "Ver reportes y estadísticas"],
+    "Cajero": ["Cobro de pedidos", "Registro de gastos", "Ver ventas del día"],
+    "Cocinero": ["Ver pedidos entrantes", "Avanzar estados de cocina", "Registrar inventario"],
+    "Mesero": ["Tomar pedidos", "Ver y editar el menú del pedido", "Ver estado de sus pedidos"],
+  };
+  function pintarPermisos(rol) {
+    const ul = document.getElementById("perms");
+    const lista = PERMISOS[rol];
+    ul.innerHTML = lista ? lista.map(p => "<li>" + p + "</li>").join("")
+                         : '<li class="muted">Selecciona un rol</li>';
+  }
+  document.querySelectorAll('.role-card').forEach(card => {
+    const radio = card.querySelector('input');
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      pintarPermisos(card.dataset.rol);
+    });
+    if (radio.checked) { card.classList.add('selected'); pintarPermisos(card.dataset.rol); }
+  });
+</script>
 {% endblock %}

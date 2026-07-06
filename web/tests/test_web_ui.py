@@ -81,3 +81,21 @@ def test_lista_filtra_por_estado(client, monkeypatch):
     cuerpo = client.get("/usuarios?estado=inactivo").get_data(as_text=True)
     assert "Rafael" in cuerpo
     assert "Eduardo" not in cuerpo
+
+
+ROLES = [
+    {"id_rol": 1, "nombre_rol": "Administrador", "descripcion": None},
+    {"id_rol": 3, "nombre_rol": "Cocinero", "descripcion": None},
+    {"id_rol": 4, "nombre_rol": "Mesero", "descripcion": None},
+]
+
+
+def test_form_nuevo_tarjetas_rol_y_permisos(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_roles", lambda a: ROLES)
+    cuerpo = client.get("/usuarios/nuevo").get_data(as_text=True)
+    assert "role-card" in cuerpo
+    assert "Permisos del rol" in cuerpo
+    assert "Mesero" in cuerpo                 # opción de rol renderizada
+    assert 'name="id_rol"' in cuerpo          # el radio conserva el campo real
+    assert 'name="nombre_usuario"' in cuerpo  # campo real, no se pierde
