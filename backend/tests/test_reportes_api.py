@@ -81,3 +81,29 @@ def test_resumen_requiere_admin_403(client, db, mesero_headers):
 
 def test_resumen_sin_token_401(client):
     assert client.get("/api/v1/reportes/resumen").status_code == 401
+
+
+def test_ventas_por_dia_agrupa_por_fecha(
+    client, db, admin_headers, cajero_headers
+):
+    from datetime import datetime, timezone
+
+    v1 = _cobrar(client, db, admin_headers, cajero_headers, numero=710, precio=100.0)
+    v2 = _cobrar(client, db, admin_headers, cajero_headers, numero=711, precio=100.0)
+    _fechar_venta(db, v1["id_venta"], datetime(2026, 7, 3, 12, 0, tzinfo=timezone.utc))
+    _fechar_venta(db, v2["id_venta"], datetime(2026, 7, 4, 12, 0, tzinfo=timezone.utc))
+    r = client.get(
+        "/api/v1/reportes/ventas-por-dia?desde=2026-07-01&hasta=2026-07-31",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    serie = r.json()
+    assert [p["fecha"] for p in serie] == ["2026-07-03", "2026-07-04"]
+    assert all(p["num_ventas"] == 1 for p in serie)
+    assert float(serie[0]["total"]) == 200.0
+
+
+def test_ventas_por_dia_requiere_admin_403(client, db, mesero_headers):
+    assert client.get(
+        "/api/v1/reportes/ventas-por-dia", headers=mesero_headers
+    ).status_code == 403

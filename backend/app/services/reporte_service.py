@@ -52,3 +52,30 @@ def resumen(db: Session, desde: date, hasta: date) -> dict:
         "total_compras": total_compras,
         "utilidad_estimada": total_vendido - total_gastos - total_compras,
     }
+
+
+def ventas_por_dia(db: Session, desde: date, hasta: date) -> list[dict]:
+    dia = func.date(Venta.fecha_venta)
+    filas = (
+        db.query(
+            dia.label("fecha"),
+            func.coalesce(func.sum(Venta.total), 0).label("total"),
+            func.count(Venta.id_venta).label("num_ventas"),
+        )
+        .filter(
+            dia >= desde,
+            dia <= hasta,
+            Venta.estado_venta == "Completada",
+        )
+        .group_by(dia)
+        .order_by(dia)
+        .all()
+    )
+    return [
+        {
+            "fecha": f.fecha,
+            "total": Decimal(str(f.total)),
+            "num_ventas": f.num_ventas,
+        }
+        for f in filas
+    ]
