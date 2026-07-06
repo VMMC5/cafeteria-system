@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Cancelacion, DetallePedido, EstadoPedido, Mesa, Pedido, Producto
 from app.schemas.pedido import PedidoCreate
+from app.services import receta_service
 
 
 def _estado_pendiente(db: Session) -> EstadoPedido:
@@ -99,6 +100,8 @@ def crear(db: Session, data: PedidoCreate, id_usuario: int) -> Pedido:
             )
         )
 
+    requerido = receta_service.requerido_y_validar(db, lineas)
+
     pedido = Pedido(
         id_mesa=mesa.id_mesa,
         id_usuario=id_usuario,
@@ -108,6 +111,8 @@ def crear(db: Session, data: PedidoCreate, id_usuario: int) -> Pedido:
     )
     mesa.estado = "Ocupada"
     db.add(pedido)
+    db.flush()
+    receta_service.aplicar_descuento(db, pedido, requerido, id_usuario)
     db.commit()
     db.refresh(pedido)
     return pedido
@@ -134,6 +139,7 @@ def cancelar(db: Session, id_pedido: int, motivo: str, usuario) -> Pedido:
     )
     pedido.id_estado = _estado_por_nombre(db, "Cancelado").id_estado
     pedido.mesa.estado = "Disponible"
+    receta_service.reponer_pedido(db, pedido, usuario.id_usuario)
     db.commit()
     db.refresh(pedido)
     return pedido

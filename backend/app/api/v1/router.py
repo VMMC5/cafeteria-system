@@ -10,6 +10,7 @@ from app.api.v1 import (
     metodos_pago,
     pedidos,
     productos,
+    recetas,
     roles,
     unidades,
     usuarios,
@@ -23,6 +24,7 @@ api_router.include_router(roles.router)
 api_router.include_router(categorias.router)
 api_router.include_router(mesas.router)
 api_router.include_router(productos.router)
+api_router.include_router(recetas.router)
 api_router.include_router(pedidos.router)
 api_router.include_router(estados.router)
 api_router.include_router(ventas.router)
