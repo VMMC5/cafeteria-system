@@ -102,3 +102,33 @@ def delete_usuario(access, id_usuario):
 def list_roles(access):
     r = requests.get(f"{_base()}/roles", headers=_headers(access), timeout=TIMEOUT)
     return _check(r)
+
+
+def get_reporte_resumen(access, desde=None, hasta=None):
+    r = requests.get(
+        f"{_base()}/reportes/resumen",
+        headers=_headers(access),
+        params={"desde": desde, "hasta": hasta},
+        timeout=TIMEOUT,
+    )
+    return _check(r)
+
+
+def get_ventas_por_dia(access, desde=None, hasta=None):
+    r = requests.get(
+        f"{_base()}/reportes/ventas-por-dia",
+        headers=_headers(access),
+        params={"desde": desde, "hasta": hasta},
+        timeout=TIMEOUT,
+    )
+    return _check(r)
+
+
+def get_top_productos(access, desde=None, hasta=None, limite=10):
+    r = requests.get(
+        f"{_base()}/reportes/top-productos",
+        headers=_headers(access),
+        params={"desde": desde, "hasta": hasta, "limite": limite},
+        timeout=TIMEOUT,
+    )
+    return _check(r)
