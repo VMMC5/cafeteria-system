@@ -145,6 +145,27 @@ export type Insumo = {
   costo_unitario: number;
 };
 
+export type Proveedor = { id_proveedor: number; nombre_proveedor: string };
+
+export type DetalleCompra = {
+  id_detalle_compra: number;
+  id_insumo: number;
+  insumo: { nombre_insumo: string };
+  cantidad: number;
+  costo_unitario: number;
+  subtotal: number;
+};
+
+export type Compra = {
+  id_compra: number;
+  id_proveedor: number;
+  proveedor: { nombre_proveedor: string };
+  fecha_compra: string;
+  total: number;
+  folio_factura: string | null;
+  detalle: DetalleCompra[];
+};
+
 export async function getMesas(access: string, estado?: string): Promise<Mesa[]> {
   const { data } = await http.get("/mesas", {
     ...authCfg(access),
@@ -264,5 +285,27 @@ export async function registrarMovimiento(
     data,
     authCfg(access)
   );
+  return res;
+}
+
+export async function getProveedores(access: string): Promise<Proveedor[]> {
+  const { data } = await http.get("/proveedores", authCfg(access));
+  return data;
+}
+
+export async function getCompras(access: string): Promise<Compra[]> {
+  const { data } = await http.get("/compras", authCfg(access));
+  return data;
+}
+
+export async function crearCompra(
+  access: string,
+  data: {
+    id_proveedor: number;
+    folio_factura: string | null;
+    items: { id_insumo: number; cantidad: number; costo_unitario: number }[];
+  }
+): Promise<Compra> {
+  const { data: res } = await http.post("/compras", data, authCfg(access));
   return res;
 }
