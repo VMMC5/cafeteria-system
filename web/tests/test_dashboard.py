@@ -1,3 +1,6 @@
+import datetime
+
+from app.dashboard.routes import rango_preset
 from app.services import api_client
 
 ADMIN_TOKENS = {"access_token": "a", "refresh_token": "r", "token_type": "bearer"}
@@ -40,7 +43,7 @@ def test_dashboard_muestra_kpis(client, monkeypatch):
     r = client.get("/dashboard")
     assert r.status_code == 200
     cuerpo = r.get_data(as_text=True)
-    assert "400" in cuerpo          # total vendido
+    assert "$400.00" in cuerpo      # total vendido
     assert "Utilidad" in cuerpo     # tarjeta de utilidad estimada
 
 
@@ -60,3 +63,29 @@ def test_dashboard_incluye_graficas(client, monkeypatch):
     assert 'id="chart-top"' in cuerpo
     assert "chart.umd.min.js" in cuerpo
     assert "Café" in cuerpo          # dato del top embebido en el JSON
+
+
+def test_rango_preset_7dias():
+    hoy = datetime.date.today()
+    desde, hasta = rango_preset("7dias", None, None)
+    assert hasta == hoy.isoformat()
+    assert desde == (hoy - datetime.timedelta(days=6)).isoformat()
+
+
+def test_rango_preset_mes():
+    hoy = datetime.date.today()
+    desde, hasta = rango_preset("mes", None, None)
+    assert desde == hoy.replace(day=1).isoformat()
+    assert hasta == hoy.isoformat()
+
+
+def test_rango_preset_rango_explicito():
+    assert rango_preset("rango", "2026-06-01", "2026-06-30") == (
+        "2026-06-01", "2026-06-30",
+    )
+
+
+def test_rango_preset_hoy_y_desconocido():
+    hoy = datetime.date.today()
+    assert rango_preset("hoy", None, None) == (hoy.isoformat(), hoy.isoformat())
+    assert rango_preset("otro", None, None) == (hoy.isoformat(), hoy.isoformat())

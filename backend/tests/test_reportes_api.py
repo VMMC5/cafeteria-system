@@ -73,6 +73,43 @@ def test_resumen_excluye_fuera_de_rango(client, db, admin_headers, cajero_header
     assert r.json()["num_ventas"] == 0
 
 
+def test_resumen_incluye_gastos_compras_y_utilidad(
+    client, db, admin_headers, cajero_headers, admin
+):
+    from app.models import CategoriaGasto, Compra, Gasto, Proveedor
+
+    _cobrar(client, db, admin_headers, cajero_headers, numero=704, precio=100.0)
+
+    cat = db.query(CategoriaGasto).first()
+    db.add(
+        Gasto(
+            id_usuario=admin.id_usuario,
+            id_categoria_gasto=cat.id_categoria_gasto,
+            concepto="Luz",
+            monto=Decimal("50.00"),
+        )
+    )
+    prov = Proveedor(nombre_proveedor="Prov Test")
+    db.add(prov)
+    db.flush()
+    db.add(
+        Compra(
+            id_proveedor=prov.id_proveedor,
+            id_usuario=admin.id_usuario,
+            total=Decimal("30.00"),
+        )
+    )
+    db.flush()
+
+    r = client.get("/api/v1/reportes/resumen", headers=admin_headers)
+    assert r.status_code == 200
+    body = r.json()
+    assert float(body["total_vendido"]) == 200.0
+    assert float(body["total_gastos"]) == 50.0
+    assert float(body["total_compras"]) == 30.0
+    assert float(body["utilidad_estimada"]) == 120.0
+
+
 def test_resumen_requiere_admin_403(client, db, mesero_headers):
     assert client.get(
         "/api/v1/reportes/resumen", headers=mesero_headers
@@ -109,6 +146,10 @@ def test_ventas_por_dia_requiere_admin_403(client, db, mesero_headers):
     ).status_code == 403
 
 
+def test_ventas_por_dia_sin_token_401(client):
+    assert client.get("/api/v1/reportes/ventas-por-dia").status_code == 401
+
+
 def test_top_productos_ordena_por_cantidad(
     client, db, admin_headers, cajero_headers
 ):
@@ -139,3 +180,16 @@ def test_top_productos_requiere_admin_403(client, db, mesero_headers):
     assert client.get(
         "/api/v1/reportes/top-productos", headers=mesero_headers
     ).status_code == 403
+
+
+def test_top_productos_limite_invalido_422(client, db, admin_headers):
+    assert client.get(
+        "/api/v1/reportes/top-productos?limite=0", headers=admin_headers
+    ).status_code == 422
+    assert client.get(
+        "/api/v1/reportes/top-productos?limite=-1", headers=admin_headers
+    ).status_code == 422
+
+
+def test_top_productos_sin_token_401(client):
+    assert client.get("/api/v1/reportes/top-productos").status_code == 401

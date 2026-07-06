@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core import deps
@@ -38,7 +38,7 @@ def ventas_por_dia(
 def top_productos(
     desde: date | None = None,
     hasta: date | None = None,
-    limite: int = 10,
+    limite: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     _: Usuario = Depends(deps.require_admin),
 ):
