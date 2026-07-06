@@ -8,6 +8,7 @@ from sqlalchemy import (
     String,
     func,
 )
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -38,6 +39,9 @@ class Compra(Base):
     total = Column(Numeric(12, 2), nullable=False)
     folio_factura = Column(String(50))
 
+    proveedor = relationship("Proveedor", lazy="joined")
+    detalle = relationship("DetalleCompra", lazy="selectin")
+
 
 class DetalleCompra(Base):
     __tablename__ = "detalle_compra"
@@ -54,3 +58,5 @@ class DetalleCompra(Base):
     subtotal = Column(
         Numeric(12, 2), Computed("cantidad * costo_unitario", persisted=True)
     )
+
+    insumo = relationship("Insumo", lazy="joined")

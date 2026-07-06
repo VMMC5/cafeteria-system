@@ -187,3 +187,35 @@ test("registrarMovimiento postea a /insumos/{id}/movimientos", async () => {
   expect(body).toEqual({ tipo: "Salida", motivo: "Merma", cantidad: 2 });
   expect(config.headers.Authorization).toBe("Bearer tok");
 });
+
+test("getProveedores pega a /proveedores con bearer", async () => {
+  const spy = jest.spyOn(client.http, "get").mockResolvedValue({ data: [] } as any);
+  await client.getProveedores("tok");
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/proveedores");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("getCompras pega a /compras con bearer", async () => {
+  const spy = jest.spyOn(client.http, "get").mockResolvedValue({ data: [] } as any);
+  await client.getCompras("tok");
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/compras");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("crearCompra postea a /compras con el cuerpo", async () => {
+  const spy = jest
+    .spyOn(client.http, "post")
+    .mockResolvedValue({ data: { id_compra: 9 } } as any);
+  const payload = {
+    id_proveedor: 1,
+    folio_factura: null,
+    items: [{ id_insumo: 2, cantidad: 3, costo_unitario: 15 }],
+  };
+  await client.crearCompra("tok", payload);
+  const [url, body, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/compras");
+  expect(body).toEqual(payload);
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});

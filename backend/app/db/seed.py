@@ -14,6 +14,7 @@ from app.models import (
     Mesa,
     MetodoPago,
     Producto,
+    Proveedor,
     Rol,
     UnidadMedida,
     Usuario,
@@ -89,6 +90,14 @@ SEED = [
                 "valor": "0.16",
                 "descripcion": "Tasa de IVA (fracción)",
             },
+        ],
+    ),
+    (
+        Proveedor,
+        "nombre_proveedor",
+        [
+            {"nombre_proveedor": "Distribuidora Central"},
+            {"nombre_proveedor": "Insumos del Valle"},
         ],
     ),
 ]
