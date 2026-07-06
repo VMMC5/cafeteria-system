@@ -23,6 +23,9 @@ h1,h2,h3 { font-family:var(--serif); }
 .sidebar__link svg { width:18px; height:18px; }
 .sidebar__user { display:flex; align-items:center; gap:.6rem; padding:1rem 1.25rem; border-top:1px solid rgba(255,255,255,.08); font-size:.9rem; }
 .sidebar__user small { color:var(--accent); }
+.sidebar__logout { display:inline-flex; align-items:center; gap:.35rem; margin-left:auto; color:#d9c9bb; text-decoration:none; font-size:.8rem; }
+.sidebar__logout:hover { color:#fff; }
+.sidebar__logout svg { width:16px; height:16px; }
 .avatar { width:34px; height:34px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; flex-shrink:0; }
 
 .main { flex:1; min-width:0; }

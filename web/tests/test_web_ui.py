@@ -26,6 +26,14 @@ def test_shell_tiene_sidebar_con_marca_y_enlaces(client, monkeypatch):
     assert "Usuarios y Roles" in cuerpo                 # enlace nav
 
 
+def test_shell_tiene_enlace_salir(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: [])
+    cuerpo = client.get("/usuarios").get_data(as_text=True)
+    assert "/logout" in cuerpo       # href de cierre de sesión
+    assert "Salir" in cuerpo          # texto del enlace
+
+
 def test_login_usa_layout_publico_sin_sidebar(client):
     cuerpo = client.get("/login").get_data(as_text=True)
     assert "Iniciar" in cuerpo
