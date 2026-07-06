@@ -62,8 +62,10 @@ y consultar la BD directo desde el web (rompe la separación API/BD).
 
 - Rutas `/reportes/ventas` y `/reportes/gastos` con filtro por rango de fechas y tabla.
 - Botones **Exportar PDF / Exportar XLSX** vía `?formato=pdf|xlsx`.
-- Generación: **openpyxl** (XLSX) + **ReportLab** (PDF). ReportLab es pip puro, sin
-  dependencias nativas (se evita WeasyPrint/GTK en el Dockerfile del web).
+- Generación: **openpyxl** (XLSX) + **WeasyPrint** (PDF). Se elige WeasyPrint para reusar
+  plantillas HTML/Jinja2 como fuente del PDF (misma tabla que la vista web). A cambio, el
+  **Dockerfile del web se modifica en el Slice B** para instalar las dependencias nativas
+  requeridas (cairo, pango, gdk-pixbuf, etc.).
 - El PDF/XLSX lleva encabezado con el rango y fila de totales.
 
 ---
