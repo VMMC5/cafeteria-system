@@ -134,6 +134,17 @@ export type Gasto = {
   id_usuario: number;
 };
 
+export type Insumo = {
+  id_insumo: number;
+  nombre_insumo: string;
+  id_unidad: number;
+  unidad: { nombre_unidad: string; abreviatura: string };
+  descripcion: string | null;
+  stock_actual: number;
+  stock_minimo: number;
+  costo_unitario: number;
+};
+
 export async function getMesas(access: string, estado?: string): Promise<Mesa[]> {
   const { data } = await http.get("/mesas", {
     ...authCfg(access),
@@ -230,5 +241,28 @@ export async function crearGasto(
   data: { id_categoria_gasto: number; concepto: string; monto: number }
 ): Promise<Gasto> {
   const { data: res } = await http.post("/gastos", data, authCfg(access));
+  return res;
+}
+
+export async function getInsumos(access: string): Promise<Insumo[]> {
+  const { data } = await http.get("/insumos", authCfg(access));
+  return data;
+}
+
+export async function getInsumo(access: string, id: number): Promise<Insumo> {
+  const { data } = await http.get(`/insumos/${id}`, authCfg(access));
+  return data;
+}
+
+export async function registrarMovimiento(
+  access: string,
+  id: number,
+  data: { tipo: string; motivo: string; cantidad: number }
+): Promise<Insumo> {
+  const { data: res } = await http.post(
+    `/insumos/${id}/movimientos`,
+    data,
+    authCfg(access)
+  );
   return res;
 }
