@@ -127,3 +127,93 @@ def test_receta_rol_mesero_403(client, db, admin_headers, mesero_headers):
         json={"id_insumo": 1, "cantidad_requerida": 1.0},
     )
     assert r.status_code == 403
+
+
+def _mesa_id(client, admin_headers, numero):
+    return client.post(
+        "/api/v1/mesas",
+        headers=admin_headers,
+        json={"numero_mesa": numero, "capacidad": 4},
+    ).json()["id_mesa"]
+
+
+def _stock(client, cocinero_headers, id_insumo):
+    return float(
+        client.get(
+            f"/api/v1/insumos/{id_insumo}", headers=cocinero_headers
+        ).json()["stock_actual"]
+    )
+
+
+def test_descuento_al_crear_pedido(client, db, admin_headers, cocinero_headers):
+    pid = _producto_id(client, db, admin_headers, nombre="Latte1")
+    iid = _insumo_id(client, db, cocinero_headers, nombre="Leche1", stock=100.0)
+    client.post(
+        f"/api/v1/productos/{pid}/receta",
+        headers=cocinero_headers,
+        json={"id_insumo": iid, "cantidad_requerida": 2.0},
+    )
+    mesa = _mesa_id(client, admin_headers, 701)
+    r = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={"id_mesa": mesa, "items": [{"id_producto": pid, "cantidad": 3}]},
+    )
+    assert r.status_code == 201
+    assert _stock(client, cocinero_headers, iid) == 94.0
+
+
+def test_producto_sin_receta_no_descuenta(client, db, admin_headers, cocinero_headers):
+    pid = _producto_id(client, db, admin_headers, nombre="AguaEmb")
+    iid = _insumo_id(client, db, cocinero_headers, nombre="Insumo suelto", stock=50.0)
+    mesa = _mesa_id(client, admin_headers, 702)
+    r = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={"id_mesa": mesa, "items": [{"id_producto": pid, "cantidad": 1}]},
+    )
+    assert r.status_code == 201
+    assert _stock(client, cocinero_headers, iid) == 50.0
+
+
+def test_stock_insuficiente_bloquea_pedido(client, db, admin_headers, cocinero_headers):
+    pid = _producto_id(client, db, admin_headers, nombre="Sopa")
+    iid = _insumo_id(client, db, cocinero_headers, nombre="Fideo", stock=5.0)
+    client.post(
+        f"/api/v1/productos/{pid}/receta",
+        headers=cocinero_headers,
+        json={"id_insumo": iid, "cantidad_requerida": 3.0},
+    )
+    mesa = _mesa_id(client, admin_headers, 703)
+    r = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={"id_mesa": mesa, "items": [{"id_producto": pid, "cantidad": 2}]},
+    )
+    assert r.status_code == 422
+    assert _stock(client, cocinero_headers, iid) == 5.0
+    m = client.get(f"/api/v1/mesas/{mesa}", headers=admin_headers).json()
+    assert m["estado"] == "Disponible"
+
+
+def test_cancelar_repone_stock(client, db, admin_headers, cocinero_headers):
+    pid = _producto_id(client, db, admin_headers, nombre="Té helado")
+    iid = _insumo_id(client, db, cocinero_headers, nombre="Azúcar morena", stock=100.0)
+    client.post(
+        f"/api/v1/productos/{pid}/receta",
+        headers=cocinero_headers,
+        json={"id_insumo": iid, "cantidad_requerida": 4.0},
+    )
+    mesa = _mesa_id(client, admin_headers, 704)
+    pedido = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={"id_mesa": mesa, "items": [{"id_producto": pid, "cantidad": 2}]},
+    ).json()
+    assert _stock(client, cocinero_headers, iid) == 92.0
+    client.post(
+        f"/api/v1/pedidos/{pedido['id_pedido']}/cancelar",
+        headers=admin_headers,
+        json={"motivo": "prueba"},
+    )
+    assert _stock(client, cocinero_headers, iid) == 100.0
