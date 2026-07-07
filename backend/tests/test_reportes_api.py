@@ -241,6 +241,68 @@ def test_detalle_gastos_requiere_admin_403(client, db, mesero_headers):
     assert client.get("/api/v1/reportes/gastos", headers=mesero_headers).status_code == 403
 
 
+def _fechar_gasto(db, id_gasto, cuando: datetime):
+    """Reescribe fecha_gasto para probar el filtro de rango."""
+    from app.models import Gasto
+
+    db.query(Gasto).filter(Gasto.id_gasto == id_gasto).update(
+        {Gasto.fecha_gasto: cuando}
+    )
+    db.flush()
+
+
+def test_gastos_por_dia_agrupa_por_fecha(client, db, admin, admin_headers):
+    # Rango en el pasado lejano (2025-03), fuera de la ventana de seed_demo
+    # (últimos 60 días), para no mezclar datos ficticios con los del test.
+    g1 = _gasto(db, admin, 100.0, concepto="GastoDia1A")
+    g2 = _gasto(db, admin, 50.0, concepto="GastoDia1B")
+    g3 = _gasto(db, admin, 30.0, concepto="GastoDia2")
+    _fechar_gasto(db, g1.id_gasto, datetime(2025, 3, 3, 9, 0, tzinfo=timezone.utc))
+    _fechar_gasto(db, g2.id_gasto, datetime(2025, 3, 3, 15, 0, tzinfo=timezone.utc))
+    _fechar_gasto(db, g3.id_gasto, datetime(2025, 3, 4, 9, 0, tzinfo=timezone.utc))
+    r = client.get(
+        "/api/v1/reportes/gastos-por-dia?desde=2025-03-01&hasta=2025-03-31",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    serie = r.json()
+    assert [p["fecha"] for p in serie] == ["2025-03-03", "2025-03-04"]
+    assert serie[0]["num_gastos"] == 2
+    assert float(serie[0]["total"]) == 150.0
+    assert serie[1]["num_gastos"] == 1
+    assert float(serie[1]["total"]) == 30.0
+
+
+def test_gastos_por_dia_respeta_rango(client, db, admin, admin_headers):
+    g = _gasto(db, admin, 999.0, concepto="GastoFueraDeRango")
+    _fechar_gasto(db, g.id_gasto, datetime(2020, 1, 1, tzinfo=timezone.utc))
+    r = client.get(
+        "/api/v1/reportes/gastos-por-dia?desde=2025-03-01&hasta=2025-03-31",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_gastos_por_dia_vacio(client, db, admin_headers):
+    r = client.get(
+        "/api/v1/reportes/gastos-por-dia?desde=2025-03-01&hasta=2025-03-31",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_gastos_por_dia_requiere_admin_403(client, db, mesero_headers):
+    assert client.get(
+        "/api/v1/reportes/gastos-por-dia", headers=mesero_headers
+    ).status_code == 403
+
+
+def test_gastos_por_dia_sin_token_401(client):
+    assert client.get("/api/v1/reportes/gastos-por-dia").status_code == 401
+
+
 def test_comparativo_calcula_delta(client, db, admin_headers, cajero_headers):
     v_act = _cobrar(client, db, admin_headers, cajero_headers, numero=903, precio=100.0)  # total 200
     v_ant = _cobrar(client, db, admin_headers, cajero_headers, numero=904, precio=50.0)   # total 100

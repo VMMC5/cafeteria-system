@@ -134,6 +134,16 @@ def get_ventas_por_dia(access, desde=None, hasta=None):
     return _check(r)
 
 
+def get_gastos_por_dia(access, desde=None, hasta=None):
+    r = requests.get(
+        f"{_base()}/reportes/gastos-por-dia",
+        headers=_headers(access),
+        params={"desde": desde, "hasta": hasta},
+        timeout=TIMEOUT,
+    )
+    return _check(r)
+
+
 def get_top_productos(access, desde=None, hasta=None, limite=10):
     r = requests.get(
         f"{_base()}/reportes/top-productos",

@@ -19,6 +19,12 @@ class VentaPorDiaOut(BaseModel):
     num_ventas: int
 
 
+class GastoPorDiaOut(BaseModel):
+    fecha: date
+    total: Decimal
+    num_gastos: int
+
+
 class TopProductoOut(BaseModel):
     id_producto: int
     nombre: str

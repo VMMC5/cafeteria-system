@@ -89,6 +89,32 @@ def ventas_por_dia(db: Session, desde: date, hasta: date) -> list[dict]:
     ]
 
 
+def gastos_por_dia(db: Session, desde: date, hasta: date) -> list[dict]:
+    dia = func.date(Gasto.fecha_gasto)
+    filas = (
+        db.query(
+            dia.label("fecha"),
+            func.coalesce(func.sum(Gasto.monto), 0).label("total"),
+            func.count(Gasto.id_gasto).label("num_gastos"),
+        )
+        .filter(
+            dia >= desde,
+            dia <= hasta,
+        )
+        .group_by(dia)
+        .order_by(dia)
+        .all()
+    )
+    return [
+        {
+            "fecha": f.fecha,
+            "total": Decimal(str(f.total)),
+            "num_gastos": f.num_gastos,
+        }
+        for f in filas
+    ]
+
+
 def top_productos(
     db: Session, desde: date, hasta: date, limite: int = 10
 ) -> list[dict]:

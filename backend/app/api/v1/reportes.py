@@ -9,6 +9,7 @@ from app.models import Usuario
 from app.schemas.reporte import (
     ComparativoOut,
     GastoDetalleOut,
+    GastoPorDiaOut,
     InventarioNivelOut,
     ResumenOut,
     TopProductoOut,
@@ -40,6 +41,17 @@ def ventas_por_dia(
 ):
     d, h = reporte_service.rango(desde, hasta)
     return reporte_service.ventas_por_dia(db, d, h)
+
+
+@router.get("/gastos-por-dia", response_model=list[GastoPorDiaOut])
+def gastos_por_dia(
+    desde: date | None = None,
+    hasta: date | None = None,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(deps.require_admin),
+):
+    d, h = reporte_service.rango(desde, hasta)
+    return reporte_service.gastos_por_dia(db, d, h)
 
 
 @router.get("/top-productos", response_model=list[TopProductoOut])
