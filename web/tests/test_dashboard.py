@@ -201,6 +201,28 @@ def test_dashboard_graficas_tienen_contenedor_con_altura(client, monkeypatch):
     assert cuerpo.count("maintainAspectRatio: false") == 3
 
 
+def test_dashboard_js_no_declara_globales_reservados(client, monkeypatch):
+    # Declarar `const/let/var top` (o name/parent/self/location/…) en el scope
+    # global de un <script> clásico choca con la propiedad no-configurable de
+    # window y lanza "Identifier 'top' has already been declared", abortando
+    # TODO el script -> gráficas en blanco. node --check NO lo detecta (es
+    # válido sintácticamente; solo truena en el navegador). Guard de lint.
+    import re
+
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+    reservados = (
+        "top", "parent", "self", "name", "location", "length",
+        "closed", "frames", "origin", "status", "window",
+    )
+    patron = re.compile(
+        r"\b(?:const|let|var)\s+(" + "|".join(reservados) + r")\b"
+    )
+    encontrados = patron.findall(cuerpo)
+    assert not encontrados, f"nombres globales reservados declarados: {encontrados}"
+
+
 def test_rango_preset_7dias():
     hoy = datetime.date.today()
     desde, hasta = rango_preset("7dias", None, None)

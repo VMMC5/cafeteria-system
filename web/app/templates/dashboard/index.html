@@ -54,7 +54,10 @@
 <script>
   const serie = JSON.parse(document.getElementById("serie-data").textContent);
   const vg = JSON.parse(document.getElementById("vg-data").textContent);
-  const top = JSON.parse(document.getElementById("top-data").textContent);
+  // OJO: NO usar `top` como nombre: colisiona con window.top (propiedad global
+  // no-configurable) y lanza "Identifier 'top' has already been declared",
+  // abortando TODO el script y dejando las gráficas en blanco.
+  const topData = JSON.parse(document.getElementById("top-data").textContent);
   const cafe = ["#3a2a20", "#c8862f", "#8a5a12", "#6b4423", "#d9c9bb", "#a96f1f"];
   new Chart(document.getElementById("chart-ventas"), {
     type: "bar",
@@ -68,7 +71,7 @@
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: "top" } } },
   });
   // Total de unidades vendidas entre los productos top (para el centro de la dona y el % de la leyenda).
-  const totalTop = top.reduce((s, p) => s + Number(p.cantidad), 0);
+  const totalTop = topData.reduce((s, p) => s + Number(p.cantidad), 0);
   // Plugin inline: dibuja el total al centro de la dona directamente sobre el canvas
   // (nada de overlays CSS). Se registra SOLO para esta gráfica vía `plugins: [...]`.
   const centerTextPlugin = {
@@ -93,13 +96,13 @@
   };
   new Chart(document.getElementById("chart-top"), {
     type: "doughnut",
-    data: { labels: top.map(p => p.nombre),
-      datasets: [{ data: top.map(p => Number(p.cantidad)), backgroundColor: cafe }] },
+    data: { labels: topData.map(p => p.nombre),
+      datasets: [{ data: topData.map(p => Number(p.cantidad)), backgroundColor: cafe }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: {
       generateLabels(chart) {
         const base = Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart);
         return base.map((item, i) => {
-          const cantidad = Number(top[i] ? top[i].cantidad : 0);
+          const cantidad = Number(topData[i] ? topData[i].cantidad : 0);
           const pct = totalTop ? Math.round((cantidad / totalTop) * 100) : 0;
           return { ...item, text: `${item.text} ${pct}%` };
         });
