@@ -7,6 +7,7 @@ from app.core import deps
 from app.db.session import get_db
 from app.models import Usuario
 from app.schemas.reporte import (
+    ComparativoOut,
     GastoDetalleOut,
     ResumenOut,
     TopProductoOut,
@@ -72,3 +73,14 @@ def detalle_gastos(
 ):
     d, h = reporte_service.rango(desde, hasta)
     return reporte_service.detalle_gastos(db, d, h)
+
+
+@router.get("/comparativo", response_model=ComparativoOut)
+def comparativo(
+    desde: date | None = None,
+    hasta: date | None = None,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(deps.require_admin),
+):
+    d, h = reporte_service.rango(desde, hasta)
+    return reporte_service.comparativo(db, d, h)

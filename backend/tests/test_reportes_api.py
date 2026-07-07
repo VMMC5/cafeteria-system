@@ -239,3 +239,33 @@ def test_detalle_gastos_incluye_el_gasto(client, db, admin, admin_headers):
 
 def test_detalle_gastos_requiere_admin_403(client, db, mesero_headers):
     assert client.get("/api/v1/reportes/gastos", headers=mesero_headers).status_code == 403
+
+
+def test_comparativo_calcula_delta(client, db, admin_headers, cajero_headers):
+    v_act = _cobrar(client, db, admin_headers, cajero_headers, numero=903, precio=100.0)  # total 200
+    v_ant = _cobrar(client, db, admin_headers, cajero_headers, numero=904, precio=50.0)   # total 100
+    _fechar_venta(db, v_act["id_venta"], datetime(2025, 3, 20, 12, 0, tzinfo=timezone.utc))
+    _fechar_venta(db, v_ant["id_venta"], datetime(2025, 3, 19, 12, 0, tzinfo=timezone.utc))
+    r = client.get(
+        "/api/v1/reportes/comparativo?desde=2025-03-20&hasta=2025-03-20",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert float(body["actual"]["total_vendido"]) == 200.0
+    assert float(body["anterior"]["total_vendido"]) == 100.0
+    assert body["deltas"]["total_vendido"] == 100.0  # (200-100)/100*100
+
+
+def test_comparativo_delta_null_sin_periodo_anterior(client, db, admin_headers, cajero_headers):
+    v = _cobrar(client, db, admin_headers, cajero_headers, numero=905, precio=100.0)
+    _fechar_venta(db, v["id_venta"], datetime(2025, 3, 25, 12, 0, tzinfo=timezone.utc))
+    r = client.get(
+        "/api/v1/reportes/comparativo?desde=2025-03-25&hasta=2025-03-25",
+        headers=admin_headers,
+    )
+    assert r.json()["deltas"]["total_vendido"] is None
+
+
+def test_comparativo_requiere_admin_403(client, db, mesero_headers):
+    assert client.get("/api/v1/reportes/comparativo", headers=mesero_headers).status_code == 403

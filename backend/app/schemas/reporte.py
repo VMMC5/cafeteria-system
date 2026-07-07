@@ -39,3 +39,16 @@ class GastoDetalleOut(BaseModel):
     categoria: str
     concepto: str
     monto: Decimal
+
+
+class DeltasOut(BaseModel):
+    total_vendido: float | None
+    total_gastos: float | None
+    utilidad_estimada: float | None
+    num_ventas: float | None
+
+
+class ComparativoOut(BaseModel):
+    actual: ResumenOut
+    anterior: ResumenOut
+    deltas: DeltasOut

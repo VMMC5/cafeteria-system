@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from sqlalchemy import func
@@ -170,3 +170,21 @@ def detalle_gastos(db: Session, desde: date, hasta: date) -> list[dict]:
         }
         for g in gastos
     ]
+
+
+def comparativo(db: Session, desde: date, hasta: date) -> dict:
+    n = (hasta - desde).days + 1
+    ant_hasta = desde - timedelta(days=1)
+    ant_desde = desde - timedelta(days=n)
+    actual = resumen(db, desde, hasta)
+    anterior = resumen(db, ant_desde, ant_hasta)
+
+    def _delta(a, b) -> float | None:
+        b = Decimal(str(b))
+        if b == 0:
+            return None
+        return float(round((Decimal(str(a)) - b) / b * 100, 1))
+
+    claves = ("total_vendido", "total_gastos", "utilidad_estimada", "num_ventas")
+    deltas = {k: _delta(actual[k], anterior[k]) for k in claves}
+    return {"actual": actual, "anterior": anterior, "deltas": deltas}
