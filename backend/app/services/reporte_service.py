@@ -8,6 +8,7 @@ from app.models import (
     Compra,
     DetallePedido,
     Gasto,
+    Insumo,
     Pedido,
     Producto,
     Venta,
@@ -188,3 +189,26 @@ def comparativo(db: Session, desde: date, hasta: date) -> dict:
     claves = ("total_vendido", "total_gastos", "utilidad_estimada", "num_ventas")
     deltas = {k: _delta(actual[k], anterior[k]) for k in claves}
     return {"actual": actual, "anterior": anterior, "deltas": deltas}
+
+
+def inventario_niveles(db: Session) -> list[dict]:
+    out = []
+    for i in db.query(Insumo).all():
+        smin = float(i.stock_minimo)
+        sact = float(i.stock_actual)
+        if smin > 0:
+            pct = min(100, round(sact / (2 * smin) * 100))
+        else:
+            pct = 100 if sact > 0 else 0
+        out.append(
+            {
+                "nombre": i.nombre_insumo,
+                "unidad": i.unidad.abreviatura,
+                "stock_actual": i.stock_actual,
+                "stock_minimo": i.stock_minimo,
+                "nivel_pct": pct,
+                "bajo_minimo": i.stock_actual < i.stock_minimo,
+            }
+        )
+    out.sort(key=lambda x: x["nivel_pct"])
+    return out

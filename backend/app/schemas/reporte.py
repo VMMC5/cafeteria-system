@@ -52,3 +52,12 @@ class ComparativoOut(BaseModel):
     actual: ResumenOut
     anterior: ResumenOut
     deltas: DeltasOut
+
+
+class InventarioNivelOut(BaseModel):
+    nombre: str
+    unidad: str
+    stock_actual: Decimal
+    stock_minimo: Decimal
+    nivel_pct: int
+    bajo_minimo: bool

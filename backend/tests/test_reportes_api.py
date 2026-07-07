@@ -269,3 +269,42 @@ def test_comparativo_delta_null_sin_periodo_anterior(client, db, admin_headers, 
 
 def test_comparativo_requiere_admin_403(client, db, mesero_headers):
     assert client.get("/api/v1/reportes/comparativo", headers=mesero_headers).status_code == 403
+
+
+def _insumo(db, nombre, stock, minimo):
+    from app.models import Insumo, UnidadMedida
+
+    u = db.query(UnidadMedida).first()
+    i = Insumo(
+        id_unidad=u.id_unidad,
+        nombre_insumo=nombre,
+        stock_actual=Decimal(str(stock)),
+        stock_minimo=Decimal(str(minimo)),
+    )
+    db.add(i)
+    db.flush()
+    return i
+
+
+def test_inventario_niveles_pct_y_bajo_minimo(client, db, admin_headers):
+    _insumo(db, "InsumoBajoXYZ", 1, 10)    # bajo mínimo; 1/(2*10)*100 = 5
+    _insumo(db, "InsumoOkXYZ", 100, 10)    # 100/(2*10)*100 = 500 -> tope 100
+    filas = {f["nombre"]: f for f in client.get(
+        "/api/v1/reportes/inventario-niveles", headers=admin_headers).json()}
+    assert filas["InsumoBajoXYZ"]["nivel_pct"] == 5
+    assert filas["InsumoBajoXYZ"]["bajo_minimo"] is True
+    assert filas["InsumoOkXYZ"]["nivel_pct"] == 100
+    assert filas["InsumoOkXYZ"]["bajo_minimo"] is False
+
+
+def test_inventario_niveles_minimo_cero(client, db, admin_headers):
+    _insumo(db, "InsumoCeroMinXYZ", 5, 0)
+    filas = {f["nombre"]: f for f in client.get(
+        "/api/v1/reportes/inventario-niveles", headers=admin_headers).json()}
+    assert filas["InsumoCeroMinXYZ"]["nivel_pct"] == 100
+    assert filas["InsumoCeroMinXYZ"]["bajo_minimo"] is False
+
+
+def test_inventario_niveles_requiere_admin_403(client, db, mesero_headers):
+    assert client.get(
+        "/api/v1/reportes/inventario-niveles", headers=mesero_headers).status_code == 403

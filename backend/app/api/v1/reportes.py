@@ -9,6 +9,7 @@ from app.models import Usuario
 from app.schemas.reporte import (
     ComparativoOut,
     GastoDetalleOut,
+    InventarioNivelOut,
     ResumenOut,
     TopProductoOut,
     VentaDetalleOut,
@@ -84,3 +85,11 @@ def comparativo(
 ):
     d, h = reporte_service.rango(desde, hasta)
     return reporte_service.comparativo(db, d, h)
+
+
+@router.get("/inventario-niveles", response_model=list[InventarioNivelOut])
+def inventario_niveles(
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(deps.require_admin),
+):
+    return reporte_service.inventario_niveles(db)
