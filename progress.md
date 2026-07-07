@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-07-05 (Sprint 5 completo)
+**Última actualización:** 2026-07-07 (Sprint 6: Slice A + rediseño mergeados; backlog en local sin subir)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -59,17 +59,35 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 
 **Estado:** inventario cerrado el ciclo: **compra sube stock**, **pedido descuenta** por receta, ajustes/mermas manuales, todo con kárdex. Recetas se gestionan por API.
 
+### Sprint 6 — Dashboard, reportes y rediseño
+
+**Mergeado a `main`:**
+| PR | Qué |
+|----|-----|
+| **#17** Dashboard (Slice A) | API `GET /reportes/{resumen,ventas-por-dia,top-productos}` (solo Admin, filtro de fechas); web `/dashboard` con 6 KPIs, selector de periodo y 2 gráficas **Chart.js** (vendorizado local). `/` redirige a `/dashboard` |
+| **#18** Rediseño web "Cafetería Aroma" | Tema café + **sidebar**, login split, Estadísticas (dashboard reskin), lista de usuarios (avatares, badges de rol, filtros Rol/Estado) y form de usuario (tarjetas de rol + permisos). Solo plantillas + CSS |
+
+**En local (rama `feature/sprint6-backlog`, commits locales — aún NO subido a GitHub):**
+- **`seed_usuarios_demo`** — el seed recrea las 3 cuentas demo (mesero/cajero/cocinero, `cafeteria123`) idempotentemente.
+- **Slice B — Reportes filtrables + export**: API `GET /reportes/{ventas,gastos}` (detalle); web `/reportes` (tipo Ventas/Gastos, rango, vista previa, **descargar PDF (WeasyPrint) / XLSX (openpyxl con celdas tipadas)**); ítem "Reportes" en sidebar; Dockerfile del web con libs nativas (`pydyf==0.10.0` fijado).
+- **Analítica avanzada** (Estadísticas): API `GET /reportes/comparativo` (vs periodo anterior) y `/reportes/inventario-niveles`; web con **KPIs ▲/▼ % y color por beneficio** (Gastos ▲ = rojo, lógica en la ruta Flask y testeada), **dona** de productos, **tendencia** de pedidos y **barras de nivel de inventario**.
+- **Hardening del admin principal**: `update_usuario` rechaza **400** si se intenta cambiar el `id_rol` del admin principal (identificado por `correo == ADMIN_CORREO`, no por id) a un rol distinto de Administrador; `seed_admin` ahora es **correctivo** (restaura el rol si quedó mal). Motivado por un incidente de datos de dev donde el admin quedó con rol Cajero y no podía entrar al panel (corregido con `UPDATE` en la BD local).
+
+**Estado:** Sprint 6 funcionalmente completo. Slice A y rediseño en `main`; el resto (reportes+export, analítica, hardening) validado en local, pendiente de subir. Cada pieza pasó brainstorming → spec → plan → TDD con subagentes + revisión (specs/planes en `docs/superpowers/`).
+
 ### Cobertura de tests
-- **Backend:** 144 tests (`docker compose exec api pytest`).
+- **Backend:** 174 tests (`docker compose exec api pytest`).
 - **Móvil:** 53 tests jest (`cd mobile && npm test`) + `tsc` limpio.
-- **Web:** 13 tests (`docker compose exec web pytest`).
+- **Web:** 40 tests (`docker compose exec web pytest`).
 
 ---
 
 ## ⏳ Pendiente
 
-### Sprint 6 — Dashboard y reportes *(SIGUIENTE)*
-- Web: KPIs + gráficas (Chart.js), reportes con filtros y export PDF/XLSX.
+### Próximo (continuar en local)
+- **Subir el backlog local** (`feature/sprint6-backlog`, ~12 commits de código) a GitHub como PR(s) cuando se decida.
+- Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
+- Tipos de reporte extra (Productos/Inventario/Pedidos) y filtros (categoría/usuario/método/agrupar-por) en `/reportes`.
 
 ### Deuda técnica / mejoras conocidas
 - Módulos móviles Mesero/Cocina/Caja implementados; el placeholder `modulo/[key].tsx` ya no se usa por ningún rol.
@@ -80,6 +98,9 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
 - RF-M03 (recuperar contraseña) solo como nota; sin implementar.
 - Sin refresh-on-401 global en el móvil (el bootstrap cubre la expiración al arrancar).
+- **Reportes (Slice B):** los endpoints de detalle no paginan (N+1 leve en ventas); endurecer el nombre de archivo del export; falta test de pago dividido.
+- **Analítica:** quitar `api_client.get_reporte_resumen` (código muerto tras el comparativo); afinar un par de tests poco específicos; relabel "# Pedidos" → "# Ventas".
+- Tras agregar/registrar un blueprint nuevo en el web, hay que **reiniciar el contenedor** (`docker compose restart web`); el hot-reload no recarga el registro de rutas.
 
 ---
 
@@ -98,6 +119,8 @@ URLs: API `localhost:8000/docs` · Web `localhost:5000` · Adminer `localhost:80
 | Mesero | `mesero@cafeteria.com` | `cafeteria123` |
 | Cajero | `cajero@cafeteria.com` | `cafeteria123` |
 | Cocinero | `cocinero@cafeteria.com` | `cafeteria123` |
+
+> Las 4 cuentas las crea el seed (`seed_admin` + `seed_usuarios_demo`, idempotentes). El admin principal está **blindado**: su rol no se puede cambiar por API (400) y `seed_admin` lo restaura si quedara mal. El panel web es **admin-only** (rol Administrador).
 
 ## Notas de entorno (WSL2)
 - Docker requiere activar la integración WSL en Docker Desktop.
