@@ -30,9 +30,9 @@
 </section>
 
 <section class="graficas">
-  <div class="grafica"><h2>Ventas vs Gastos</h2><canvas id="chart-ventas"></canvas></div>
-  <div class="grafica"><h2>Productos más vendidos</h2><canvas id="chart-top"></canvas></div>
-  <div class="grafica"><h2>Tendencia de pedidos diarios</h2><canvas id="chart-pedidos"></canvas></div>
+  <div class="grafica"><h2>Ventas vs Gastos</h2><div class="chart-box"><canvas id="chart-ventas"></canvas></div></div>
+  <div class="grafica"><h2>Productos más vendidos</h2><div class="chart-box"><canvas id="chart-top"></canvas></div></div>
+  <div class="grafica"><h2>Tendencia de pedidos diarios</h2><div class="chart-box"><canvas id="chart-pedidos"></canvas></div></div>
   <div class="grafica">
     <h2>Nivel de inventario</h2>
     <div class="inv">
@@ -65,7 +65,7 @@
         { label: "Gastos", data: vg.map(p => Number(p.gastos)),
           backgroundColor: "#c8862f", categoryPercentage: 0.6, barPercentage: 0.9 },
       ] },
-    options: { responsive: true, plugins: { legend: { display: true, position: "top" } } },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: "top" } } },
   });
   // Total de unidades vendidas entre los productos top (para el centro de la dona y el % de la leyenda).
   const totalTop = top.reduce((s, p) => s + Number(p.cantidad), 0);
@@ -95,7 +95,7 @@
     type: "doughnut",
     data: { labels: top.map(p => p.nombre),
       datasets: [{ data: top.map(p => Number(p.cantidad)), backgroundColor: cafe }] },
-    options: { responsive: true, plugins: { legend: { position: "right", labels: {
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: {
       generateLabels(chart) {
         const base = Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart);
         return base.map((item, i) => {
@@ -121,7 +121,7 @@
           return g;
         },
         fill: true, tension: 0.38 }] },
-    options: { responsive: true, plugins: { legend: { display: false } } },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
   });
 </script>
 {% endblock %}

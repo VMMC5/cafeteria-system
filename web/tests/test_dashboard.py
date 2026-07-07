@@ -190,6 +190,17 @@ def test_dashboard_tendencia_gradiente(client, monkeypatch):
     assert 'rgba(217,201,187,0)' in cuerpo
 
 
+def test_dashboard_graficas_tienen_contenedor_con_altura(client, monkeypatch):
+    # Chart.js `responsive` colapsa el canvas a 0 (gráfica en blanco) si el
+    # contenedor no tiene altura definida. Los 3 canvas deben ir envueltos en
+    # `.chart-box` (altura fija en CSS) y usar maintainAspectRatio:false.
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+    assert cuerpo.count('class="chart-box"') == 3
+    assert cuerpo.count("maintainAspectRatio: false") == 3
+
+
 def test_rango_preset_7dias():
     hoy = datetime.date.today()
     desde, hasta = rango_preset("7dias", None, None)

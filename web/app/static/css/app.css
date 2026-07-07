@@ -108,6 +108,11 @@ small { display:block; font-weight:400; margin-top:.25rem; color:var(--muted); }
 .graficas { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:1.25rem; margin-top:1.25rem; }
 .grafica { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem; box-shadow:var(--shadow); }
 .grafica h2 { font-family:var(--serif); font-size:1.05rem; margin:0 0 .8rem; }
+/* Chart.js responsive necesita un contenedor con altura definida; sin esto el
+   canvas colapsa a 0 y la gráfica sale en blanco. Con maintainAspectRatio:false
+   el chart llena esta caja. */
+.chart-box { position:relative; height:260px; }
+.chart-box canvas { max-width:100%; }
 
 /* Inventory bars */
 .inv { display: grid; gap: .55rem; }
