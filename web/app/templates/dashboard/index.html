@@ -9,12 +9,12 @@
 </div>
 
 <form method="get" class="filtros">
-  <button type="submit" name="preset" value="hoy"   class="pill {{ 'active' if preset == 'hoy' }}">Hoy</button>
-  <button type="submit" name="preset" value="7dias" class="pill {{ 'active' if preset == '7dias' }}">7 días</button>
-  <button type="submit" name="preset" value="mes"   class="pill {{ 'active' if preset == 'mes' }}">Este mes</button>
+  <button type="submit" name="preset" value="mes"    class="pill {{ 'active' if preset == 'mes' }}">Mes</button>
+  <button type="submit" name="preset" value="6meses" class="pill {{ 'active' if preset == '6meses' }}">6 meses</button>
+  <button type="submit" name="preset" value="anio"   class="pill {{ 'active' if preset == 'anio' }}">Año</button>
   <input type="date" name="desde" value="{{ desde }}">
   <input type="date" name="hasta" value="{{ hasta }}">
-  <button type="submit" name="preset" value="rango" class="pill {{ 'active' if preset == 'rango' }}">Aplicar rango</button>
+  <button type="submit" name="preset" value="rango" class="pill {{ 'active' if preset == 'rango' }}">Rango</button>
 </form>
 
 <section class="kpis">

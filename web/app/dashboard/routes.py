@@ -8,16 +8,35 @@ from app.services import api_client, api_gateway
 bp = Blueprint("dashboard", __name__)
 
 
+def _restar_meses(fecha, meses):
+    """Retrocede `meses` meses naturales desde `fecha`, día 1 del mes destino.
+
+    Aritmética de mes/año pura (no timedelta): evita el error de "180 días"
+    que no equivale a 6 meses naturales y que además rompe en el cambio de
+    año (p.ej. retroceder desde enero/febrero debe bajar el año).
+    """
+    total_meses = fecha.month - 1 - meses
+    anio = fecha.year + total_meses // 12
+    mes = total_meses % 12 + 1
+    return date(anio, mes, 1)
+
+
 def rango_preset(preset, desde, hasta):
     """Devuelve (desde, hasta) en ISO según el preset o el rango explícito."""
     hoy = date.today()
+    if preset == "hoy":
+        return hoy.isoformat(), hoy.isoformat()
     if preset == "7dias":
         return (hoy - timedelta(days=6)).isoformat(), hoy.isoformat()
-    if preset == "mes":
-        return hoy.replace(day=1).isoformat(), hoy.isoformat()
+    if preset == "6meses":
+        return _restar_meses(hoy, 5).isoformat(), hoy.isoformat()
+    if preset == "anio":
+        return hoy.replace(month=1, day=1).isoformat(), hoy.isoformat()
     if preset == "rango" and desde and hasta:
         return desde, hasta
-    return hoy.isoformat(), hoy.isoformat()  # "hoy" (default)
+    # "mes" y cualquier preset desconocido/None -> mes (default sensato,
+    # acorde al mockup: la UI arranca en "Mes", no en "Hoy").
+    return hoy.replace(day=1).isoformat(), hoy.isoformat()
 
 
 # (label, key, up_is_good|None, es_money, es_accent)
@@ -61,6 +80,24 @@ def _serie_ventas_vs_gastos(serie, gastos_serie):
     ]
 
 
+def _bucketizar_mensual(serie_vg):
+    """Agrupa una serie diaria alineada (ver `_serie_ventas_vs_gastos`) por mes.
+
+    Suma `ventas`/`gastos` de cada día que cae en el mismo mes (`fecha[:7]`,
+    formato "YYYY-MM") y devuelve la lista ordenada por mes ascendente.
+    """
+    acumulado = {}
+    for p in serie_vg:
+        mes = p["fecha"][:7]
+        bucket = acumulado.setdefault(mes, {"ventas": 0, "gastos": 0})
+        bucket["ventas"] += float(p["ventas"])
+        bucket["gastos"] += float(p["gastos"])
+    return [
+        {"fecha": mes, "ventas": acumulado[mes]["ventas"], "gastos": acumulado[mes]["gastos"]}
+        for mes in sorted(acumulado)
+    ]
+
+
 def _kpis(comp):
     actual, deltas = comp["actual"], comp["deltas"]
     tarjetas = []
@@ -82,7 +119,7 @@ def _kpis(comp):
 @bp.route("/dashboard")
 @login_required
 def index():
-    preset = request.args.get("preset", "hoy")
+    preset = request.args.get("preset", "mes")
     desde, hasta = rango_preset(
         preset, request.args.get("desde"), request.args.get("hasta")
     )
@@ -91,7 +128,12 @@ def index():
     gastos_serie = api_gateway.call(api_client.get_gastos_por_dia, desde, hasta)
     top = api_gateway.call(api_client.get_top_productos, desde, hasta)
     inventario = api_gateway.call(api_client.get_inventario_niveles)
+    # La tendencia (`serie`) siempre es diaria. La barra Ventas vs Gastos se
+    # agrupa por mes cuando el periodo es largo (6meses/año); en Mes/Rango se
+    # mantiene diaria.
     serie_vg = _serie_ventas_vs_gastos(serie, gastos_serie)
+    if preset in ("6meses", "anio"):
+        serie_vg = _bucketizar_mensual(serie_vg)
     return render_template(
         "dashboard/index.html",
         kpis=_kpis(comp), serie=serie, serie_vg=serie_vg, top=top,

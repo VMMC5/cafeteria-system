@@ -1,6 +1,12 @@
 import datetime
+import json
+import re
 
-from app.dashboard.routes import _serie_ventas_vs_gastos, rango_preset
+from app.dashboard.routes import (
+    _bucketizar_mensual,
+    _serie_ventas_vs_gastos,
+    rango_preset,
+)
 from app.services import api_client
 
 ADMIN_TOKENS = {"access_token": "a", "refresh_token": "r", "token_type": "bearer"}
@@ -245,8 +251,99 @@ def test_rango_preset_rango_explicito():
 
 def test_rango_preset_hoy_y_desconocido():
     hoy = datetime.date.today()
+    # "hoy" se mantiene funcionando por compatibilidad (ya no es el default,
+    # pero sigue siendo un preset válido si se solicita explícitamente).
     assert rango_preset("hoy", None, None) == (hoy.isoformat(), hoy.isoformat())
-    assert rango_preset("otro", None, None) == (hoy.isoformat(), hoy.isoformat())
+    # Un preset desconocido/None ahora cae al default sensato "mes" (no "hoy").
+    assert rango_preset("otro", None, None) == (
+        hoy.replace(day=1).isoformat(), hoy.isoformat(),
+    )
+
+
+def test_rango_preset_6meses():
+    hoy = datetime.date.today()
+    # Retrocede 5 meses reales desde hoy (6 meses naturales inclusive),
+    # calculado con aritmética de mes/año pura (sin timedelta ni hardcodear años).
+    total_meses = hoy.month - 1 - 5
+    anio_esperado = hoy.year + total_meses // 12
+    mes_esperado = total_meses % 12 + 1
+    esperado_desde = datetime.date(anio_esperado, mes_esperado, 1)
+    desde, hasta = rango_preset("6meses", None, None)
+    assert desde == esperado_desde.isoformat()
+    assert hasta == hoy.isoformat()
+
+
+def test_rango_preset_anio():
+    hoy = datetime.date.today()
+    desde, hasta = rango_preset("anio", None, None)
+    assert desde == hoy.replace(month=1, day=1).isoformat()
+    assert hasta == hoy.isoformat()
+
+
+def test_bucketizar_mensual_agrupa_y_suma_por_mes():
+    # Serie diaria que cruza 2 meses (mayo -> junio); debe agrupar por
+    # "YYYY-MM", sumar ventas/gastos numéricamente y quedar ordenada.
+    serie_vg = [
+        {"fecha": "2026-05-30", "ventas": 100.0, "gastos": 20.0},
+        {"fecha": "2026-05-31", "ventas": 50.0, "gastos": 10.0},
+        {"fecha": "2026-06-01", "ventas": 200.0, "gastos": 30.0},
+    ]
+    resultado = _bucketizar_mensual(serie_vg)
+    assert resultado == [
+        {"fecha": "2026-05", "ventas": 150.0, "gastos": 30.0},
+        {"fecha": "2026-06", "ventas": 200.0, "gastos": 30.0},
+    ]
+
+
+def test_dashboard_preset_6meses_bucketiza_serie_vg_por_mes(client, monkeypatch):
+    # Integración: con preset "6meses" la ruta debe responder 200 y el
+    # serie_vg inyectado en el template debe llevar etiquetas mensuales
+    # ("YYYY-MM"), no diarias, aunque las series crudas vengan por día.
+    _login(client, monkeypatch)
+    serie_multimes = [
+        {"fecha": "2026-05-15", "total": "100.00", "num_ventas": 1},
+        {"fecha": "2026-06-10", "total": "200.00", "num_ventas": 2},
+    ]
+    gastos_multimes = [
+        {"fecha": "2026-05-20", "total": "30.00", "num_gastos": 1},
+        {"fecha": "2026-06-15", "total": "40.00", "num_gastos": 1},
+    ]
+    monkeypatch.setattr(api_client, "get_comparativo", lambda a, d, h: COMPARATIVO)
+    monkeypatch.setattr(
+        api_client, "get_ventas_por_dia", lambda a, d, h: serie_multimes
+    )
+    monkeypatch.setattr(
+        api_client, "get_gastos_por_dia", lambda a, d, h: gastos_multimes
+    )
+    monkeypatch.setattr(api_client, "get_top_productos", lambda a, d, h: TOP)
+    monkeypatch.setattr(api_client, "get_inventario_niveles", lambda a: INVENTARIO)
+
+    r = client.get("/dashboard?preset=6meses")
+    assert r.status_code == 200
+    cuerpo = r.get_data(as_text=True)
+
+    match = re.search(r'<script id="vg-data"[^>]*>(.*?)</script>', cuerpo, re.S)
+    datos_vg = json.loads(match.group(1))
+    fechas = [p["fecha"] for p in datos_vg]
+    assert fechas == ["2026-05", "2026-06"]
+    assert all(len(f) == 7 for f in fechas)  # "YYYY-MM", no "YYYY-MM-DD"
+
+    # la tendencia (serie diaria) NO se bucketiza: sigue trayendo fechas diarias
+    match_serie = re.search(r'<script id="serie-data"[^>]*>(.*?)</script>', cuerpo, re.S)
+    datos_serie = json.loads(match_serie.group(1))
+    assert [p["fecha"] for p in datos_serie] == ["2026-05-15", "2026-06-10"]
+
+
+def test_dashboard_preset_mes_mantiene_serie_vg_diaria(client, monkeypatch):
+    # Preset "mes" (y "rango") deben conservar la granularidad diaria.
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    r = client.get("/dashboard?preset=mes")
+    assert r.status_code == 200
+    cuerpo = r.get_data(as_text=True)
+    match = re.search(r'<script id="vg-data"[^>]*>(.*?)</script>', cuerpo, re.S)
+    datos_vg = json.loads(match.group(1))
+    assert any(len(p["fecha"]) == 10 for p in datos_vg)  # "YYYY-MM-DD"
 
 
 def test_dashboard_delta_gastos_positivo_es_down(client, monkeypatch):
