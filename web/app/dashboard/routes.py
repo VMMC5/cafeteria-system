@@ -38,8 +38,12 @@ def _serie_ventas_vs_gastos(serie, gastos_serie):
     en ambas series; la fecha que falte en alguna de las dos se rellena
     con 0 en ese lado.
     """
-    ventas_por_fecha = {p["fecha"]: p["total"] for p in serie}
-    gastos_por_fecha = {p["fecha"]: p["total"] for p in gastos_serie}
+    ventas_por_fecha = {}
+    for p in serie:
+        ventas_por_fecha[p["fecha"]] = ventas_por_fecha.get(p["fecha"], 0) + p["total"]
+    gastos_por_fecha = {}
+    for p in gastos_serie:
+        gastos_por_fecha[p["fecha"]] = gastos_por_fecha.get(p["fecha"], 0) + p["total"]
     fechas = sorted(set(ventas_por_fecha) | set(gastos_por_fecha))
     return [
         {

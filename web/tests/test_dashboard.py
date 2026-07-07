@@ -97,8 +97,11 @@ def test_dashboard_ventas_vs_gastos(client, monkeypatch):
     assert "Ventas vs Gastos" in cuerpo
     assert '"Ventas"' in cuerpo
     assert '"Gastos"' in cuerpo
-    assert "#3a2a20" in cuerpo
-    assert "#c8862f" in cuerpo
+    # el color debe ir atado a su dataset: Ventas = café oscuro, Gastos = mostaza
+    # (si se intercambiaran los colores, estas dos aserciones fallarían).
+    import re
+    assert re.search(r'label:\s*"Ventas"[^}]*?backgroundColor:\s*"#3a2a20"', cuerpo)
+    assert re.search(r'label:\s*"Gastos"[^}]*?backgroundColor:\s*"#c8862f"', cuerpo)
     # alineación por fecha: 2026-07-06 solo tiene gasto, debe aparecer en serie_vg
     assert "2026-07-06" in cuerpo
 
@@ -117,6 +120,23 @@ def test_serie_ventas_vs_gastos_alinea_fechas_con_ceros():
         {"fecha": "2026-07-04", "ventas": 100.0, "gastos": 0},
         {"fecha": "2026-07-05", "ventas": 400.0, "gastos": 50.0},
         {"fecha": "2026-07-06", "ventas": 0, "gastos": 30.0},
+    ]
+
+
+def test_serie_ventas_vs_gastos_acumula_fechas_duplicadas():
+    # La API contempla una fila por día, pero ante una fecha duplicada
+    # (p.ej. reintento/paginación) los totales deben sumarse, no perderse.
+    serie = [
+        {"fecha": "2026-07-05", "total": 400.0, "num_ventas": 2},
+        {"fecha": "2026-07-05", "total": 100.0, "num_ventas": 1},
+    ]
+    gastos = [
+        {"fecha": "2026-07-05", "total": 50.0, "num_gastos": 1},
+        {"fecha": "2026-07-05", "total": 30.0, "num_gastos": 1},
+    ]
+    resultado = _serie_ventas_vs_gastos(serie, gastos)
+    assert resultado == [
+        {"fecha": "2026-07-05", "ventas": 500.0, "gastos": 80.0},
     ]
 
 
