@@ -144,6 +144,15 @@ def get_top_productos(access, desde=None, hasta=None, limite=10):
     return _check(r)
 
 
+def get_inventario_niveles(access):
+    r = requests.get(
+        f"{_base()}/reportes/inventario-niveles",
+        headers=_headers(access),
+        timeout=TIMEOUT,
+    )
+    return _check(r)
+
+
 def get_reporte_ventas(access, desde=None, hasta=None):
     r = requests.get(
         f"{_base()}/reportes/ventas",

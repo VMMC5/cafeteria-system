@@ -27,6 +27,12 @@ COMPARATIVO = {
 }
 SERIE = [{"fecha": "2026-07-05", "total": 400.0, "num_ventas": 2}]
 TOP = [{"id_producto": 1, "nombre": "Café", "cantidad": 5, "importe": 150.0}]
+INVENTARIO = [
+    {"nombre": "Café en grano", "unidad": "kg", "stock_actual": 2.0,
+     "stock_minimo": 5.0, "nivel_pct": 20, "bajo_minimo": True},
+    {"nombre": "Leche", "unidad": "L", "stock_actual": 8.0,
+     "stock_minimo": 4.0, "nivel_pct": 100, "bajo_minimo": False},
+]
 
 
 def _login(client, monkeypatch):
@@ -39,6 +45,7 @@ def _stub_reportes(monkeypatch):
     monkeypatch.setattr(api_client, "get_comparativo", lambda a, d, h: COMPARATIVO)
     monkeypatch.setattr(api_client, "get_ventas_por_dia", lambda a, d, h: SERIE)
     monkeypatch.setattr(api_client, "get_top_productos", lambda a, d, h: TOP)
+    monkeypatch.setattr(api_client, "get_inventario_niveles", lambda a: INVENTARIO)
 
 
 def test_dashboard_sin_sesion_redirige(client):
@@ -73,6 +80,16 @@ def test_dashboard_incluye_graficas(client, monkeypatch):
     assert 'id="chart-top"' in cuerpo
     assert "chart.umd.min.js" in cuerpo
     assert "Café" in cuerpo          # dato del top embebido en el JSON
+
+
+def test_dashboard_dona_tendencia_e_inventario(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+    assert "doughnut" in cuerpo               # tipo de la dona
+    assert 'id="chart-pedidos"' in cuerpo     # línea de tendencia
+    assert "Café en grano" in cuerpo          # barra de inventario
+    assert "20%" in cuerpo                     # nivel_pct de la barra
 
 
 def test_rango_preset_7dias():

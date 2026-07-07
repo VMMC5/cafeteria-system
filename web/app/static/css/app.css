@@ -109,6 +109,15 @@ small { display:block; font-weight:400; margin-top:.25rem; color:var(--muted); }
 .grafica { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem; box-shadow:var(--shadow); }
 .grafica h2 { font-family:var(--serif); font-size:1.05rem; margin:0 0 .8rem; }
 
+/* Inventory bars */
+.inv { display: grid; gap: .55rem; }
+.inv__row { display: grid; grid-template-columns: 130px 1fr 42px; align-items: center; gap: .5rem; font-size: .85rem; }
+.inv__name { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv__bar { background: var(--bg); border-radius: 999px; height: 10px; overflow: hidden; }
+.inv__fill { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.inv__fill--low { background: var(--loss); }
+.inv__pct { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
 /* Two-column (user form) */
 .cols { display:grid; grid-template-columns:1.4fr 1fr; gap:1.25rem; align-items:start; }
 .stack { display:grid; gap:1.25rem; }

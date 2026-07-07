@@ -32,6 +32,19 @@
 <section class="graficas">
   <div class="grafica"><h2>Ventas por día</h2><canvas id="chart-ventas"></canvas></div>
   <div class="grafica"><h2>Productos más vendidos</h2><canvas id="chart-top"></canvas></div>
+  <div class="grafica"><h2>Tendencia de pedidos diarios</h2><canvas id="chart-pedidos"></canvas></div>
+  <div class="grafica">
+    <h2>Nivel de inventario</h2>
+    <div class="inv">
+      {% for i in inventario %}
+      <div class="inv__row">
+        <span class="inv__name">{{ i.nombre }}</span>
+        <span class="inv__bar"><span class="inv__fill {{ 'inv__fill--low' if i.bajo_minimo }}" style="width:{{ i.nivel_pct }}%"></span></span>
+        <span class="inv__pct">{{ i.nivel_pct }}%</span>
+      </div>
+      {% else %}<p class="muted">Sin insumos.</p>{% endfor %}
+    </div>
+  </div>
 </section>
 
 <script id="serie-data" type="application/json">{{ serie|tojson }}</script>
@@ -40,23 +53,25 @@
 <script>
   const serie = JSON.parse(document.getElementById("serie-data").textContent);
   const top = JSON.parse(document.getElementById("top-data").textContent);
+  const cafe = ["#3a2a20", "#c8862f", "#8a5a12", "#6b4423", "#d9c9bb", "#a96f1f"];
   new Chart(document.getElementById("chart-ventas"), {
     type: "line",
-    data: {
-      labels: serie.map(p => p.fecha),
+    data: { labels: serie.map(p => p.fecha),
       datasets: [{ label: "Ventas ($)", data: serie.map(p => Number(p.total)),
-                   borderColor: "#c8862f", backgroundColor: "rgba(200,134,47,.15)",
-                   fill: true, tension: 0.3 }],
-    },
+        borderColor: "#c8862f", backgroundColor: "rgba(200,134,47,.15)", fill: true, tension: 0.3 }] },
     options: { responsive: true, plugins: { legend: { display: false } } },
   });
   new Chart(document.getElementById("chart-top"), {
-    type: "bar",
-    data: {
-      labels: top.map(p => p.nombre),
-      datasets: [{ label: "Cantidad", data: top.map(p => Number(p.cantidad)),
-                   backgroundColor: "#3a2a20" }],
-    },
+    type: "doughnut",
+    data: { labels: top.map(p => p.nombre),
+      datasets: [{ data: top.map(p => Number(p.cantidad)), backgroundColor: cafe }] },
+    options: { responsive: true, plugins: { legend: { position: "right" } } },
+  });
+  new Chart(document.getElementById("chart-pedidos"), {
+    type: "line",
+    data: { labels: serie.map(p => p.fecha),
+      datasets: [{ label: "# Pedidos", data: serie.map(p => Number(p.num_ventas)),
+        borderColor: "#3a2a20", backgroundColor: "rgba(58,42,32,.12)", fill: true, tension: 0.3 }] },
     options: { responsive: true, plugins: { legend: { display: false } } },
   });
 </script>

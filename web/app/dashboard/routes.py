@@ -59,8 +59,9 @@ def index():
     comp = api_gateway.call(api_client.get_comparativo, desde, hasta)
     serie = api_gateway.call(api_client.get_ventas_por_dia, desde, hasta)
     top = api_gateway.call(api_client.get_top_productos, desde, hasta)
+    inventario = api_gateway.call(api_client.get_inventario_niveles)
     return render_template(
         "dashboard/index.html",
-        kpis=_kpis(comp), serie=serie, top=top,
+        kpis=_kpis(comp), serie=serie, top=top, inventario=inventario,
         preset=preset, desde=desde, hasta=hasta,
     )
