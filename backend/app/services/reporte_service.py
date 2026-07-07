@@ -122,3 +122,51 @@ def top_productos(
         }
         for f in filas
     ]
+
+
+def detalle_ventas(db: Session, desde: date, hasta: date) -> list[dict]:
+    ventas = (
+        db.query(Venta)
+        .filter(
+            func.date(Venta.fecha_venta) >= desde,
+            func.date(Venta.fecha_venta) <= hasta,
+            Venta.estado_venta == "Completada",
+        )
+        .order_by(Venta.fecha_venta)
+        .all()
+    )
+    out = []
+    for v in ventas:
+        pedido = db.get(Pedido, v.id_pedido)
+        metodos = ", ".join(sorted({p.metodo.nombre_metodo for p in v.pagos}))
+        out.append(
+            {
+                "folio": v.ticket.folio if v.ticket else "",
+                "fecha": v.fecha_venta,
+                "mesa": pedido.mesa.numero_mesa if pedido and pedido.mesa else None,
+                "total": v.total,
+                "metodos": metodos,
+            }
+        )
+    return out
+
+
+def detalle_gastos(db: Session, desde: date, hasta: date) -> list[dict]:
+    gastos = (
+        db.query(Gasto)
+        .filter(
+            func.date(Gasto.fecha_gasto) >= desde,
+            func.date(Gasto.fecha_gasto) <= hasta,
+        )
+        .order_by(Gasto.fecha_gasto)
+        .all()
+    )
+    return [
+        {
+            "fecha": g.fecha_gasto,
+            "categoria": g.categoria.nombre_categoria,
+            "concepto": g.concepto,
+            "monto": g.monto,
+        }
+        for g in gastos
+    ]

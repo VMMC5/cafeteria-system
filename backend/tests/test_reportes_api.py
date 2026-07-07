@@ -193,3 +193,49 @@ def test_top_productos_limite_invalido_422(client, db, admin_headers):
 
 def test_top_productos_sin_token_401(client):
     assert client.get("/api/v1/reportes/top-productos").status_code == 401
+
+
+def _gasto(db, admin, monto, concepto="Luz"):
+    from app.models import CategoriaGasto, Gasto
+
+    cat = db.query(CategoriaGasto).first()
+    g = Gasto(
+        id_usuario=admin.id_usuario,
+        id_categoria_gasto=cat.id_categoria_gasto,
+        concepto=concepto,
+        monto=Decimal(str(monto)),
+    )
+    db.add(g)
+    db.flush()
+    return g
+
+
+def test_detalle_ventas_incluye_la_venta(client, db, admin_headers, cajero_headers):
+    venta = _cobrar(client, db, admin_headers, cajero_headers, numero=801, precio=116.0)
+    r = client.get("/api/v1/reportes/ventas", headers=admin_headers)
+    assert r.status_code == 200
+    fila = next(f for f in r.json() if f["folio"] == venta["folio"])
+    assert fila["mesa"] == 801
+    assert float(fila["total"]) == 232.0  # 2 x 116
+    assert "Efectivo" in fila["metodos"]
+
+
+def test_detalle_ventas_requiere_admin_403(client, db, mesero_headers):
+    assert client.get("/api/v1/reportes/ventas", headers=mesero_headers).status_code == 403
+
+
+def test_detalle_ventas_sin_token_401(client):
+    assert client.get("/api/v1/reportes/ventas").status_code == 401
+
+
+def test_detalle_gastos_incluye_el_gasto(client, db, admin, admin_headers):
+    _gasto(db, admin, 250.0, concepto="LuzReporteTest")
+    r = client.get("/api/v1/reportes/gastos", headers=admin_headers)
+    assert r.status_code == 200
+    fila = next(f for f in r.json() if f["concepto"] == "LuzReporteTest")
+    assert float(fila["monto"]) == 250.0
+    assert fila["categoria"]
+
+
+def test_detalle_gastos_requiere_admin_403(client, db, mesero_headers):
+    assert client.get("/api/v1/reportes/gastos", headers=mesero_headers).status_code == 403

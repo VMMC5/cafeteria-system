@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -24,3 +24,18 @@ class TopProductoOut(BaseModel):
     nombre: str
     cantidad: int
     importe: Decimal
+
+
+class VentaDetalleOut(BaseModel):
+    folio: str
+    fecha: datetime
+    mesa: int | None
+    total: Decimal
+    metodos: str
+
+
+class GastoDetalleOut(BaseModel):
+    fecha: datetime
+    categoria: str
+    concepto: str
+    monto: Decimal
