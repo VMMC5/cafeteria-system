@@ -216,21 +216,27 @@ def seed_usuarios_demo(db) -> int:
     return total
 
 
+def seed_base(db) -> int:
+    """Siembra catálogos + admin + usuarios demo + mesas/productos. Idempotente,
+    no abre sesión ni hace commit (lo hace el `run()` de este módulo, o el
+    caller cuando comparte sesión, p.ej. `seed_demo`)."""
+    total = 0
+    for model, key, rows in SEED:
+        for row in rows:
+            existe = db.query(model).filter(getattr(model, key) == row[key]).first()
+            if not existe:
+                db.add(model(**row))
+                total += 1
+    total += seed_admin(db)
+    total += seed_usuarios_demo(db)
+    total += seed_catalogo(db)
+    return total
+
+
 def run():
     db = SessionLocal()
     try:
-        total = 0
-        for model, key, rows in SEED:
-            for row in rows:
-                existe = (
-                    db.query(model).filter(getattr(model, key) == row[key]).first()
-                )
-                if not existe:
-                    db.add(model(**row))
-                    total += 1
-        total += seed_admin(db)
-        total += seed_usuarios_demo(db)
-        total += seed_catalogo(db)
+        total = seed_base(db)
         db.commit()
         print(f"Seed completado: {total} filas nuevas insertadas.")
     finally:
