@@ -19,6 +19,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2"/></svg>
         Usuarios y Roles
       </a>
+      <a class="sidebar__link {{ 'active' if request.endpoint and request.endpoint.startswith('reportes.') }}" href="{{ url_for('reportes.index') }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+        Reportes
+      </a>
     </nav>
     <div class="sidebar__user">
       <span class="avatar">{{ (current_user.nombre[0] if current_user.nombre else 'U')|upper }}</span>

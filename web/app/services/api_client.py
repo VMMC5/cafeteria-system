@@ -132,3 +132,23 @@ def get_top_productos(access, desde=None, hasta=None, limite=10):
         timeout=TIMEOUT,
     )
     return _check(r)
+
+
+def get_reporte_ventas(access, desde=None, hasta=None):
+    r = requests.get(
+        f"{_base()}/reportes/ventas",
+        headers=_headers(access),
+        params={"desde": desde, "hasta": hasta},
+        timeout=TIMEOUT,
+    )
+    return _check(r)
+
+
+def get_reporte_gastos(access, desde=None, hasta=None):
+    r = requests.get(
+        f"{_base()}/reportes/gastos",
+        headers=_headers(access),
+        params={"desde": desde, "hasta": hasta},
+        timeout=TIMEOUT,
+    )
+    return _check(r)

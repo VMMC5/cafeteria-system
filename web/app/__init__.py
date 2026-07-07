@@ -22,10 +22,12 @@ def create_app(config_object=Config):
 
     from app.auth.routes import bp as auth_bp
     from app.dashboard.routes import bp as dashboard_bp
+    from app.reportes.routes import bp as reportes_bp
     from app.usuarios.routes import bp as usuarios_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(reportes_bp)
     app.register_blueprint(usuarios_bp)
 
     @app.route("/")
