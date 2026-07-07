@@ -94,6 +94,10 @@ small { display:block; font-weight:400; margin-top:.25rem; color:var(--muted); }
 .kpi--accent { border-top-color:var(--accent); }
 .kpi__label { font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
 .kpi__value { font-family:var(--mono); font-size:1.6rem; font-weight:700; margin-top:.3rem; }
+.kpi__delta { font-size:.72rem; margin-top:.25rem; }
+.kpi__delta--up { color:var(--gain); }
+.kpi__delta--down { color:var(--loss); }
+.kpi__delta--neutral { color:var(--muted); }
 
 /* Period pills */
 .filtros { display:flex; gap:.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap; }

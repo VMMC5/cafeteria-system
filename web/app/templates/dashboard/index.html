@@ -18,18 +18,15 @@
 </form>
 
 <section class="kpis">
-  <div class="kpi"><span class="kpi__label">Total vendido</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.total_vendido|float) }}</span></div>
-  <div class="kpi"><span class="kpi__label"># Ventas</span>
-    <span class="kpi__value">{{ resumen.num_ventas }}</span></div>
-  <div class="kpi"><span class="kpi__label">Ticket promedio</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.ticket_promedio|float) }}</span></div>
-  <div class="kpi"><span class="kpi__label">Gastos</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.total_gastos|float) }}</span></div>
-  <div class="kpi"><span class="kpi__label">Compras</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.total_compras|float) }}</span></div>
-  <div class="kpi kpi--accent"><span class="kpi__label">Utilidad estimada</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.utilidad_estimada|float) }}</span></div>
+  {% for k in kpis %}
+  <div class="kpi {{ 'kpi--accent' if k.accent }}">
+    <span class="kpi__label">{{ k.label }}</span>
+    <span class="kpi__value">{{ k.valor }}</span>
+    {% if k.delta is not none %}
+    <span class="kpi__delta kpi__delta--{{ k.color }}">{{ k.flecha }} {{ k.delta }}% vs periodo anterior</span>
+    {% endif %}
+  </div>
+  {% endfor %}
 </section>
 
 <section class="graficas">

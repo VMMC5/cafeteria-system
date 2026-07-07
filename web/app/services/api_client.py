@@ -114,6 +114,16 @@ def get_reporte_resumen(access, desde=None, hasta=None):
     return _check(r)
 
 
+def get_comparativo(access, desde=None, hasta=None):
+    r = requests.get(
+        f"{_base()}/reportes/comparativo",
+        headers=_headers(access),
+        params={"desde": desde, "hasta": hasta},
+        timeout=TIMEOUT,
+    )
+    return _check(r)
+
+
 def get_ventas_por_dia(access, desde=None, hasta=None):
     r = requests.get(
         f"{_base()}/reportes/ventas-por-dia",
