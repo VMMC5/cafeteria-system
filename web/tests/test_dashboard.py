@@ -25,11 +25,14 @@ COMPARATIVO = {
         "utilidad_estimada": 8.7, "num_ventas": 0.0,
     },
 }
-SERIE = [{"fecha": "2026-07-05", "total": 400.0, "num_ventas": 2}]
+# OJO: la API serializa Decimal como STRING en JSON (p.ej. "400.00"); los stubs
+# deben reflejarlo para no divergir del contrato real (una divergencia float
+# ocultó un TypeError en el helper acumulador).
+SERIE = [{"fecha": "2026-07-05", "total": "400.00", "num_ventas": 2}]
 # Incluye 2026-07-06, fecha ausente en SERIE, para probar la alineación con 0.
 GASTOS_SERIE = [
-    {"fecha": "2026-07-05", "total": 50.0, "num_gastos": 1},
-    {"fecha": "2026-07-06", "total": 30.0, "num_gastos": 1},
+    {"fecha": "2026-07-05", "total": "50.00", "num_gastos": 1},
+    {"fecha": "2026-07-06", "total": "30.00", "num_gastos": 1},
 ]
 TOP = [{"id_producto": 1, "nombre": "Café", "cantidad": 5, "importe": 150.0}]
 INVENTARIO = [
@@ -107,13 +110,14 @@ def test_dashboard_ventas_vs_gastos(client, monkeypatch):
 
 
 def test_serie_ventas_vs_gastos_alinea_fechas_con_ceros():
+    # Totales como STRING (como los envía la API real, Decimal->JSON string).
     serie = [
-        {"fecha": "2026-07-04", "total": 100.0, "num_ventas": 1},
-        {"fecha": "2026-07-05", "total": 400.0, "num_ventas": 2},
+        {"fecha": "2026-07-04", "total": "100.00", "num_ventas": 1},
+        {"fecha": "2026-07-05", "total": "400.00", "num_ventas": 2},
     ]
     gastos = [
-        {"fecha": "2026-07-05", "total": 50.0, "num_gastos": 1},
-        {"fecha": "2026-07-06", "total": 30.0, "num_gastos": 1},
+        {"fecha": "2026-07-05", "total": "50.00", "num_gastos": 1},
+        {"fecha": "2026-07-06", "total": "30.00", "num_gastos": 1},
     ]
     resultado = _serie_ventas_vs_gastos(serie, gastos)
     assert resultado == [
@@ -127,12 +131,12 @@ def test_serie_ventas_vs_gastos_acumula_fechas_duplicadas():
     # La API contempla una fila por día, pero ante una fecha duplicada
     # (p.ej. reintento/paginación) los totales deben sumarse, no perderse.
     serie = [
-        {"fecha": "2026-07-05", "total": 400.0, "num_ventas": 2},
-        {"fecha": "2026-07-05", "total": 100.0, "num_ventas": 1},
+        {"fecha": "2026-07-05", "total": "400.00", "num_ventas": 2},
+        {"fecha": "2026-07-05", "total": "100.00", "num_ventas": 1},
     ]
     gastos = [
-        {"fecha": "2026-07-05", "total": 50.0, "num_gastos": 1},
-        {"fecha": "2026-07-05", "total": 30.0, "num_gastos": 1},
+        {"fecha": "2026-07-05", "total": "50.00", "num_gastos": 1},
+        {"fecha": "2026-07-05", "total": "30.00", "num_gastos": 1},
     ]
     resultado = _serie_ventas_vs_gastos(serie, gastos)
     assert resultado == [
