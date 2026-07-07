@@ -1,6 +1,6 @@
 import datetime
 
-from app.dashboard.routes import rango_preset
+from app.dashboard.routes import _serie_ventas_vs_gastos, rango_preset
 from app.services import api_client
 
 ADMIN_TOKENS = {"access_token": "a", "refresh_token": "r", "token_type": "bearer"}
@@ -26,6 +26,11 @@ COMPARATIVO = {
     },
 }
 SERIE = [{"fecha": "2026-07-05", "total": 400.0, "num_ventas": 2}]
+# Incluye 2026-07-06, fecha ausente en SERIE, para probar la alineación con 0.
+GASTOS_SERIE = [
+    {"fecha": "2026-07-05", "total": 50.0, "num_gastos": 1},
+    {"fecha": "2026-07-06", "total": 30.0, "num_gastos": 1},
+]
 TOP = [{"id_producto": 1, "nombre": "Café", "cantidad": 5, "importe": 150.0}]
 INVENTARIO = [
     {"nombre": "Café en grano", "unidad": "kg", "stock_actual": 2.0,
@@ -44,6 +49,7 @@ def _login(client, monkeypatch):
 def _stub_reportes(monkeypatch):
     monkeypatch.setattr(api_client, "get_comparativo", lambda a, d, h: COMPARATIVO)
     monkeypatch.setattr(api_client, "get_ventas_por_dia", lambda a, d, h: SERIE)
+    monkeypatch.setattr(api_client, "get_gastos_por_dia", lambda a, d, h: GASTOS_SERIE)
     monkeypatch.setattr(api_client, "get_top_productos", lambda a, d, h: TOP)
     monkeypatch.setattr(api_client, "get_inventario_niveles", lambda a: INVENTARIO)
 
@@ -80,6 +86,38 @@ def test_dashboard_incluye_graficas(client, monkeypatch):
     assert 'id="chart-top"' in cuerpo
     assert "chart.umd.min.js" in cuerpo
     assert "Café" in cuerpo          # dato del top embebido en el JSON
+
+
+def test_dashboard_ventas_vs_gastos(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    r = client.get("/dashboard")
+    assert r.status_code == 200
+    cuerpo = r.get_data(as_text=True)
+    assert "Ventas vs Gastos" in cuerpo
+    assert '"Ventas"' in cuerpo
+    assert '"Gastos"' in cuerpo
+    assert "#3a2a20" in cuerpo
+    assert "#c8862f" in cuerpo
+    # alineación por fecha: 2026-07-06 solo tiene gasto, debe aparecer en serie_vg
+    assert "2026-07-06" in cuerpo
+
+
+def test_serie_ventas_vs_gastos_alinea_fechas_con_ceros():
+    serie = [
+        {"fecha": "2026-07-04", "total": 100.0, "num_ventas": 1},
+        {"fecha": "2026-07-05", "total": 400.0, "num_ventas": 2},
+    ]
+    gastos = [
+        {"fecha": "2026-07-05", "total": 50.0, "num_gastos": 1},
+        {"fecha": "2026-07-06", "total": 30.0, "num_gastos": 1},
+    ]
+    resultado = _serie_ventas_vs_gastos(serie, gastos)
+    assert resultado == [
+        {"fecha": "2026-07-04", "ventas": 100.0, "gastos": 0},
+        {"fecha": "2026-07-05", "ventas": 400.0, "gastos": 50.0},
+        {"fecha": "2026-07-06", "ventas": 0, "gastos": 30.0},
+    ]
 
 
 def test_dashboard_dona_tendencia_e_inventario(client, monkeypatch):

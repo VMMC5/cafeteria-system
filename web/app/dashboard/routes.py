@@ -31,6 +31,26 @@ _KPI_DEFS = [
 ]
 
 
+def _serie_ventas_vs_gastos(serie, gastos_serie):
+    """Combina ventas y gastos por día en una serie alineada por fecha.
+
+    Devuelve una lista ordenada por fecha con la unión de fechas presentes
+    en ambas series; la fecha que falte en alguna de las dos se rellena
+    con 0 en ese lado.
+    """
+    ventas_por_fecha = {p["fecha"]: p["total"] for p in serie}
+    gastos_por_fecha = {p["fecha"]: p["total"] for p in gastos_serie}
+    fechas = sorted(set(ventas_por_fecha) | set(gastos_por_fecha))
+    return [
+        {
+            "fecha": f,
+            "ventas": ventas_por_fecha.get(f, 0),
+            "gastos": gastos_por_fecha.get(f, 0),
+        }
+        for f in fechas
+    ]
+
+
 def _kpis(comp):
     actual, deltas = comp["actual"], comp["deltas"]
     tarjetas = []
@@ -58,10 +78,12 @@ def index():
     )
     comp = api_gateway.call(api_client.get_comparativo, desde, hasta)
     serie = api_gateway.call(api_client.get_ventas_por_dia, desde, hasta)
+    gastos_serie = api_gateway.call(api_client.get_gastos_por_dia, desde, hasta)
     top = api_gateway.call(api_client.get_top_productos, desde, hasta)
     inventario = api_gateway.call(api_client.get_inventario_niveles)
+    serie_vg = _serie_ventas_vs_gastos(serie, gastos_serie)
     return render_template(
         "dashboard/index.html",
-        kpis=_kpis(comp), serie=serie, top=top, inventario=inventario,
-        preset=preset, desde=desde, hasta=hasta,
+        kpis=_kpis(comp), serie=serie, serie_vg=serie_vg, top=top,
+        inventario=inventario, preset=preset, desde=desde, hasta=hasta,
     )
