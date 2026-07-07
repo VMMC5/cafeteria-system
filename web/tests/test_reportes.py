@@ -55,3 +55,26 @@ def test_sidebar_incluye_reportes(client, monkeypatch):
     # El enlace del sidebar renderiza href="{{ url_for('reportes.index') }}" -> /reportes.
     # Verificamos el ancla real, no solo el texto "Reportes" (presente también en <title>/<h1>).
     assert 'href="/reportes"' in cuerpo
+
+
+XLSX_CT = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def test_reportes_export_xlsx(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub(monkeypatch)
+    r = client.get("/reportes?tipo=ventas&preset=rango&desde=2026-07-01&hasta=2026-07-31&formato=xlsx")
+    assert r.status_code == 200
+    assert r.mimetype == XLSX_CT
+    assert "attachment" in r.headers["Content-Disposition"]
+    assert r.data[:2] == b"PK"  # los .xlsx son ZIP
+
+
+def test_reportes_export_pdf(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub(monkeypatch)
+    r = client.get("/reportes?tipo=ventas&preset=rango&desde=2026-07-01&hasta=2026-07-31&formato=pdf")
+    assert r.status_code == 200
+    assert r.mimetype == "application/pdf"
+    assert "attachment" in r.headers["Content-Disposition"]
+    assert r.data[:4] == b"%PDF"

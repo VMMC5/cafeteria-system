@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, Response, render_template, request
 from flask_login import login_required
 
 from app.dashboard.routes import rango_preset
-from app.services import api_client, api_gateway
+from app.services import api_client, api_gateway, export
 
 bp = Blueprint("reportes", __name__)
 
@@ -45,6 +45,27 @@ def index():
     else:
         filas = api_gateway.call(api_client.get_reporte_ventas, desde, hasta)
     titulo, headers, rows, total_row = _reporte(tipo, filas)
+    formato = request.args.get("formato")
+    if formato in ("xlsx", "pdf"):
+        base = f"reporte-{tipo}-{desde}_{hasta}"
+        if formato == "xlsx":
+            data = export.to_xlsx(titulo, headers, rows, total_row)
+            ctype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            fname = f"{base}.xlsx"
+        else:
+            html = render_template(
+                "reportes/print.html",
+                titulo=titulo, headers=headers, rows=rows, total_row=total_row,
+                desde=desde, hasta=hasta,
+            )
+            data = export.to_pdf(html)
+            ctype = "application/pdf"
+            fname = f"{base}.pdf"
+        return Response(
+            data,
+            mimetype=ctype,
+            headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+        )
     return render_template(
         "reportes/index.html",
         tipo=tipo, titulo=titulo, headers=headers, rows=rows, total_row=total_row,

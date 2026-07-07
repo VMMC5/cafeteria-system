@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Georgia, serif; color: #2c1e16; margin: 24px; }
+    h1 { font-size: 18px; margin: 0 0 2px; }
+    .sub { color: #6b5647; font-size: 12px; margin: 0 0 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { border-bottom: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0ebe4; }
+    tr.total td { font-weight: bold; border-top: 2px solid #999; }
+  </style>
+</head>
+<body>
+  <h1>{{ titulo }}</h1>
+  <p class="sub">Rango: {{ desde }} — {{ hasta }}</p>
+  <table>
+    <thead><tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for row in rows %}<tr>{% for c in row %}<td>{{ c }}</td>{% endfor %}</tr>
+      {% else %}<tr><td colspan="{{ headers|length }}">Sin datos en el rango.</td></tr>{% endfor %}
+      {% if rows %}<tr class="total">{% for c in total_row %}<td>{{ c }}</td>{% endfor %}</tr>{% endif %}
+    </tbody>
+  </table>
+</body>
+</html>
