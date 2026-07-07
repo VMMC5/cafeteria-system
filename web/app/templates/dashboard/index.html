@@ -67,17 +67,60 @@
       ] },
     options: { responsive: true, plugins: { legend: { display: true, position: "top" } } },
   });
+  // Total de unidades vendidas entre los productos top (para el centro de la dona y el % de la leyenda).
+  const totalTop = top.reduce((s, p) => s + Number(p.cantidad), 0);
+  // Plugin inline: dibuja el total al centro de la dona directamente sobre el canvas
+  // (nada de overlays CSS). Se registra SOLO para esta gráfica vía `plugins: [...]`.
+  const centerTextPlugin = {
+    id: "centerText",
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      const { left, right, top: areaTop, bottom } = chartArea;
+      const x = (left + right) / 2;
+      const y = (areaTop + bottom) / 2;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 24px sans-serif";
+      ctx.fillStyle = "#3a2a20";
+      ctx.fillText(totalTop ? totalTop.toLocaleString("es-MX") : "0", x, y - 10);
+      ctx.font = "12px sans-serif";
+      ctx.fillStyle = "#8a8a8a";
+      ctx.fillText("pedidos", x, y + 12);
+      ctx.restore();
+    },
+  };
   new Chart(document.getElementById("chart-top"), {
     type: "doughnut",
     data: { labels: top.map(p => p.nombre),
       datasets: [{ data: top.map(p => Number(p.cantidad)), backgroundColor: cafe }] },
-    options: { responsive: true, plugins: { legend: { position: "right" } } },
+    options: { responsive: true, plugins: { legend: { position: "right", labels: {
+      generateLabels(chart) {
+        const base = Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart);
+        return base.map((item, i) => {
+          const cantidad = Number(top[i] ? top[i].cantidad : 0);
+          const pct = totalTop ? Math.round((cantidad / totalTop) * 100) : 0;
+          return { ...item, text: `${item.text} ${pct}%` };
+        });
+      },
+    } } } },
+    plugins: [centerTextPlugin],
   });
   new Chart(document.getElementById("chart-pedidos"), {
     type: "line",
     data: { labels: serie.map(p => p.fecha),
       datasets: [{ label: "# Pedidos", data: serie.map(p => Number(p.num_ventas)),
-        borderColor: "#3a2a20", backgroundColor: "rgba(58,42,32,.12)", fill: true, tension: 0.3 }] },
+        borderColor: "#3a2a20",
+        backgroundColor(context) {
+          const { ctx, chartArea } = context.chart;
+          if (!chartArea) return "rgba(217,201,187,0.25)";
+          const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          g.addColorStop(0, "rgba(217,201,187,0.55)");
+          g.addColorStop(1, "rgba(217,201,187,0)");
+          return g;
+        },
+        fill: true, tension: 0.38 }] },
     options: { responsive: true, plugins: { legend: { display: false } } },
   });
 </script>

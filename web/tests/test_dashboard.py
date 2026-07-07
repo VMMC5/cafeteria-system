@@ -150,6 +150,40 @@ def test_dashboard_dona_tendencia_e_inventario(client, monkeypatch):
     assert "20%" in cuerpo                     # nivel_pct de la barra
 
 
+def test_dashboard_dona_total_central_plugin(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+    # Plugin inline de texto central: debe usar un hook de dibujo real sobre el
+    # canvas (no un overlay CSS) y escribir la etiqueta "pedidos" con fillText.
+    assert "afterDraw" in cuerpo or "beforeDraw" in cuerpo
+    assert "fillText(" in cuerpo
+    assert '"pedidos"' in cuerpo
+    # se registra SOLO para la dona (array plugins local a esa gráfica, no Chart.register)
+    assert "plugins: [centerTextPlugin]" in cuerpo
+    assert "Chart.register" not in cuerpo
+
+
+def test_dashboard_dona_leyenda_con_porcentaje(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+    assert "generateLabels" in cuerpo
+    # concatenación del texto de la etiqueta con el porcentaje calculado
+    assert '`${item.text} ${pct}%`' in cuerpo
+
+
+def test_dashboard_tendencia_gradiente(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+    assert "createLinearGradient(" in cuerpo
+    # guard obligatorio: chartArea es undefined en el primer render
+    assert "if (!chartArea) return" in cuerpo
+    # tendencia sigue sin leyenda
+    assert 'chart-pedidos' in cuerpo
+
+
 def test_rango_preset_7dias():
     hoy = datetime.date.today()
     desde, hasta = rango_preset("7dias", None, None)
