@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import hash_password, verify_password
 from app.models import Rol, Usuario
 from app.schemas.usuario import UsuarioCreate, UsuarioUpdate
@@ -75,6 +76,14 @@ def update_usuario(
     user = get_or_404(db, id_usuario)
     if data.id_rol is not None:
         _ensure_rol(db, data.id_rol)
+        # Hardening: el administrador principal (por correo) no puede perder su rol.
+        if user.correo == settings.ADMIN_CORREO:
+            rol = db.get(Rol, data.id_rol)
+            if rol is None or rol.nombre_rol != "Administrador":
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    "No se puede cambiar el rol del administrador principal",
+                )
     if data.correo is not None or data.nombre_usuario is not None:
         _ensure_unico(
             db,

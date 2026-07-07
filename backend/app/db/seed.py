@@ -167,11 +167,16 @@ def seed_catalogo(db) -> int:
 
 
 def seed_admin(db) -> int:
-    """Crea el Administrador inicial desde .env si no existe. Idempotente."""
+    """Crea el Administrador inicial desde .env si no existe; si existe con el rol
+    equivocado, se lo restaura. Idempotente."""
+    admin_rol = db.query(Rol).filter(Rol.nombre_rol == "Administrador").one()
     existe = db.query(Usuario).filter(Usuario.correo == settings.ADMIN_CORREO).first()
     if existe:
+        if existe.id_rol != admin_rol.id_rol:
+            existe.id_rol = admin_rol.id_rol
+            db.flush()
+            return 1
         return 0
-    admin_rol = db.query(Rol).filter(Rol.nombre_rol == "Administrador").one()
     db.add(
         Usuario(
             nombre=settings.ADMIN_NOMBRE,
