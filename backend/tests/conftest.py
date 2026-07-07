@@ -1,16 +1,82 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 from app.core.security import hash_password
+from app.db.base import Base
+from app.db.seed import seed_base
 from app.db.session import get_db
 from app.main import app
 from app.models import Rol, Usuario
 
-engine = create_engine(settings.DATABASE_URL)
+
+def _test_db_url() -> str:
+    """URL de la BD de test: `TEST_DATABASE_URL` si está seteada, si no se
+    deriva de `DATABASE_URL` cambiando el nombre de la base por `<nombre>_test`,
+    para no tocar jamás la BD de desarrollo (donde vive la data demo del panel)."""
+    if settings.TEST_DATABASE_URL:
+        return settings.TEST_DATABASE_URL
+    url = make_url(settings.DATABASE_URL)
+    # OJO: `str(url)` oculta la contraseña (hide_password=True por defecto);
+    # hay que serializar explícitamente con la contraseña real o la conexión
+    # a la BD de test falla por autenticación.
+    return url.set(database=f"{url.database}_test").render_as_string(
+        hide_password=False
+    )
+
+
+TEST_DATABASE_URL = _test_db_url()
+engine = create_engine(TEST_DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False)
+
+
+def _ensure_database_exists(url) -> None:
+    """Crea la BD de test en el servidor si todavía no existe. Se conecta a la
+    BD de mantenimiento `postgres` (nunca a la BD de dev) en modo AUTOCOMMIT,
+    porque `CREATE DATABASE` no puede ejecutarse dentro de una transacción."""
+    target = make_url(url)
+    maintenance_url = target.set(database="postgres")
+    maintenance_engine = create_engine(
+        maintenance_url, isolation_level="AUTOCOMMIT"
+    )
+    try:
+        with maintenance_engine.connect() as conn:
+            existe = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"),
+                {"name": target.database},
+            ).first()
+            if not existe:
+                conn.execute(text(f'CREATE DATABASE "{target.database}"'))
+    finally:
+        maintenance_engine.dispose()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _provision_test_database():
+    """Fixture de sesión: garantiza que exista una BD de test dedicada, limpia,
+    con el esquema completo y el baseline de `seed_base` (catálogos + admin +
+    usuarios demo + mesas/productos), SIN datos transaccionales demo. Nunca
+    toca la BD de dev: solo lee `DATABASE_URL` para derivar el nombre."""
+    _ensure_database_exists(TEST_DATABASE_URL)
+
+    # Esquema: create_all es autocontenido (no requiere correr Alembic dentro
+    # de los tests) y refleja fielmente los modelos, incluidas las columnas
+    # `Computed`/defaults definidas en ellos.
+    Base.metadata.create_all(engine)
+
+    session = Session(bind=engine)
+    try:
+        seed_base(session)
+        session.commit()
+    finally:
+        session.close()
+
+    yield
+
+    engine.dispose()
 
 
 @pytest.fixture()
