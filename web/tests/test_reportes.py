@@ -52,4 +52,6 @@ def test_sidebar_incluye_reportes(client, monkeypatch):
     _login(client, monkeypatch)
     _stub(monkeypatch)
     cuerpo = client.get("/reportes?tipo=ventas").get_data(as_text=True)
-    assert "Reportes" in cuerpo
+    # El enlace del sidebar renderiza href="{{ url_for('reportes.index') }}" -> /reportes.
+    # Verificamos el ancla real, no solo el texto "Reportes" (presente también en <title>/<h1>).
+    assert 'href="/reportes"' in cuerpo
