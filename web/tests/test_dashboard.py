@@ -178,10 +178,12 @@ def test_dashboard_tendencia_gradiente(client, monkeypatch):
     _stub_reportes(monkeypatch)
     cuerpo = client.get("/dashboard").get_data(as_text=True)
     assert "createLinearGradient(" in cuerpo
-    # guard obligatorio: chartArea es undefined en el primer render
-    assert "if (!chartArea) return" in cuerpo
-    # tendencia sigue sin leyenda
-    assert 'chart-pedidos' in cuerpo
+    # guard obligatorio anclado a la tendencia: devuelve el tono crema base
+    # (distinto del guard "return;" a secas del plugin de la dona).
+    assert 'if (!chartArea) return "rgba(217,201,187,0.25)"' in cuerpo
+    # el relleno crema se difumina de opaco a transparente
+    assert 'rgba(217,201,187,0.55)' in cuerpo
+    assert 'rgba(217,201,187,0)' in cuerpo
 
 
 def test_rango_preset_7dias():
