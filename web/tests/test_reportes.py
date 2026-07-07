@@ -78,3 +78,15 @@ def test_reportes_export_pdf(client, monkeypatch):
     assert r.mimetype == "application/pdf"
     assert "attachment" in r.headers["Content-Disposition"]
     assert r.data[:4] == b"%PDF"
+
+
+def test_reportes_xlsx_celdas_numericas(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub(monkeypatch)
+    from io import BytesIO
+    from openpyxl import load_workbook
+    r = client.get("/reportes?tipo=ventas&preset=rango&desde=2026-07-01&hasta=2026-07-31&formato=xlsx")
+    ws = load_workbook(BytesIO(r.data)).active
+    # data row 2, "Total" column (4th) must be a real number, not "232.00"
+    assert ws.cell(row=2, column=4).value == 232.0
+    assert isinstance(ws.cell(row=2, column=4).value, (int, float))

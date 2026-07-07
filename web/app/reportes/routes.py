@@ -1,3 +1,5 @@
+from datetime import date
+
 from flask import Blueprint, Response, render_template, request
 from flask_login import login_required
 
@@ -8,28 +10,46 @@ bp = Blueprint("reportes", __name__)
 
 
 def _reporte(tipo, filas):
-    """Normaliza un reporte a (titulo, headers, rows, total_row) para preview/export."""
+    """Normaliza un reporte a (titulo, headers, rows, total_row) con tipos nativos.
+
+    Las filas llevan tipos reales (date, float, int|None) para que el XLSX use
+    celdas numéricas/fecha (SUM/orden/filtro en Excel). La capa de presentación
+    (HTML/PDF) las formatea con _fmt_rows; así una sola definición de columnas
+    sirve para preview/PDF/XLSX.
+    """
     if tipo == "gastos":
         headers = ["Fecha", "Categoría", "Concepto", "Monto"]
         rows = [
-            [f["fecha"][:10], f["categoria"], f["concepto"], f"{float(f['monto']):.2f}"]
+            [date.fromisoformat(f["fecha"][:10]), f["categoria"], f["concepto"], float(f["monto"])]
             for f in filas
         ]
         total = sum(float(f["monto"]) for f in filas)
-        return "Reporte de Gastos", headers, rows, ["Total", "", "", f"{total:.2f}"]
+        return "Reporte de Gastos", headers, rows, ["Total", "", "", total]
     headers = ["Folio", "Fecha", "Mesa", "Total", "Métodos"]
     rows = [
         [
             f["folio"],
-            f["fecha"][:10],
-            "" if f["mesa"] is None else str(f["mesa"]),
-            f"{float(f['total']):.2f}",
+            date.fromisoformat(f["fecha"][:10]),
+            f["mesa"],
+            float(f["total"]),
             f["metodos"],
         ]
         for f in filas
     ]
     total = sum(float(f["total"]) for f in filas)
-    return "Reporte de Ventas", headers, rows, ["Total", "", "", f"{total:.2f}", ""]
+    return "Reporte de Ventas", headers, rows, ["Total", "", "", total, ""]
+
+
+def _fmt_cell(v):
+    if v is None:
+        return ""
+    if isinstance(v, float):
+        return f"{v:.2f}"
+    return str(v)
+
+
+def _fmt_rows(rows):
+    return [[_fmt_cell(c) for c in r] for r in rows]
 
 
 @bp.route("/reportes")
@@ -55,7 +75,8 @@ def index():
         else:
             html = render_template(
                 "reportes/print.html",
-                titulo=titulo, headers=headers, rows=rows, total_row=total_row,
+                titulo=titulo, headers=headers,
+                rows=_fmt_rows(rows), total_row=_fmt_rows([total_row])[0],
                 desde=desde, hasta=hasta,
             )
             data = export.to_pdf(html)
@@ -68,6 +89,7 @@ def index():
         )
     return render_template(
         "reportes/index.html",
-        tipo=tipo, titulo=titulo, headers=headers, rows=rows, total_row=total_row,
+        tipo=tipo, titulo=titulo, headers=headers,
+        rows=_fmt_rows(rows), total_row=_fmt_rows([total_row])[0],
         preset=preset, desde=desde, hasta=hasta,
     )
