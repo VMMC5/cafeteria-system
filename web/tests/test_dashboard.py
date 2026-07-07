@@ -260,17 +260,36 @@ def test_rango_preset_hoy_y_desconocido():
     )
 
 
-def test_rango_preset_6meses():
-    hoy = datetime.date.today()
-    # Retrocede 5 meses reales desde hoy (6 meses naturales inclusive),
-    # calculado con aritmética de mes/año pura (sin timedelta ni hardcodear años).
-    total_meses = hoy.month - 1 - 5
-    anio_esperado = hoy.year + total_meses // 12
-    mes_esperado = total_meses % 12 + 1
-    esperado_desde = datetime.date(anio_esperado, mes_esperado, 1)
-    desde, hasta = rango_preset("6meses", None, None)
-    assert desde == esperado_desde.isoformat()
-    assert hasta == hoy.isoformat()
+def _fijar_hoy(monkeypatch, y, m, d):
+    """Fija date.today() en la ruta a una fecha conocida (para probar la
+    aritmética de meses con valores esperados HARDCODEADOS, independientes de
+    la fórmula de la implementación — si no, el test sería una tautología)."""
+    import app.dashboard.routes as routes
+
+    class _FakeDate(datetime.date):
+        @classmethod
+        def today(cls):
+            return datetime.date(y, m, d)
+
+    monkeypatch.setattr(routes, "date", _FakeDate)
+
+
+def test_rango_preset_6meses_cruza_anio_desde_febrero(monkeypatch):
+    # Hoy = 15-feb-2026; 5 meses atrás (6 naturales inclusive) = sep-2025.
+    _fijar_hoy(monkeypatch, 2026, 2, 15)
+    assert rango_preset("6meses", None, None) == ("2025-09-01", "2026-02-15")
+
+
+def test_rango_preset_6meses_cruza_anio_desde_enero(monkeypatch):
+    # Hoy = 10-ene-2026; 5 meses atrás = ago-2025.
+    _fijar_hoy(monkeypatch, 2026, 1, 10)
+    assert rango_preset("6meses", None, None) == ("2025-08-01", "2026-01-10")
+
+
+def test_rango_preset_6meses_mismo_anio(monkeypatch):
+    # Hoy = 20-jul-2026; 5 meses atrás = feb-2026 (sin cruzar año).
+    _fijar_hoy(monkeypatch, 2026, 7, 20)
+    assert rango_preset("6meses", None, None) == ("2026-02-01", "2026-07-20")
 
 
 def test_rango_preset_anio():
