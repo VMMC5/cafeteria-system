@@ -139,11 +139,21 @@ def index():
         )
     titulo, headers, rows, total_row = _reporte(tipo, filas)
 
+    serie_er = None
+    if tipo == "estado_resultados":
+        serie_er = [
+            {"periodo": r[0], "ventas": r[1], "gastos": r[2], "utilidad": r[4]}
+            for r in rows
+        ]
+
     formato = request.args.get("formato")
     if formato in ("xlsx", "pdf"):
         base = f"reporte-{tipo}-{desde}_{hasta}"
         if formato == "xlsx":
-            data = export.to_xlsx(titulo, headers, rows, total_row)
+            data = export.to_xlsx(
+                titulo, headers, rows, total_row,
+                chart=(tipo == "estado_resultados"),
+            )
             ctype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             fname = f"{base}.xlsx"
         else:
@@ -151,7 +161,7 @@ def index():
                 "reportes/print.html",
                 titulo=titulo, headers=headers,
                 rows=_fmt_rows(rows), total_row=_fmt_total(total_row),
-                desde=desde, hasta=hasta,
+                desde=desde, hasta=hasta, serie_er=serie_er,
             )
             data = export.to_pdf(html)
             ctype = "application/pdf"
@@ -169,13 +179,6 @@ def index():
     ]
     metodos = api_gateway.call(api_client.get_metodos_pago)
     categorias = api_gateway.call(api_client.get_gastos_categorias)
-
-    serie_er = None
-    if tipo == "estado_resultados":
-        serie_er = [
-            {"periodo": r[0], "ventas": r[1], "gastos": r[2], "utilidad": r[4]}
-            for r in rows
-        ]
 
     return render_template(
         "reportes/index.html",

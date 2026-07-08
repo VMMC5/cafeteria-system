@@ -1,5 +1,9 @@
 import re
 
+import pytest
+from flask import render_template
+
+from app.reportes.routes import TIPOS
 from app.services import api_client
 
 ADMIN_TOKENS = {"access_token": "a", "refresh_token": "r", "token_type": "bearer"}
@@ -288,3 +292,64 @@ def test_reportes_export_pdf_inventario_sin_total_row(client, monkeypatch):
     assert r.status_code == 200
     assert r.mimetype == "application/pdf"
     assert r.data[:4] == b"%PDF"
+
+
+@pytest.mark.parametrize("tipo", TIPOS)
+def test_reportes_export_pdf_todos_los_tipos(client, monkeypatch, tipo):
+    # Tarea 3: los 4 tipos deben exportar a PDF sin reventar (bytes %PDF).
+    _login(client, monkeypatch)
+    _stub(monkeypatch)
+    r = client.get(f"/reportes?tipo={tipo}&formato=pdf")
+    assert r.status_code == 200
+    assert r.mimetype == "application/pdf"
+    assert r.data[:4] == b"%PDF"
+
+
+@pytest.mark.parametrize("tipo", TIPOS)
+def test_reportes_export_xlsx_todos_los_tipos(client, monkeypatch, tipo):
+    # Tarea 3: los 4 tipos deben exportar a XLSX sin reventar (magic PK).
+    _login(client, monkeypatch)
+    _stub(monkeypatch)
+    r = client.get(f"/reportes?tipo={tipo}&formato=xlsx")
+    assert r.status_code == 200
+    assert r.mimetype == XLSX_CT
+    assert r.data[:2] == b"PK"
+
+
+def test_print_html_grafica_estatica_estado_resultados(app):
+    # WeasyPrint no ejecuta JS: el chart del PDF debe ser CSS estático,
+    # renderizado dentro de print.html a partir de serie_er.
+    serie_er = [
+        {"periodo": "2026-07", "ventas": 1000.0, "gastos": 400.0, "utilidad": 600.0},
+        {"periodo": "2026-08", "ventas": 500.0, "gastos": 700.0, "utilidad": -200.0},
+    ]
+    with app.test_request_context():
+        html = render_template(
+            "reportes/print.html",
+            titulo="Estado de Resultados",
+            headers=["Periodo", "Ventas", "Gastos", "Compras", "Utilidad"],
+            rows=[], total_row=None,
+            desde="2026-07-01", hasta="2026-08-31",
+            serie_er=serie_er,
+        )
+    assert 'class="pdf-chart"' in html
+    assert "Ventas vs Gastos por periodo" in html
+    assert html.count('class="pdf-bar ventas"') == 2
+    assert html.count('class="pdf-bar gastos"') == 2
+    assert "2026-07" in html
+    assert "2026-08" in html
+    # la barra más alta (ventas del primer periodo, el máximo) debe ser 100%
+    assert "height: 100.0%" in html or "height: 100%" in html
+
+
+def test_print_html_grafica_ausente_sin_serie_er(app):
+    with app.test_request_context():
+        html = render_template(
+            "reportes/print.html",
+            titulo="Reporte de Ventas",
+            headers=["Folio"], rows=[["V-1"]], total_row=None,
+            desde="2026-07-01", hasta="2026-07-31",
+            serie_er=None,
+        )
+    assert 'class="pdf-chart"' not in html
+    assert '<div class="pdf-bar' not in html

@@ -10,6 +10,26 @@
     th, td { border-bottom: 1px solid #ccc; padding: 6px 8px; text-align: left; }
     th { background: #f0ebe4; }
     tr.total td { font-weight: bold; border-top: 2px solid #999; }
+
+    .pdf-chart { margin-top: 28px; }
+    .pdf-chart-title { font-size: 13px; margin: 0 0 8px; color: #3a2a20; font-weight: bold; }
+    .pdf-chart-legend { font-size: 10px; margin-bottom: 10px; }
+    .pdf-chart-legend .legend-item { margin-right: 14px; }
+    .pdf-chart-legend .swatch {
+      display: inline-block; width: 10px; height: 10px; margin-right: 4px;
+    }
+    .pdf-chart-legend .swatch.ventas { background: #3a2a20; }
+    .pdf-chart-legend .swatch.gastos { background: #c8862f; }
+    .pdf-chart-bars {
+      display: flex; align-items: flex-end; height: 140px;
+      border-bottom: 1px solid #999; gap: 18px; padding: 0 4px;
+    }
+    .pdf-chart-group { display: flex; flex-direction: column; align-items: center; flex: 1; }
+    .pdf-chart-bar-pair { display: flex; align-items: flex-end; gap: 3px; height: 140px; }
+    .pdf-bar { width: 16px; }
+    .pdf-bar.ventas { background: #3a2a20; }
+    .pdf-bar.gastos { background: #c8862f; }
+    .pdf-chart-label { font-size: 9px; margin-top: 4px; color: #6b5647; text-align: center; }
   </style>
 </head>
 <body>
@@ -23,5 +43,32 @@
       {% if rows and total_row %}<tr class="total">{% for c in total_row %}<td>{{ c }}</td>{% endfor %}</tr>{% endif %}
     </tbody>
   </table>
+
+  {% if serie_er %}
+  {% set valores = [] %}
+  {% for it in serie_er %}
+    {% set _ = valores.append(it.ventas) %}
+    {% set _ = valores.append(it.gastos) %}
+  {% endfor %}
+  {% set max_val = (valores | max) if (valores and (valores | max) > 0) else 1 %}
+  <div class="pdf-chart">
+    <p class="pdf-chart-title">Ventas vs Gastos por periodo</p>
+    <div class="pdf-chart-legend">
+      <span class="legend-item"><span class="swatch ventas"></span>Ventas</span>
+      <span class="legend-item"><span class="swatch gastos"></span>Gastos</span>
+    </div>
+    <div class="pdf-chart-bars">
+      {% for it in serie_er %}
+      <div class="pdf-chart-group">
+        <div class="pdf-chart-bar-pair">
+          <div class="pdf-bar ventas" style="height: {{ (it.ventas / max_val * 100) | round(1) }}%;"></div>
+          <div class="pdf-bar gastos" style="height: {{ (it.gastos / max_val * 100) | round(1) }}%;"></div>
+        </div>
+        <div class="pdf-chart-label">{{ it.periodo }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 </body>
 </html>
