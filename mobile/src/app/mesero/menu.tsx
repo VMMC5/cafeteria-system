@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { Categoria, getCategorias, getProductos, Producto } from "@/api/client";
+import { money } from "@/lib/format";
 import { useAuth } from "@/store/auth";
 import { cartCount, cartTotal, useCart } from "@/store/cart";
 
@@ -77,7 +78,7 @@ export default function Menu() {
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.nombre}>{item.nombre_producto}</Text>
-                <Text style={styles.precio}>${item.precio_venta}</Text>
+                <Text style={styles.precio}>{money(item.precio_venta)}</Text>
               </View>
               <View style={styles.stepper}>
                 <TouchableOpacity

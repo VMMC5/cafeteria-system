@@ -18,6 +18,7 @@ import {
   getCategoriasGasto,
   getGastos,
 } from "@/api/client";
+import { money } from "@/lib/format";
 import { gastoValido } from "@/lib/gastos";
 import { useAuth } from "@/store/auth";
 
@@ -159,7 +160,7 @@ export default function Gastos() {
               <Text style={styles.concepto}>{item.concepto}</Text>
               <Text style={styles.meta}>{item.categoria.nombre_categoria}</Text>
             </View>
-            <Text style={styles.monto}>${item.monto.toFixed(2)}</Text>
+            <Text style={styles.monto}>{money(item.monto)}</Text>
           </View>
         )}
       />

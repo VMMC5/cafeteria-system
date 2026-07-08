@@ -20,6 +20,7 @@ import {
   Venta,
 } from "@/api/client";
 import { cambio, puedeCobrar } from "@/lib/caja";
+import { money } from "@/lib/format";
 import { useAuth } from "@/store/auth";
 
 function Row({
@@ -28,13 +29,13 @@ function Row({
   bold,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   bold?: boolean;
 }) {
   return (
     <View style={styles.row}>
       <Text style={[styles.rowL, bold && styles.bold]}>{label}</Text>
-      <Text style={[styles.rowV, bold && styles.bold]}>${value.toFixed(2)}</Text>
+      <Text style={[styles.rowV, bold && styles.bold]}>{money(value)}</Text>
     </View>
   );
 }
@@ -73,7 +74,7 @@ export default function Cobro() {
     })();
   }, [access, pid]);
 
-  const total = pedido?.total ?? 0;
+  const total = Number(pedido?.total ?? 0);
   const recibido = Number(recibidoTxt) || 0;
   const habilitado = metodoSel !== null && puedeCobrar(recibido, total);
 

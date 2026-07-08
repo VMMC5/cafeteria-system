@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { getPedidos, Pedido } from "@/api/client";
+import { money } from "@/lib/format";
 import { useAuth } from "@/store/auth";
 
 const POLL_MS = 10000;
@@ -87,7 +88,7 @@ export default function Caja() {
               <Text style={styles.mesa}>Mesa {item.mesa.numero_mesa}</Text>
               <Text style={styles.meta}>#{item.id_pedido}</Text>
             </View>
-            <Text style={styles.total}>${item.total.toFixed(2)}</Text>
+            <Text style={styles.total}>{money(item.total)}</Text>
           </TouchableOpacity>
         )}
       />

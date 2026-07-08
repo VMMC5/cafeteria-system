@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { Compra, getCompras } from "@/api/client";
+import { money } from "@/lib/format";
 import { useAuth } from "@/store/auth";
 
 export default function Compras() {
@@ -69,7 +70,7 @@ export default function Compras() {
                 {item.folio_factura ?? `#${item.id_compra}`}
               </Text>
             </View>
-            <Text style={styles.total}>${item.total.toFixed(2)}</Text>
+            <Text style={styles.total}>{money(item.total)}</Text>
           </View>
         )}
       />

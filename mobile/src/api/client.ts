@@ -1,9 +1,18 @@
 import axios from "axios";
 
+import { coerceDecimals } from "./coerce";
+
 const baseURL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 export const http = axios.create({ baseURL, timeout: 10000 });
+
+// La API serializa Decimal como string; coacciona esos campos a number en el
+// borde para que los tipos `number` de abajo sean verdaderos en runtime.
+http.interceptors.response.use((response) => {
+  response.data = coerceDecimals(response.data);
+  return response;
+});
 
 export type Tokens = { access_token: string; refresh_token: string };
 export type Rol = { id_rol: number; nombre_rol: string; descripcion: string | null };
