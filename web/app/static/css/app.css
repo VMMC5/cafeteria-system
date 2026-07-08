@@ -87,6 +87,8 @@ small { display:block; font-weight:400; margin-top:.25rem; color:var(--muted); }
 .icon-btn:hover { background:var(--accent-soft); }
 .link-danger { background:none; color:var(--loss); padding:0; border:0; cursor:pointer; }
 .link-danger:hover { text-decoration:underline; background:none; }
+.link-ok { background:none; color:var(--gain); padding:0; border:0; cursor:pointer; font-family:inherit; }
+.link-ok:hover { text-decoration:underline; background:none; }
 
 /* KPIs */
 .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin:1rem 0; }
