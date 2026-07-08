@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-07-07 (Sprint 6: Slice A + rediseño mergeados; backlog en local sin subir)
+**Última actualización:** 2026-07-08 (Sprint 6 completo en rama `feature/sprint6-backlog` — 49 commits, revisión final READY TO MERGE, listo para PR a `main`)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -67,29 +67,39 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 | **#17** Dashboard (Slice A) | API `GET /reportes/{resumen,ventas-por-dia,top-productos}` (solo Admin, filtro de fechas); web `/dashboard` con 6 KPIs, selector de periodo y 2 gráficas **Chart.js** (vendorizado local). `/` redirige a `/dashboard` |
 | **#18** Rediseño web "Cafetería Aroma" | Tema café + **sidebar**, login split, Estadísticas (dashboard reskin), lista de usuarios (avatares, badges de rol, filtros Rol/Estado) y form de usuario (tarjetas de rol + permisos). Solo plantillas + CSS |
 
-**En local (rama `feature/sprint6-backlog`, commits locales — aún NO subido a GitHub):**
-- **`seed_usuarios_demo`** — el seed recrea las 3 cuentas demo (mesero/cajero/cocinero, `cafeteria123`) idempotentemente.
-- **Slice B — Reportes filtrables + export**: API `GET /reportes/{ventas,gastos}` (detalle); web `/reportes` (tipo Ventas/Gastos, rango, vista previa, **descargar PDF (WeasyPrint) / XLSX (openpyxl con celdas tipadas)**); ítem "Reportes" en sidebar; Dockerfile del web con libs nativas (`pydyf==0.10.0` fijado).
-- **Analítica avanzada** (Estadísticas): API `GET /reportes/comparativo` (vs periodo anterior) y `/reportes/inventario-niveles`; web con **KPIs ▲/▼ % y color por beneficio** (Gastos ▲ = rojo, lógica en la ruta Flask y testeada), **dona** de productos, **tendencia** de pedidos y **barras de nivel de inventario**.
-- **Hardening del admin principal**: `update_usuario` rechaza **400** si se intenta cambiar el `id_rol` del admin principal (identificado por `correo == ADMIN_CORREO`, no por id) a un rol distinto de Administrador; `seed_admin` ahora es **correctivo** (restaura el rol si quedó mal). Motivado por un incidente de datos de dev donde el admin quedó con rol Cajero y no podía entrar al panel (corregido con `UPDATE` en la BD local).
+**En rama `feature/sprint6-backlog` (49 commits sobre `main` #17 — sin conflictos, listos para PR):**
+- **Rediseño web "Cafetería Aroma"** (era PR #18, no llegó a `main`): tema café + sidebar, login split, reskin de Estadísticas/Usuarios/form de usuario. Plantillas + CSS.
+- **`seed_usuarios_demo`** — recrea las 3 cuentas demo (mesero/cajero/cocinero, `cafeteria123`) idempotentemente.
+- **Reportes filtrables + export (Slice B)**: base de `/reportes` con vista previa y descarga PDF (WeasyPrint) / XLSX (openpyxl tipado); ítem "Reportes" en sidebar; Dockerfile web con libs nativas (`pydyf==0.10.0`).
+- **Analítica avanzada (Estadísticas)**: `GET /reportes/{comparativo,inventario-niveles}`; **KPIs ▲/▼ % con color por beneficio**, **dona con total al centro + leyenda %**, **Ventas vs Gastos** (barras agrupadas, presets Mes/6meses/Año con **bucketing mensual**), **tendencia con degradado**, **barras de inventario**, chips de indicadores (toggle cliente) y botón "Exportar vista". Layout de gráficas en rejilla 2×2.
+- **`seed_demo`** (opt-in, `python -m app.db.seed_demo`): genera ~60 días de ventas/gastos/compras/insumos realistas (determinista, guard de idempotencia) para poblar reportes y estadísticas.
+- **Aislamiento del suite de tests**: `conftest` usa una **BD de test dedicada** (`<db>_test`, autoprovisionada + `seed_base`), con **guardia** que falla si resolviera a la BD de dev. Desacopla los datos demo del panel de los tests.
+- **Reactivar usuarios**: `POST /usuarios/<id>/activar` + botón "Activar" para inactivos en Usuarios y Roles.
+- **Reportes BI** (herramienta de decisiones): dropdown de **4 tipos** (Ventas Detalladas, Gastos Operativos, Inventario, **Estado de Resultados agrupado**); **filtros por entidad** en la API (`/reportes/ventas` +usuario/método; `/reportes/gastos` +usuario/categoría; `/reportes/inventario-niveles` +solo_bajo_minimo; nuevo `/reportes/estado-resultados?agrupar=dia|semana|mes`); formulario dinámico (toggle de filtros por tipo, sin recargar); preview con fila de totales + **gráfica Chart.js** en el agrupado; **export PDF/XLSX de los 4 tipos** con **gráfica estática CSS en el PDF** (WeasyPrint no corre JS) y **BarChart nativo openpyxl** en el XLSX.
+- **Hardening del admin principal**: `update_usuario` rechaza **400** el cambio de rol del admin principal (por `correo == ADMIN_CORREO`); `seed_admin` **correctivo** (restaura el rol si quedó mal).
 
-**Estado:** Sprint 6 funcionalmente completo. Slice A y rediseño en `main`; el resto (reportes+export, analítica, hardening) validado en local, pendiente de subir. Cada pieza pasó brainstorming → spec → plan → TDD con subagentes + revisión (specs/planes en `docs/superpowers/`).
+**Estado:** Sprint 6 **completo y verificado**. Revisión final de rama completa: **READY TO MERGE** (0 Critical / 0 Important; los pendientes son deuda menor post-merge). Cada pieza pasó brainstorming → spec/plan → TDD subagent-driven → revisión de tarea + fixes; verificación visual/E2E en la app real (specs/planes en `docs/superpowers/`).
+
+### Bugs de vista atrapados en verificación real (Estadísticas) — corregidos
+- `TypeError`: la API serializa `Decimal` como **string**; coacción a `float` antes de sumar (los stubs de test ahora usan strings).
+- Gráficas en blanco: `const top` colisiona con `window.top` (global no-configurable) → renombrado `topData`; guard de lint contra globales reservados.
+- Canvas Chart.js sin altura → `.chart-box` (260px) + `maintainAspectRatio:false`.
 
 ### Cobertura de tests
-- **Backend:** 174 tests (`docker compose exec api pytest`).
+- **Backend:** 201 tests (`docker compose exec api pytest`).
+- **Web:** 86 tests (`docker compose exec web pytest`).
 - **Móvil:** 53 tests jest (`cd mobile && npm test`) + `tsc` limpio.
-- **Web:** 40 tests (`docker compose exec web pytest`).
 
 ---
 
 ## ⏳ Pendiente
 
-### Próximo (continuar en local)
-- **Subir el backlog local** (`feature/sprint6-backlog`, ~12 commits de código) a GitHub como PR(s) cuando se decida.
+### Próximo
+- **Crear el PR** `feature/sprint6-backlog` → `main` (49 commits, merge limpio) y mergear.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
-- Tipos de reporte extra (Productos/Inventario/Pedidos) y filtros (categoría/usuario/método/agrupar-por) en `/reportes`.
 
 ### Deuda técnica / mejoras conocidas
+- **Deuda menor post-merge (triada en la revisión final, no bloquea):** quitar código muerto `api_client.get_reporte_resumen`; relabel "# Pedidos" → "# Ventas"; paleta de dona (6 colores < `limite` 10); un par de tests poco específicos; tests de no-regresión de filtros usan subconjunto en vez de igualdad; documentar `Pedido.id_usuario` (mesero) vs `Venta.id_usuario` (cajero) a nivel de modelo; la leyenda de la dona acopla a `Chart.overrides` (revisar en upgrade de Chart.js); el nombre de archivo del export refleja `desde`/`hasta` sin validar (fechas inválidas → 500, no explotable).
 - Módulos móviles Mesero/Cocina/Caja implementados; el placeholder `modulo/[key].tsx` ya no se usa por ningún rol.
 - **Pago dividido** en la Caja móvil: la API lo soporta, pero la UI cobra con un solo método.
 - **Recetas** se gestionan solo por API (Swagger); sin pantalla móvil.
@@ -98,9 +108,8 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
 - RF-M03 (recuperar contraseña) solo como nota; sin implementar.
 - Sin refresh-on-401 global en el móvil (el bootstrap cubre la expiración al arrancar).
-- **Reportes (Slice B):** los endpoints de detalle no paginan (N+1 leve en ventas); endurecer el nombre de archivo del export; falta test de pago dividido.
-- **Analítica:** quitar `api_client.get_reporte_resumen` (código muerto tras el comparativo); afinar un par de tests poco específicos; relabel "# Pedidos" → "# Ventas".
-- Tras agregar/registrar un blueprint nuevo en el web, hay que **reiniciar el contenedor** (`docker compose restart web`); el hot-reload no recarga el registro de rutas.
+- Los endpoints de detalle de reportes no paginan (N+1 leve en ventas); falta test de pago dividido en el cobro.
+- Tras registrar un blueprint nuevo en el web, hay que **reiniciar el contenedor** (`docker compose restart web`); el hot-reload no recarga el registro de rutas.
 
 ---
 
