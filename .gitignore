@@ -369,3 +369,6 @@ vite.config.ts.timestamp-*
 # El Python.gitignore ignora lib/ (venvs); permitir el codigo fuente del movil
 !mobile/src/lib/
 !mobile/src/lib/**
+
+# Claude Code: versionar settings.json (compartido con el equipo), ignorar los locales
+.claude/settings.local.json
