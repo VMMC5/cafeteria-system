@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-07-08 (Sprint 6 **mergeado a `main`** — PR #19 `e1f2cb3`; los 3 PRs del sprint (#17, #18, #19) ya en secuencia en `origin/main`)
+**Última actualización:** 2026-07-08 (Sprint 6 en `main` + **PR #20 `0993569`** mergeado: fix de importes en móvil)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -86,17 +86,24 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 - Gráficas en blanco: `const top` colisiona con `window.top` (global no-configurable) → renombrado `topData`; guard de lint contra globales reservados.
 - Canvas Chart.js sin altura → `.chart-box` (260px) + `maintainAspectRatio:false`.
 
+### Post-Sprint 6 — fix de importes en móvil (PR #20 `0993569`)
+Al probar la app en dispositivo físico varias pantallas reventaban con `Render Error: undefined is not a function` al pintar importes: la API serializa `Decimal` como **string** pero los tipos de `client.ts` los declaraban `number`, y `item.total.toFixed(2)` sobre un string rompe (mismo bug que en la web, ver `web/`).
+- **Fix de raíz** (`mobile/src/api/coerce.ts` + interceptor de respuesta de axios): coacciona string→number en el **borde** del api-client (`total, subtotal, iva, cambio, monto, cantidad, precio_venta, costo_unitario, stock_actual, stock_minimo`; lista validada contra la API real). Los tipos `number` quedan verdaderos en runtime.
+- **Helper `money()`** (`mobile/src/lib/format.ts`) para formateo defensivo `$X.XX` en Caja, Cobro/comprobante, Compras, Gastos y precio del menú.
+- Efecto colateral: `stockBajo` comparaba strings (lexicográfico, bug latente) → ahora numérico correcto.
+- Revisión de código: corregida la regresión de formato del precio del menú; el stock se deja como "12" (más limpio que "12.00") a propósito.
+
 ### Cobertura de tests
 - **Backend:** 201 tests (`docker compose exec api pytest`).
 - **Web:** 86 tests (`docker compose exec web pytest`).
-- **Móvil:** 53 tests jest (`cd mobile && npm test`) + `tsc` limpio.
+- **Móvil:** 58 tests jest (`cd mobile && npm test`) + `tsc` limpio.
 
 ---
 
 ## ⏳ Pendiente
 
 ### Próximo
-- **Limpiar la rama** `feature/sprint6-backlog` (local y remota) — ya integrada a `main` vía PR #19.
+- Sprint 6 + fix móvil (PR #20) en `main`. Sin trabajo activo en curso.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas
