@@ -139,21 +139,6 @@ def index():
         )
     titulo, headers, rows, total_row = _reporte(tipo, filas)
 
-    usuarios_raw = api_gateway.call(api_client.list_usuarios)
-    usuarios = [
-        {"id_usuario": u["id_usuario"], "nombre": _nombre_usuario(u)}
-        for u in usuarios_raw
-    ]
-    metodos = api_gateway.call(api_client.get_metodos_pago)
-    categorias = api_gateway.call(api_client.get_gastos_categorias)
-
-    serie_er = None
-    if tipo == "estado_resultados":
-        serie_er = [
-            {"periodo": r[0], "ventas": r[1], "gastos": r[2], "utilidad": r[4]}
-            for r in rows
-        ]
-
     formato = request.args.get("formato")
     if formato in ("xlsx", "pdf"):
         base = f"reporte-{tipo}-{desde}_{hasta}"
@@ -176,6 +161,22 @@ def index():
             mimetype=ctype,
             headers={"Content-Disposition": f'attachment; filename="{fname}"'},
         )
+
+    usuarios_raw = api_gateway.call(api_client.list_usuarios)
+    usuarios = [
+        {"id_usuario": u["id_usuario"], "nombre": _nombre_usuario(u)}
+        for u in usuarios_raw
+    ]
+    metodos = api_gateway.call(api_client.get_metodos_pago)
+    categorias = api_gateway.call(api_client.get_gastos_categorias)
+
+    serie_er = None
+    if tipo == "estado_resultados":
+        serie_er = [
+            {"periodo": r[0], "ventas": r[1], "gastos": r[2], "utilidad": r[4]}
+            for r in rows
+        ]
+
     return render_template(
         "reportes/index.html",
         tipo=tipo, titulo=titulo, headers=headers,

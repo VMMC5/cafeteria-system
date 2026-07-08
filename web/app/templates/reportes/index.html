@@ -95,7 +95,7 @@
       <tbody>
         {% for row in rows %}<tr>{% for c in row %}<td>{{ c }}</td>{% endfor %}</tr>
         {% else %}<tr><td colspan="{{ headers|length }}" class="muted">Sin datos en el rango.</td></tr>{% endfor %}
-        {% if total_row %}<tr style="font-weight:700;">{% for c in total_row %}<td>{{ c }}</td>{% endfor %}</tr>{% endif %}
+        {% if rows and total_row %}<tr style="font-weight:700;">{% for c in total_row %}<td>{{ c }}</td>{% endfor %}</tr>{% endif %}
       </tbody>
     </table>
     </div>
@@ -109,8 +109,10 @@
   </div>
 </div>
 
+{% if tipo == 'estado_resultados' %}
 <script id="er-data" type="application/json">{{ serie_er|tojson }}</script>
 <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+{% endif %}
 <script>
   // Toggle cliente de filtros por tipo de reporte: sin recargar la página,
   // solo alterna la visibilidad (clase .is-hidden) de cada bloque [data-para]
@@ -131,6 +133,7 @@
   tipoSelect.addEventListener("change", aplicarToggleFiltros);
   aplicarToggleFiltros();
 
+  {% if tipo == 'estado_resultados' %}
   const serieEr = JSON.parse(document.getElementById("er-data").textContent);
   const chartErCanvas = document.getElementById("chart-er");
   if (chartErCanvas && serieEr) {
@@ -153,5 +156,6 @@
       },
     });
   }
+  {% endif %}
 </script>
 {% endblock %}

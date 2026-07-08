@@ -116,6 +116,20 @@ def test_reportes_preview_estado_resultados(client, monkeypatch):
     assert "600.00" in cuerpo  # utilidad en el total (única fila -> mismo valor)
 
 
+def test_reportes_sin_datos_no_muestra_fila_de_totales(client, monkeypatch):
+    # Regresión: _reporte() siempre arma un total_row truthy (p.ej.
+    # ["Total", "", "", 0.0]) aunque no haya filas, así que el guard debía
+    # exigir también `rows` para no renderizar una fila de totales sobre un
+    # reporte vacío.
+    _login(client, monkeypatch)
+    _stub(monkeypatch)
+    monkeypatch.setattr(api_client, "get_reporte_ventas", lambda a, *args: [])
+    cuerpo = client.get("/reportes?tipo=ventas").get_data(as_text=True)
+    assert "Sin datos en el rango." in cuerpo
+    tbody = re.search(r"<tbody>(.*?)</tbody>", cuerpo, re.S).group(1)
+    assert re.search(r">Total<", tbody) is None
+
+
 def test_sidebar_incluye_reportes(client, monkeypatch):
     _login(client, monkeypatch)
     _stub(monkeypatch)
