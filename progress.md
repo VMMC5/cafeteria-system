@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-07-08 (Sprint 6 completo en rama `feature/sprint6-backlog` — 49 commits, revisión final READY TO MERGE, listo para PR a `main`)
+**Última actualización:** 2026-07-08 (Sprint 6 **mergeado a `main`** — PR #19 `e1f2cb3`; los 3 PRs del sprint (#17, #18, #19) ya en secuencia en `origin/main`)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -66,8 +66,9 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 |----|-----|
 | **#17** Dashboard (Slice A) | API `GET /reportes/{resumen,ventas-por-dia,top-productos}` (solo Admin, filtro de fechas); web `/dashboard` con 6 KPIs, selector de periodo y 2 gráficas **Chart.js** (vendorizado local). `/` redirige a `/dashboard` |
 | **#18** Rediseño web "Cafetería Aroma" | Tema café + **sidebar**, login split, Estadísticas (dashboard reskin), lista de usuarios (avatares, badges de rol, filtros Rol/Estado) y form de usuario (tarjetas de rol + permisos). Solo plantillas + CSS |
+| **#19** Backlog (Slice B) | Todo lo listado abajo — analítica avanzada, Reportes BI, seed demo, aislamiento de tests y hardening del admin. Mergeado como `e1f2cb3` |
 
-**En rama `feature/sprint6-backlog` (49 commits sobre `main` #17 — sin conflictos, listos para PR):**
+**Contenido del PR #19 (mergeado a `main`):**
 - **Rediseño web "Cafetería Aroma"** (era PR #18, no llegó a `main`): tema café + sidebar, login split, reskin de Estadísticas/Usuarios/form de usuario. Plantillas + CSS.
 - **`seed_usuarios_demo`** — recrea las 3 cuentas demo (mesero/cajero/cocinero, `cafeteria123`) idempotentemente.
 - **Reportes filtrables + export (Slice B)**: base de `/reportes` con vista previa y descarga PDF (WeasyPrint) / XLSX (openpyxl tipado); ítem "Reportes" en sidebar; Dockerfile web con libs nativas (`pydyf==0.10.0`).
@@ -78,7 +79,7 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 - **Reportes BI** (herramienta de decisiones): dropdown de **4 tipos** (Ventas Detalladas, Gastos Operativos, Inventario, **Estado de Resultados agrupado**); **filtros por entidad** en la API (`/reportes/ventas` +usuario/método; `/reportes/gastos` +usuario/categoría; `/reportes/inventario-niveles` +solo_bajo_minimo; nuevo `/reportes/estado-resultados?agrupar=dia|semana|mes`); formulario dinámico (toggle de filtros por tipo, sin recargar); preview con fila de totales + **gráfica Chart.js** en el agrupado; **export PDF/XLSX de los 4 tipos** con **gráfica estática CSS en el PDF** (WeasyPrint no corre JS) y **BarChart nativo openpyxl** en el XLSX.
 - **Hardening del admin principal**: `update_usuario` rechaza **400** el cambio de rol del admin principal (por `correo == ADMIN_CORREO`); `seed_admin` **correctivo** (restaura el rol si quedó mal).
 
-**Estado:** Sprint 6 **completo y verificado**. Revisión final de rama completa: **READY TO MERGE** (0 Critical / 0 Important; los pendientes son deuda menor post-merge). Cada pieza pasó brainstorming → spec/plan → TDD subagent-driven → revisión de tarea + fixes; verificación visual/E2E en la app real (specs/planes en `docs/superpowers/`).
+**Estado:** Sprint 6 **completo, verificado y mergeado a `main`** (PR #19 `e1f2cb3`, 2026-07-08). Revisión final de rama completa: **READY TO MERGE** (0 Critical / 0 Important; los pendientes son deuda menor post-merge). Los conflictos con el PR #18 se resolvieron antes del merge (estrategia `--ours`, la rama era superset). Cada pieza pasó brainstorming → spec/plan → TDD subagent-driven → revisión de tarea + fixes; verificación visual/E2E en la app real (specs/planes en `docs/superpowers/`).
 
 ### Bugs de vista atrapados en verificación real (Estadísticas) — corregidos
 - `TypeError`: la API serializa `Decimal` como **string**; coacción a `float` antes de sumar (los stubs de test ahora usan strings).
@@ -95,7 +96,7 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 ## ⏳ Pendiente
 
 ### Próximo
-- **Crear el PR** `feature/sprint6-backlog` → `main` (49 commits, merge limpio) y mergear.
+- **Limpiar la rama** `feature/sprint6-backlog` (local y remota) — ya integrada a `main` vía PR #19.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas
