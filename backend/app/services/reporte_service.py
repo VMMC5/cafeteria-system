@@ -292,8 +292,8 @@ def estado_resultados(
             func.coalesce(func.sum(Venta.total), 0).label("total"),
         )
         .filter(
-            bucket_venta >= desde,
-            bucket_venta <= hasta,
+            func.date(Venta.fecha_venta) >= desde,
+            func.date(Venta.fecha_venta) <= hasta,
             Venta.estado_venta == "Completada",
         )
         .group_by(bucket_venta)
@@ -304,7 +304,10 @@ def estado_resultados(
             bucket_gasto.label("bucket"),
             func.coalesce(func.sum(Gasto.monto), 0).label("total"),
         )
-        .filter(bucket_gasto >= desde, bucket_gasto <= hasta)
+        .filter(
+            func.date(Gasto.fecha_gasto) >= desde,
+            func.date(Gasto.fecha_gasto) <= hasta,
+        )
         .group_by(bucket_gasto)
         .all()
     )
@@ -313,7 +316,10 @@ def estado_resultados(
             bucket_compra.label("bucket"),
             func.coalesce(func.sum(Compra.total), 0).label("total"),
         )
-        .filter(bucket_compra >= desde, bucket_compra <= hasta)
+        .filter(
+            func.date(Compra.fecha_compra) >= desde,
+            func.date(Compra.fecha_compra) <= hasta,
+        )
         .group_by(bucket_compra)
         .all()
     )

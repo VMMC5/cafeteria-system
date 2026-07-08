@@ -680,6 +680,65 @@ def test_estado_resultados_agrupa_por_semana(
     assert float(serie[1]["ventas"]) == 140.0
 
 
+def test_estado_resultados_mes_filtra_fecha_cruda_no_bucket(
+    client, db, admin_headers, cajero_headers
+):
+    """Regresión: el filtro debe aplicarse sobre la fecha cruda de cada
+    transacción, no sobre el bucket truncado (date_trunc). Con un rango NO
+    alineado a mes completo (desde=10-mar, hasta=20-abr):
+    - una venta el 2025-03-20 está DENTRO del rango pero su bucket
+      (2025-03-01) cae antes de `desde` -> con el bug quedaba excluida.
+    - una venta el 2025-04-25 está FUERA del rango pero su bucket
+      (2025-04-01) cae antes de `hasta` -> con el bug se colaba incluida.
+    """
+    v_en_rango = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=877, precio=100.0
+    )  # total 200
+    v_fuera_rango = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=878, precio=60.0
+    )  # total 120
+    _fechar_venta(
+        db, v_en_rango["id_venta"], datetime(2025, 3, 20, 12, 0, tzinfo=timezone.utc)
+    )
+    _fechar_venta(
+        db, v_fuera_rango["id_venta"], datetime(2025, 4, 25, 12, 0, tzinfo=timezone.utc)
+    )
+
+    r = client.get(
+        "/api/v1/reportes/estado-resultados"
+        "?desde=2025-03-10&hasta=2025-04-20&agrupar=mes",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    serie = {f["periodo"]: f for f in r.json()}
+    assert "2025-03" in serie
+    assert float(serie["2025-03"]["ventas"]) == 200.0
+    assert "2025-04" not in serie
+
+
+def test_estado_resultados_semana_desde_mitad_de_semana_incluye_transaccion(
+    client, db, admin_headers, cajero_headers
+):
+    """Regresión: con agrupar=semana y un `desde` que cae a mitad de semana,
+    una venta posterior a `desde` cuyo bucket (inicio de semana, lunes) es
+    anterior a `desde` debe seguir incluida en el reporte."""
+    v = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=879, precio=100.0
+    )  # total 200
+    # 2025-03-06 es jueves; la semana (lunes) inicia 2025-03-03.
+    _fechar_venta(db, v["id_venta"], datetime(2025, 3, 6, 12, 0, tzinfo=timezone.utc))
+
+    r = client.get(
+        "/api/v1/reportes/estado-resultados"
+        "?desde=2025-03-05&hasta=2025-03-31&agrupar=semana",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    serie = {f["periodo"]: f for f in r.json()}
+    assert "2025-03-03" in serie
+    assert float(serie["2025-03-03"]["ventas"]) == 200.0
+
+
 def test_estado_resultados_rango_vacio(client, db, admin_headers):
     r = client.get(
         "/api/v1/reportes/estado-resultados"
