@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Reportes — Cafetería Aroma{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Reportes</h1>
+    <p class="sub">Genera y descarga reportes en PDF o XLSX</p>
+  </div>
+</div>
+
+<div class="cols">
+  <div class="card">
+    <h2 class="card__title">Configurar reporte</h2>
+    <form method="get">
+      <label>Tipo de reporte
+        <select name="tipo" id="tipo-reporte">
+          <option value="ventas" {{ 'selected' if tipo == 'ventas' }}>Ventas Detalladas</option>
+          <option value="gastos" {{ 'selected' if tipo == 'gastos' }}>Gastos Operativos</option>
+          <option value="inventario" {{ 'selected' if tipo == 'inventario' }}>Inventario</option>
+          <option value="estado_resultados" {{ 'selected' if tipo == 'estado_resultados' }}>Estado de Resultados</option>
+        </select>
+      </label>
+
+      <div data-para="ventas gastos estado_resultados" class="filtro-bloque">
+        <div class="filtros" style="margin-top:.75rem;">
+          <button type="submit" name="preset" value="hoy"   class="pill {{ 'active' if preset == 'hoy' }}">Hoy</button>
+          <button type="submit" name="preset" value="7dias" class="pill {{ 'active' if preset == '7dias' }}">7 días</button>
+          <button type="submit" name="preset" value="mes"   class="pill {{ 'active' if preset == 'mes' }}">Este mes</button>
+        </div>
+        <label>Desde <input type="date" name="desde" value="{{ desde }}"></label>
+        <label>Hasta <input type="date" name="hasta" value="{{ hasta }}"></label>
+        <button type="submit" name="preset" value="rango" class="btn">Aplicar rango</button>
+      </div>
+
+      <div data-para="ventas gastos" class="filtro-bloque">
+        <label>Usuario / Mesero
+          <select name="id_usuario">
+            <option value="">Todos</option>
+            {% for u in usuarios %}
+            <option value="{{ u.id_usuario }}" {{ 'selected' if id_usuario == u.id_usuario }}>{{ u.nombre }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+
+      <div data-para="ventas" class="filtro-bloque">
+        <label>Método de pago
+          <select name="id_metodo">
+            <option value="">Todos</option>
+            {% for m in metodos %}
+            <option value="{{ m.id_metodo_pago }}" {{ 'selected' if id_metodo == m.id_metodo_pago }}>{{ m.nombre_metodo }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+
+      <div data-para="gastos" class="filtro-bloque">
+        <label>Categoría
+          <select name="id_categoria">
+            <option value="">Todas</option>
+            {% for c in categorias %}
+            <option value="{{ c.id_categoria_gasto }}" {{ 'selected' if id_categoria == c.id_categoria_gasto }}>{{ c.nombre_categoria }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+
+      <div data-para="estado_resultados" class="filtro-bloque">
+        <label>Agrupar por
+          <select name="agrupar">
+            <option value="dia"    {{ 'selected' if agrupar == 'dia' }}>Día</option>
+            <option value="semana" {{ 'selected' if agrupar == 'semana' }}>Semana</option>
+            <option value="mes"    {{ 'selected' if agrupar == 'mes' }}>Mes</option>
+          </select>
+        </label>
+      </div>
+
+      <div data-para="inventario" class="filtro-bloque">
+        <label class="inline"><input type="checkbox" name="solo_bajo_minimo" value="1" {{ 'checked' if solo_bajo_minimo }}> Solo bajo mínimo</label>
+      </div>
+
+      <button type="submit" class="btn btn--accent" style="margin-top:1rem;">Generar reporte</button>
+    </form>
+    <div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
+      <a class="btn btn--ghost" href="{{ url_for('reportes.index', tipo=tipo, preset='rango', desde=desde, hasta=hasta, id_usuario=id_usuario, id_metodo=id_metodo, id_categoria=id_categoria, agrupar=agrupar, solo_bajo_minimo=('1' if solo_bajo_minimo else None), formato='pdf') }}">Descargar PDF</a>
+      <a class="btn btn--ghost" href="{{ url_for('reportes.index', tipo=tipo, preset='rango', desde=desde, hasta=hasta, id_usuario=id_usuario, id_metodo=id_metodo, id_categoria=id_categoria, agrupar=agrupar, solo_bajo_minimo=('1' if solo_bajo_minimo else None), formato='xlsx') }}">Descargar XLSX</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="card__title">{{ titulo }} <span class="muted" style="font-weight:400">({{ desde }} — {{ hasta }})</span></h2>
+    <div style="overflow-x:auto;">
+    <table class="table">
+      <thead><tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for row in rows %}<tr>{% for c in row %}<td>{{ c }}</td>{% endfor %}</tr>
+        {% else %}<tr><td colspan="{{ headers|length }}" class="muted">Sin datos en el rango.</td></tr>{% endfor %}
+        {% if rows and total_row %}<tr style="font-weight:700;">{% for c in total_row %}<td>{{ c }}</td>{% endfor %}</tr>{% endif %}
+      </tbody>
+    </table>
+    </div>
+
+    {% if tipo == 'estado_resultados' %}
+    <div id="grafica-er" class="grafica" style="margin-top:1.5rem;">
+      <h2>Ventas vs Gastos por periodo</h2>
+      <div class="chart-box"><canvas id="chart-er"></canvas></div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if tipo == 'estado_resultados' %}
+<script id="er-data" type="application/json">{{ serie_er|tojson }}</script>
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+{% endif %}
+<script>
+  // Toggle cliente de filtros por tipo de reporte: sin recargar la página,
+  // solo alterna la visibilidad (clase .is-hidden) de cada bloque [data-para]
+  // según si su lista de tipos incluye el tipo seleccionado en #tipo-reporte.
+  // OJO: no usar nombres de variable globales reservados (top/name/parent/
+  // self/location/...): prefijamos con `reporte`/`bloque` para evitarlas.
+  const tipoSelect = document.getElementById("tipo-reporte");
+  const bloquesFiltro = document.querySelectorAll("[data-para]");
+
+  function aplicarToggleFiltros() {
+    const tipoActual = tipoSelect.value;
+    bloquesFiltro.forEach((bloque) => {
+      const tipos = bloque.dataset.para.split(" ");
+      bloque.classList.toggle("is-hidden", !tipos.includes(tipoActual));
+    });
+  }
+
+  tipoSelect.addEventListener("change", aplicarToggleFiltros);
+  aplicarToggleFiltros();
+
+  {% if tipo == 'estado_resultados' %}
+  const serieEr = JSON.parse(document.getElementById("er-data").textContent);
+  const chartErCanvas = document.getElementById("chart-er");
+  if (chartErCanvas && serieEr) {
+    new Chart(chartErCanvas, {
+      type: "bar",
+      data: {
+        labels: serieEr.map((p) => p.periodo),
+        datasets: [
+          { label: "Ventas", data: serieEr.map((p) => Number(p.ventas)),
+            backgroundColor: "#3a2a20", categoryPercentage: 0.6, barPercentage: 0.9 },
+          { label: "Gastos", data: serieEr.map((p) => Number(p.gastos)),
+            backgroundColor: "#c8862f", categoryPercentage: 0.6, barPercentage: 0.9 },
+          { label: "Utilidad", data: serieEr.map((p) => Number(p.utilidad)),
+            backgroundColor: "#8a5a12", categoryPercentage: 0.6, barPercentage: 0.9 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: "top" } },
+      },
+    });
+  }
+  {% endif %}
+</script>
+{% endblock %}

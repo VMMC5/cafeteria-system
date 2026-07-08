@@ -77,3 +77,37 @@ def test_desactivar_llama_api(client, monkeypatch):
     r = client.post("/usuarios/5/desactivar")
     assert r.status_code == 302
     assert llamado["id"] == 5
+
+
+def test_activar_llama_api_con_activo_true(client, monkeypatch):
+    _login(client, monkeypatch)
+    llamado = {}
+
+    def fake_update(access, id_usuario, payload):
+        llamado["id"] = id_usuario
+        llamado["payload"] = payload
+        return {"id_usuario": id_usuario, **payload}
+
+    monkeypatch.setattr(api_client, "update_usuario", fake_update)
+    r = client.post("/usuarios/5/activar")
+    assert r.status_code == 302
+    assert "/usuarios" in r.headers["Location"]
+    assert llamado["id"] == 5
+    assert llamado["payload"] == {"activo": True}
+
+
+def test_lista_muestra_activar_solo_para_inactivos(client, monkeypatch):
+    _login(client, monkeypatch)
+    usuarios = [
+        {"id_usuario": 2, "nombre": "Ana", "apellido_paterno": "Prueba",
+         "correo": "ana@x.com", "activo": False, "rol": {"nombre_rol": "Mesero"}},
+        {"id_usuario": 3, "nombre": "Beto", "apellido_paterno": "Ruiz",
+         "correo": "beto@x.com", "activo": True, "rol": {"nombre_rol": "Cajero"}},
+    ]
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: usuarios)
+    cuerpo = client.get("/usuarios").get_data(as_text=True)
+    # el inactivo ofrece Activar (no Desactivar); el activo, al revés.
+    assert "/usuarios/2/activar" in cuerpo
+    assert "/usuarios/2/desactivar" not in cuerpo
+    assert "/usuarios/3/desactivar" in cuerpo
+    assert "/usuarios/3/activar" not in cuerpo

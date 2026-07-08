@@ -87,23 +87,56 @@ small { display:block; font-weight:400; margin-top:.25rem; color:var(--muted); }
 .icon-btn:hover { background:var(--accent-soft); }
 .link-danger { background:none; color:var(--loss); padding:0; border:0; cursor:pointer; }
 .link-danger:hover { text-decoration:underline; background:none; }
+.link-ok { background:none; color:var(--gain); padding:0; border:0; cursor:pointer; font-family:inherit; }
+.link-ok:hover { text-decoration:underline; background:none; }
 
 /* KPIs */
 .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin:1rem 0; }
-.kpi { background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--border); border-radius:var(--radius); padding:1rem 1.1rem; box-shadow:var(--shadow); }
+/* flex column: etiqueta/valor/delta son <span> inline; sin esto fluyen como
+   texto y se apilan distinto según el ancho del valor (p.ej. "77" vs "$19452.00"). */
+.kpi { display:flex; flex-direction:column; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--border); border-radius:var(--radius); padding:1rem 1.1rem; box-shadow:var(--shadow); }
 .kpi--accent { border-top-color:var(--accent); }
 .kpi__label { font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
 .kpi__value { font-family:var(--mono); font-size:1.6rem; font-weight:700; margin-top:.3rem; }
+.kpi__delta { font-size:.72rem; margin-top:.25rem; }
+.kpi__delta--up { color:var(--gain); }
+.kpi__delta--down { color:var(--loss); }
+.kpi__delta--neutral { color:var(--muted); }
 
 /* Period pills */
 .filtros { display:flex; gap:.5rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap; }
 .pill { border:1px solid var(--border); background:var(--surface); border-radius:999px; padding:.35rem .8rem; cursor:pointer; font-size:.85rem; color:var(--ink-soft); font-family:inherit; }
 .pill.active { background:var(--accent); color:#fff; border-color:var(--accent); }
 
+/* Indicator chips (toggle cliente, sin recargar la página) */
+.indicadores { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin-bottom:1rem; }
+.indicadores__label { font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-right:.25rem; }
+
+/* Utilidad: oculta sin quitar del DOM (toggle de chips de indicadores) */
+.is-hidden { display:none; }
+
 /* Charts */
-.graficas { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:1.25rem; margin-top:1.25rem; }
+/* Rejilla fija de 2 columnas: cada gráfica/tabla ocupa media fila y se ve
+   completa (Ventas vs Gastos | Dona, y debajo Tendencia | Inventario). En
+   pantallas angostas colapsa a 1 columna. minmax(0,1fr) evita desbordes. */
+.graficas { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.25rem; margin-top:1.25rem; }
+@media (max-width:820px) { .graficas { grid-template-columns:1fr; } }
 .grafica { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem; box-shadow:var(--shadow); }
 .grafica h2 { font-family:var(--serif); font-size:1.05rem; margin:0 0 .8rem; }
+/* Chart.js responsive necesita un contenedor con altura definida; sin esto el
+   canvas colapsa a 0 y la gráfica sale en blanco. Con maintainAspectRatio:false
+   el chart llena esta caja. */
+.chart-box { position:relative; height:260px; }
+.chart-box canvas { max-width:100%; }
+
+/* Inventory bars */
+.inv { display: grid; gap: .55rem; }
+.inv__row { display: grid; grid-template-columns: 130px 1fr 42px; align-items: center; gap: .5rem; font-size: .85rem; }
+.inv__name { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv__bar { background: var(--bg); border-radius: 999px; height: 10px; overflow: hidden; }
+.inv__fill { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.inv__fill--low { background: var(--loss); }
+.inv__pct { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Two-column (user form) */
 .cols { display:grid; grid-template-columns:1.4fr 1fr; gap:1.25rem; align-items:start; }

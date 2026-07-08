@@ -6,61 +6,157 @@
     <h1>Estadísticas</h1>
     <p class="sub">Panel de indicadores</p>
   </div>
+  <a class="btn btn--accent" href="{{ url_for('reportes.index') }}">Exportar vista</a>
 </div>
 
 <form method="get" class="filtros">
-  <button type="submit" name="preset" value="hoy"   class="pill {{ 'active' if preset == 'hoy' }}">Hoy</button>
-  <button type="submit" name="preset" value="7dias" class="pill {{ 'active' if preset == '7dias' }}">7 días</button>
-  <button type="submit" name="preset" value="mes"   class="pill {{ 'active' if preset == 'mes' }}">Este mes</button>
+  <button type="submit" name="preset" value="mes"    class="pill {{ 'active' if preset == 'mes' }}">Mes</button>
+  <button type="submit" name="preset" value="6meses" class="pill {{ 'active' if preset == '6meses' }}">6 meses</button>
+  <button type="submit" name="preset" value="anio"   class="pill {{ 'active' if preset == 'anio' }}">Año</button>
   <input type="date" name="desde" value="{{ desde }}">
   <input type="date" name="hasta" value="{{ hasta }}">
-  <button type="submit" name="preset" value="rango" class="pill {{ 'active' if preset == 'rango' }}">Aplicar rango</button>
+  <button type="submit" name="preset" value="rango" class="pill {{ 'active' if preset == 'rango' }}">Rango</button>
 </form>
 
+<div class="indicadores">
+  <span class="indicadores__label">Indicadores a mostrar</span>
+  <button type="button" class="pill active" data-chip="ventas" aria-pressed="true">Ventas</button>
+  <button type="button" class="pill active" data-chip="gastos" aria-pressed="true">Gastos</button>
+  <button type="button" class="pill active" data-chip="ganancia" aria-pressed="true">Ganancia</button>
+  <button type="button" class="pill active" data-chip="pedidos" aria-pressed="true">Pedidos</button>
+  <button type="button" class="pill active" data-chip="productos" aria-pressed="true">Productos top</button>
+  <button type="button" class="pill active" data-chip="inventario" aria-pressed="true">Inventario</button>
+  <button type="button" class="pill active" data-chip="tickets" aria-pressed="true">Tickets promedio</button>
+</div>
+
 <section class="kpis">
-  <div class="kpi"><span class="kpi__label">Total vendido</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.total_vendido|float) }}</span></div>
-  <div class="kpi"><span class="kpi__label"># Ventas</span>
-    <span class="kpi__value">{{ resumen.num_ventas }}</span></div>
-  <div class="kpi"><span class="kpi__label">Ticket promedio</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.ticket_promedio|float) }}</span></div>
-  <div class="kpi"><span class="kpi__label">Gastos</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.total_gastos|float) }}</span></div>
-  <div class="kpi"><span class="kpi__label">Compras</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.total_compras|float) }}</span></div>
-  <div class="kpi kpi--accent"><span class="kpi__label">Utilidad estimada</span>
-    <span class="kpi__value">${{ '%.2f'|format(resumen.utilidad_estimada|float) }}</span></div>
+  {% for k in kpis %}
+  <div class="kpi {{ 'kpi--accent' if k.accent }}"{% if k.indicador %} data-indicador="{{ k.indicador }}"{% endif %}>
+    <span class="kpi__label">{{ k.label }}</span>
+    <span class="kpi__value">{{ k.valor }}</span>
+    {% if k.delta is not none %}
+    <span class="kpi__delta kpi__delta--{{ k.color }}">{{ k.flecha }} {{ k.delta }}% vs periodo anterior</span>
+    {% endif %}
+  </div>
+  {% endfor %}
 </section>
 
 <section class="graficas">
-  <div class="grafica"><h2>Ventas por día</h2><canvas id="chart-ventas"></canvas></div>
-  <div class="grafica"><h2>Productos más vendidos</h2><canvas id="chart-top"></canvas></div>
+  <div class="grafica" data-indicador="ventas"><h2>Ventas vs Gastos</h2><div class="chart-box"><canvas id="chart-ventas"></canvas></div></div>
+  <div class="grafica" data-indicador="productos"><h2>Productos más vendidos</h2><div class="chart-box"><canvas id="chart-top"></canvas></div></div>
+  <div class="grafica" data-indicador="pedidos"><h2>Tendencia de pedidos diarios</h2><div class="chart-box"><canvas id="chart-pedidos"></canvas></div></div>
+  <div class="grafica" data-indicador="inventario">
+    <h2>Nivel de inventario</h2>
+    <div class="inv">
+      {% for i in inventario %}
+      <div class="inv__row">
+        <span class="inv__name">{{ i.nombre }}</span>
+        <span class="inv__bar"><span class="inv__fill {{ 'inv__fill--low' if i.bajo_minimo }}" style="width:{{ i.nivel_pct }}%"></span></span>
+        <span class="inv__pct">{{ i.nivel_pct }}%</span>
+      </div>
+      {% else %}<p class="muted">Sin insumos.</p>{% endfor %}
+    </div>
+  </div>
 </section>
 
 <script id="serie-data" type="application/json">{{ serie|tojson }}</script>
+<script id="vg-data" type="application/json">{{ serie_vg|tojson }}</script>
 <script id="top-data" type="application/json">{{ top|tojson }}</script>
 <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
 <script>
   const serie = JSON.parse(document.getElementById("serie-data").textContent);
-  const top = JSON.parse(document.getElementById("top-data").textContent);
+  const vg = JSON.parse(document.getElementById("vg-data").textContent);
+  // OJO: NO usar `top` como nombre: colisiona con window.top (propiedad global
+  // no-configurable) y lanza "Identifier 'top' has already been declared",
+  // abortando TODO el script y dejando las gráficas en blanco.
+  const topData = JSON.parse(document.getElementById("top-data").textContent);
+  const cafe = ["#3a2a20", "#c8862f", "#8a5a12", "#6b4423", "#d9c9bb", "#a96f1f"];
   new Chart(document.getElementById("chart-ventas"), {
-    type: "line",
-    data: {
-      labels: serie.map(p => p.fecha),
-      datasets: [{ label: "Ventas ($)", data: serie.map(p => Number(p.total)),
-                   borderColor: "#c8862f", backgroundColor: "rgba(200,134,47,.15)",
-                   fill: true, tension: 0.3 }],
-    },
-    options: { responsive: true, plugins: { legend: { display: false } } },
-  });
-  new Chart(document.getElementById("chart-top"), {
     type: "bar",
-    data: {
-      labels: top.map(p => p.nombre),
-      datasets: [{ label: "Cantidad", data: top.map(p => Number(p.cantidad)),
-                   backgroundColor: "#3a2a20" }],
+    data: { labels: vg.map(p => p.fecha),
+      datasets: [
+        { label: "Ventas", data: vg.map(p => Number(p.ventas)),
+          backgroundColor: "#3a2a20", categoryPercentage: 0.6, barPercentage: 0.9 },
+        { label: "Gastos", data: vg.map(p => Number(p.gastos)),
+          backgroundColor: "#c8862f", categoryPercentage: 0.6, barPercentage: 0.9 },
+      ] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: "top" } } },
+  });
+  // Total de unidades vendidas entre los productos top (para el centro de la dona y el % de la leyenda).
+  const totalTop = topData.reduce((s, p) => s + Number(p.cantidad), 0);
+  // Plugin inline: dibuja el total al centro de la dona directamente sobre el canvas
+  // (nada de overlays CSS). Se registra SOLO para esta gráfica vía `plugins: [...]`.
+  const centerTextPlugin = {
+    id: "centerText",
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      const { left, right, top: areaTop, bottom } = chartArea;
+      const x = (left + right) / 2;
+      const y = (areaTop + bottom) / 2;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 24px sans-serif";
+      ctx.fillStyle = "#3a2a20";
+      ctx.fillText(totalTop ? totalTop.toLocaleString("es-MX") : "0", x, y - 10);
+      ctx.font = "12px sans-serif";
+      ctx.fillStyle = "#8a8a8a";
+      ctx.fillText("pedidos", x, y + 12);
+      ctx.restore();
     },
-    options: { responsive: true, plugins: { legend: { display: false } } },
+  };
+  new Chart(document.getElementById("chart-top"), {
+    type: "doughnut",
+    data: { labels: topData.map(p => p.nombre),
+      datasets: [{ data: topData.map(p => Number(p.cantidad)), backgroundColor: cafe }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: {
+      generateLabels(chart) {
+        const base = Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart);
+        return base.map((item, i) => {
+          const cantidad = Number(topData[i] ? topData[i].cantidad : 0);
+          const pct = totalTop ? Math.round((cantidad / totalTop) * 100) : 0;
+          return { ...item, text: `${item.text} ${pct}%` };
+        });
+      },
+    } } } },
+    plugins: [centerTextPlugin],
+  });
+  new Chart(document.getElementById("chart-pedidos"), {
+    type: "line",
+    data: { labels: serie.map(p => p.fecha),
+      datasets: [{ label: "# Pedidos", data: serie.map(p => Number(p.num_ventas)),
+        borderColor: "#3a2a20",
+        backgroundColor(context) {
+          const { ctx, chartArea } = context.chart;
+          if (!chartArea) return "rgba(217,201,187,0.25)";
+          const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          g.addColorStop(0, "rgba(217,201,187,0.55)");
+          g.addColorStop(1, "rgba(217,201,187,0)");
+          return g;
+        },
+        fill: true, tension: 0.38 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  });
+</script>
+<script>
+  // Toggle cliente de "Indicadores a mostrar": no recarga la página, solo
+  // alterna la visibilidad (clase .is-hidden) de todos los elementos que
+  // compartan el mismo data-indicador (p.ej. "pedidos" = KPI #Ventas +
+  // gráfica Tendencia). Todo activo al cargar.
+  // OJO: no usar nombres de variable globales reservados (top/name/parent/
+  // self/location/...): prefijamos con `chip`/`ind` para evitar colisiones.
+  const chipBotones = document.querySelectorAll("[data-chip]");
+  chipBotones.forEach((chipBoton) => {
+    chipBoton.addEventListener("click", () => {
+      const indicadorKey = chipBoton.dataset.chip;
+      const activo = chipBoton.classList.toggle("active");
+      chipBoton.setAttribute("aria-pressed", activo ? "true" : "false");
+      const indicadorEls = document.querySelectorAll('[data-indicador="' + indicadorKey + '"]');
+      indicadorEls.forEach((indicadorEl) => {
+        indicadorEl.classList.toggle("is-hidden", !activo);
+      });
+    });
   });
 </script>
 {% endblock %}

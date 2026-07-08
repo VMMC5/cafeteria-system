@@ -99,3 +99,14 @@ def desactivar(id_usuario):
     except ApiError as e:
         flash(e.detail, "error")
     return redirect(url_for("usuarios.listar"))
+
+
+@bp.route("/usuarios/<int:id_usuario>/activar", methods=["POST"])
+@login_required
+def activar(id_usuario):
+    try:
+        api_gateway.call(api_client.update_usuario, id_usuario, {"activo": True})
+        flash("Usuario activado.", "info")
+    except ApiError as e:
+        flash(e.detail, "error")
+    return redirect(url_for("usuarios.listar"))

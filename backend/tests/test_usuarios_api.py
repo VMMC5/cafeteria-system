@@ -71,3 +71,38 @@ def test_crear_devuelve_rol_anidado(client, db, admin_headers):
     r = client.post("/api/v1/usuarios", headers=admin_headers, json=_nuevo(db))
     assert r.status_code == 201
     assert r.json()["rol"]["nombre_rol"] == "Mesero"
+
+
+def _admin_principal(db):
+    from app.core.config import settings
+    from app.models import Usuario
+
+    return (
+        db.query(Usuario)
+        .filter(Usuario.correo == settings.ADMIN_CORREO)
+        .one()
+    )
+
+
+def test_admin_principal_no_puede_cambiar_su_rol(client, db, admin_headers):
+    from app.models import Rol
+
+    principal = _admin_principal(db)
+    cajero = db.query(Rol).filter(Rol.nombre_rol == "Cajero").one().id_rol
+    r = client.patch(
+        f"/api/v1/usuarios/{principal.id_usuario}",
+        headers=admin_headers,
+        json={"id_rol": cajero},
+    )
+    assert r.status_code == 400
+
+
+def test_admin_principal_puede_editar_otros_campos(client, db, admin_headers):
+    principal = _admin_principal(db)
+    r = client.patch(
+        f"/api/v1/usuarios/{principal.id_usuario}",
+        headers=admin_headers,
+        json={"nombre": "AdminEditado"},
+    )
+    assert r.status_code == 200
+    assert r.json()["nombre"] == "AdminEditado"
