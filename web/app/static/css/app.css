@@ -116,7 +116,11 @@ small { display:block; font-weight:400; margin-top:.25rem; color:var(--muted); }
 .is-hidden { display:none; }
 
 /* Charts */
-.graficas { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:1.25rem; margin-top:1.25rem; }
+/* Rejilla fija de 2 columnas: cada gráfica/tabla ocupa media fila y se ve
+   completa (Ventas vs Gastos | Dona, y debajo Tendencia | Inventario). En
+   pantallas angostas colapsa a 1 columna. minmax(0,1fr) evita desbordes. */
+.graficas { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.25rem; margin-top:1.25rem; }
+@media (max-width:820px) { .graficas { grid-template-columns:1fr; } }
 .grafica { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem; box-shadow:var(--shadow); }
 .grafica h2 { font-family:var(--serif); font-size:1.05rem; margin:0 0 .8rem; }
 /* Chart.js responsive necesita un contenedor con altura definida; sin esto el
