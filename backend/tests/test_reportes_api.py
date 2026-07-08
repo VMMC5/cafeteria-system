@@ -2,8 +2,19 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 
-def _cobrar(client, db, admin_headers, cajero_headers, numero, precio=116.0):
-    """Crea mesa+producto+pedido y lo cobra. Devuelve el dict de la venta."""
+def _cobrar(
+    client, db, admin_headers, cajero_headers, numero, precio=116.0,
+    pedido_headers=None, pagos=None,
+):
+    """Crea mesa+producto+pedido y lo cobra. Devuelve el dict de la venta.
+
+    `pedido_headers` permite crear el pedido con otro usuario autenticado
+    (el "mesero" queda registrado como `Pedido.id_usuario`); por defecto usa
+    `admin_headers` (comportamiento histórico, sin cambios).
+    `pagos` permite pasar una lista explícita de pagos (p.ej. para probar
+    métodos de pago distintos o pagos divididos); por defecto un único pago
+    en Efectivo que cubre el total (comportamiento histórico, sin cambios).
+    """
     from app.models import Categoria, MetodoPago
 
     mesa = client.post(
@@ -17,17 +28,18 @@ def _cobrar(client, db, admin_headers, cajero_headers, numero, precio=116.0):
               "precio_venta": precio, "disponible": True},
     ).json()
     pedido = client.post(
-        "/api/v1/pedidos", headers=admin_headers,
+        "/api/v1/pedidos", headers=pedido_headers or admin_headers,
         json={"id_mesa": mesa["id_mesa"],
               "items": [{"id_producto": prod["id_producto"], "cantidad": 2}]},
     ).json()
-    efectivo = (
-        db.query(MetodoPago).filter(MetodoPago.nombre_metodo == "Efectivo").one()
-    ).id_metodo_pago
+    if pagos is None:
+        efectivo = (
+            db.query(MetodoPago).filter(MetodoPago.nombre_metodo == "Efectivo").one()
+        ).id_metodo_pago
+        pagos = [{"id_metodo_pago": efectivo, "monto": float(precio) * 2 + 100}]
     venta = client.post(
         "/api/v1/ventas", headers=cajero_headers,
-        json={"id_pedido": pedido["id_pedido"],
-              "pagos": [{"id_metodo_pago": efectivo, "monto": float(precio) * 2 + 100}]},
+        json={"id_pedido": pedido["id_pedido"], "pagos": pagos},
     ).json()
     return venta
 
@@ -195,10 +207,10 @@ def test_top_productos_sin_token_401(client):
     assert client.get("/api/v1/reportes/top-productos").status_code == 401
 
 
-def _gasto(db, admin, monto, concepto="Luz"):
+def _gasto(db, admin, monto, concepto="Luz", categoria=None):
     from app.models import CategoriaGasto, Gasto
 
-    cat = db.query(CategoriaGasto).first()
+    cat = categoria or db.query(CategoriaGasto).first()
     g = Gasto(
         id_usuario=admin.id_usuario,
         id_categoria_gasto=cat.id_categoria_gasto,
@@ -370,3 +382,327 @@ def test_inventario_niveles_minimo_cero(client, db, admin_headers):
 def test_inventario_niveles_requiere_admin_403(client, db, mesero_headers):
     assert client.get(
         "/api/v1/reportes/inventario-niveles", headers=mesero_headers).status_code == 403
+
+
+# --- Filtros opcionales en /reportes/ventas -------------------------------
+
+
+def test_detalle_ventas_sin_filtro_incluye_ambos_meseros(
+    client, db, admin_headers, cajero_headers
+):
+    """No-regresión: sin id_usuario, el resultado no cambia (siguen ambas)."""
+    from tests.conftest import _crear_usuario, _headers
+
+    _crear_usuario(db, "meserosinfxyz", "mesero.sinf.xyz@cafeteria.com", "Mesero")
+    _crear_usuario(db, "meserosinfxyz2", "mesero.sinf2.xyz@cafeteria.com", "Mesero")
+    headers_a = _headers(client, "mesero.sinf.xyz@cafeteria.com")
+    headers_b = _headers(client, "mesero.sinf2.xyz@cafeteria.com")
+    v_a = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=850, precio=50.0,
+        pedido_headers=headers_a,
+    )
+    v_b = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=851, precio=60.0,
+        pedido_headers=headers_b,
+    )
+    r = client.get("/api/v1/reportes/ventas", headers=admin_headers)
+    assert r.status_code == 200
+    folios = {f["folio"] for f in r.json()}
+    assert {v_a["folio"], v_b["folio"]} <= folios
+
+
+def test_detalle_ventas_filtra_por_mesero(client, db, admin_headers, cajero_headers):
+    from tests.conftest import _crear_usuario, _headers
+
+    mesero_a = _crear_usuario(db, "meserofxyz", "mesero.f.xyz@cafeteria.com", "Mesero")
+    _crear_usuario(db, "meserofxyz2", "mesero.f2.xyz@cafeteria.com", "Mesero")
+    headers_a = _headers(client, "mesero.f.xyz@cafeteria.com")
+    headers_b = _headers(client, "mesero.f2.xyz@cafeteria.com")
+    v_a = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=852, precio=50.0,
+        pedido_headers=headers_a,
+    )
+    v_b = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=853, precio=60.0,
+        pedido_headers=headers_b,
+    )
+    r = client.get(
+        f"/api/v1/reportes/ventas?id_usuario={mesero_a.id_usuario}",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    folios = {f["folio"] for f in r.json()}
+    assert v_a["folio"] in folios
+    assert v_b["folio"] not in folios
+
+
+def test_detalle_ventas_sin_filtro_incluye_todos_los_metodos(
+    client, db, admin_headers, cajero_headers
+):
+    from app.models import MetodoPago
+
+    tarjeta_id = (
+        db.query(MetodoPago).filter(MetodoPago.nombre_metodo == "Tarjeta").one()
+    ).id_metodo_pago
+    v_efectivo = _cobrar(client, db, admin_headers, cajero_headers, numero=860, precio=40.0)
+    v_tarjeta = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=861, precio=40.0,
+        pagos=[{"id_metodo_pago": tarjeta_id, "monto": 80.0}],
+    )
+    r = client.get("/api/v1/reportes/ventas", headers=admin_headers)
+    assert r.status_code == 200
+    folios = {f["folio"] for f in r.json()}
+    assert {v_efectivo["folio"], v_tarjeta["folio"]} <= folios
+
+
+def test_detalle_ventas_filtra_por_metodo_incluye_pago_dividido(
+    client, db, admin_headers, cajero_headers
+):
+    from app.models import MetodoPago
+
+    tarjeta_id = (
+        db.query(MetodoPago).filter(MetodoPago.nombre_metodo == "Tarjeta").one()
+    ).id_metodo_pago
+    efectivo_id = (
+        db.query(MetodoPago).filter(MetodoPago.nombre_metodo == "Efectivo").one()
+    ).id_metodo_pago
+
+    v_efectivo = _cobrar(client, db, admin_headers, cajero_headers, numero=862, precio=40.0)
+    v_tarjeta = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=863, precio=40.0,
+        pagos=[{"id_metodo_pago": tarjeta_id, "monto": 80.0}],
+    )
+    v_dividida = _cobrar(
+        client, db, admin_headers, cajero_headers, numero=864, precio=40.0,
+        pagos=[
+            {"id_metodo_pago": efectivo_id, "monto": 30.0},
+            {"id_metodo_pago": tarjeta_id, "monto": 50.0},
+        ],
+    )
+
+    r = client.get(
+        f"/api/v1/reportes/ventas?id_metodo={tarjeta_id}", headers=admin_headers
+    )
+    assert r.status_code == 200
+    folios = [f["folio"] for f in r.json()]
+    assert v_tarjeta["folio"] in folios
+    assert v_dividida["folio"] in folios
+    assert v_efectivo["folio"] not in folios
+    # la venta con pago dividido aparece una sola vez (sin duplicar filas)
+    assert folios.count(v_dividida["folio"]) == 1
+
+
+# --- Filtros opcionales en /reportes/gastos --------------------------------
+
+
+def test_detalle_gastos_sin_filtro_incluye_todo(client, db, admin, cajero, admin_headers):
+    g_admin = _gasto(db, admin, 50.0, concepto="GastoSinFAdminXYZ")
+    g_cajero = _gasto(db, cajero, 60.0, concepto="GastoSinFCajeroXYZ")
+    r = client.get("/api/v1/reportes/gastos", headers=admin_headers)
+    assert r.status_code == 200
+    conceptos = {f["concepto"] for f in r.json()}
+    assert {"GastoSinFAdminXYZ", "GastoSinFCajeroXYZ"} <= conceptos
+    assert g_admin.id_gasto and g_cajero.id_gasto  # sanidad: se crearon
+
+
+def test_detalle_gastos_filtra_por_usuario(client, db, admin, cajero, admin_headers):
+    _gasto(db, admin, 50.0, concepto="GastoFUAdminXYZ")
+    _gasto(db, cajero, 60.0, concepto="GastoFUCajeroXYZ")
+    r = client.get(
+        f"/api/v1/reportes/gastos?id_usuario={cajero.id_usuario}",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    conceptos = {f["concepto"] for f in r.json()}
+    assert "GastoFUCajeroXYZ" in conceptos
+    assert "GastoFUAdminXYZ" not in conceptos
+
+
+def test_detalle_gastos_filtra_por_categoria(client, db, admin, admin_headers):
+    from app.models import CategoriaGasto
+
+    servicios = (
+        db.query(CategoriaGasto)
+        .filter(CategoriaGasto.nombre_categoria == "Servicios")
+        .one()
+    )
+    nomina = (
+        db.query(CategoriaGasto)
+        .filter(CategoriaGasto.nombre_categoria == "Nómina")
+        .one()
+    )
+    _gasto(db, admin, 111.0, concepto="GastoFCServiciosXYZ", categoria=servicios)
+    _gasto(db, admin, 222.0, concepto="GastoFCNominaXYZ", categoria=nomina)
+    r = client.get(
+        f"/api/v1/reportes/gastos?id_categoria={servicios.id_categoria_gasto}",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    conceptos = {f["concepto"] for f in r.json()}
+    assert "GastoFCServiciosXYZ" in conceptos
+    assert "GastoFCNominaXYZ" not in conceptos
+
+
+# --- Flag opcional en /reportes/inventario-niveles -------------------------
+
+
+def test_inventario_niveles_sin_filtro_incluye_todos(client, db, admin_headers):
+    _insumo(db, "InsumoBajoSinFXYZ", 1, 10)
+    _insumo(db, "InsumoOkSinFXYZ", 100, 10)
+    r = client.get("/api/v1/reportes/inventario-niveles", headers=admin_headers)
+    assert r.status_code == 200
+    nombres = {f["nombre"] for f in r.json()}
+    assert {"InsumoBajoSinFXYZ", "InsumoOkSinFXYZ"} <= nombres
+
+
+def test_inventario_niveles_solo_bajo_minimo_filtra(client, db, admin_headers):
+    _insumo(db, "InsumoBajoFXYZ", 1, 10)
+    _insumo(db, "InsumoOkFXYZ", 100, 10)
+    r = client.get(
+        "/api/v1/reportes/inventario-niveles?solo_bajo_minimo=true",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    nombres = {f["nombre"] for f in r.json()}
+    assert "InsumoBajoFXYZ" in nombres
+    assert "InsumoOkFXYZ" not in nombres
+
+
+# --- Nuevo endpoint: /reportes/estado-resultados ---------------------------
+
+
+def _compra(db, admin, total, proveedor_nombre="ProvEstadoResultadosXYZ"):
+    from app.models import Compra, Proveedor
+
+    prov = Proveedor(nombre_proveedor=proveedor_nombre)
+    db.add(prov)
+    db.flush()
+    c = Compra(
+        id_proveedor=prov.id_proveedor,
+        id_usuario=admin.id_usuario,
+        total=Decimal(str(total)),
+    )
+    db.add(c)
+    db.flush()
+    return c
+
+
+def _fechar_compra(db, id_compra, cuando: datetime):
+    from app.models import Compra
+
+    db.query(Compra).filter(Compra.id_compra == id_compra).update(
+        {Compra.fecha_compra: cuando}
+    )
+    db.flush()
+
+
+def test_estado_resultados_agrupa_por_dia(
+    client, db, admin, admin_headers, cajero_headers
+):
+    v1 = _cobrar(client, db, admin_headers, cajero_headers, numero=870, precio=100.0)  # 200
+    v2 = _cobrar(client, db, admin_headers, cajero_headers, numero=871, precio=50.0)   # 100
+    _fechar_venta(db, v1["id_venta"], datetime(2025, 3, 3, 12, 0, tzinfo=timezone.utc))
+    _fechar_venta(db, v2["id_venta"], datetime(2025, 3, 4, 12, 0, tzinfo=timezone.utc))
+
+    g1 = _gasto(db, admin, 30.0, concepto="EResDiaGastoXYZ")
+    _fechar_gasto(db, g1.id_gasto, datetime(2025, 3, 3, 9, 0, tzinfo=timezone.utc))
+
+    c1 = _compra(db, admin, 20.0)
+    _fechar_compra(db, c1.id_compra, datetime(2025, 3, 4, 9, 0, tzinfo=timezone.utc))
+
+    r = client.get(
+        "/api/v1/reportes/estado-resultados"
+        "?desde=2025-03-01&hasta=2025-03-31&agrupar=dia",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    serie = {f["periodo"]: f for f in r.json()}
+    assert "2025-03-03" in serie
+    assert "2025-03-04" in serie
+
+    d3 = serie["2025-03-03"]
+    assert float(d3["ventas"]) == 200.0
+    assert float(d3["gastos"]) == 30.0
+    assert float(d3["compras"]) == 0.0
+    assert float(d3["utilidad"]) == 170.0
+
+    d4 = serie["2025-03-04"]
+    assert float(d4["ventas"]) == 100.0
+    assert float(d4["gastos"]) == 0.0
+    assert float(d4["compras"]) == 20.0
+    assert float(d4["utilidad"]) == 80.0
+
+    periodos = [f["periodo"] for f in r.json()]
+    assert periodos == sorted(periodos)
+
+
+def test_estado_resultados_agrupa_por_mes(
+    client, db, admin_headers, cajero_headers
+):
+    v1 = _cobrar(client, db, admin_headers, cajero_headers, numero=872, precio=100.0)  # 200
+    v2 = _cobrar(client, db, admin_headers, cajero_headers, numero=873, precio=100.0)  # 200
+    _fechar_venta(db, v1["id_venta"], datetime(2025, 3, 3, 12, 0, tzinfo=timezone.utc))
+    _fechar_venta(db, v2["id_venta"], datetime(2025, 3, 25, 12, 0, tzinfo=timezone.utc))
+    r = client.get(
+        "/api/v1/reportes/estado-resultados"
+        "?desde=2025-03-01&hasta=2025-03-31&agrupar=mes",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    serie = r.json()
+    assert len(serie) == 1
+    assert serie[0]["periodo"] == "2025-03"
+    assert float(serie[0]["ventas"]) == 400.0
+    assert float(serie[0]["utilidad"]) == 400.0
+
+
+def test_estado_resultados_agrupa_por_semana(
+    client, db, admin_headers, cajero_headers
+):
+    # 2025-03-03 es lunes; semana ISO Postgres (date_trunc) va lun 03 -> dom 09.
+    v1 = _cobrar(client, db, admin_headers, cajero_headers, numero=874, precio=100.0)  # 200
+    v2 = _cobrar(client, db, admin_headers, cajero_headers, numero=875, precio=50.0)   # 100, misma semana
+    v3 = _cobrar(client, db, admin_headers, cajero_headers, numero=876, precio=70.0)   # 140, semana siguiente
+    _fechar_venta(db, v1["id_venta"], datetime(2025, 3, 3, 8, 0, tzinfo=timezone.utc))
+    _fechar_venta(db, v2["id_venta"], datetime(2025, 3, 6, 8, 0, tzinfo=timezone.utc))
+    _fechar_venta(db, v3["id_venta"], datetime(2025, 3, 10, 8, 0, tzinfo=timezone.utc))
+    r = client.get(
+        "/api/v1/reportes/estado-resultados"
+        "?desde=2025-03-01&hasta=2025-03-31&agrupar=semana",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    serie = r.json()
+    assert len(serie) == 2
+    assert serie[0]["periodo"] == "2025-03-03"
+    assert float(serie[0]["ventas"]) == 300.0
+    assert serie[1]["periodo"] == "2025-03-10"
+    assert float(serie[1]["ventas"]) == 140.0
+
+
+def test_estado_resultados_rango_vacio(client, db, admin_headers):
+    r = client.get(
+        "/api/v1/reportes/estado-resultados"
+        "?desde=2025-03-01&hasta=2025-03-31&agrupar=dia",
+        headers=admin_headers,
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_estado_resultados_agrupar_invalido_422(client, db, admin_headers):
+    r = client.get(
+        "/api/v1/reportes/estado-resultados?agrupar=anual",
+        headers=admin_headers,
+    )
+    assert r.status_code == 422
+
+
+def test_estado_resultados_requiere_admin_403(client, db, mesero_headers):
+    assert client.get(
+        "/api/v1/reportes/estado-resultados", headers=mesero_headers
+    ).status_code == 403
+
+
+def test_estado_resultados_sin_token_401(client):
+    assert client.get("/api/v1/reportes/estado-resultados").status_code == 401

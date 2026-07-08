@@ -67,3 +67,11 @@ class InventarioNivelOut(BaseModel):
     stock_minimo: Decimal
     nivel_pct: int
     bajo_minimo: bool
+
+
+class EstadoResultadoOut(BaseModel):
+    periodo: str
+    ventas: Decimal
+    gastos: Decimal
+    compras: Decimal
+    utilidad: Decimal

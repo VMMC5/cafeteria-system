@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -8,6 +9,7 @@ from app.db.session import get_db
 from app.models import Usuario
 from app.schemas.reporte import (
     ComparativoOut,
+    EstadoResultadoOut,
     GastoDetalleOut,
     GastoPorDiaOut,
     InventarioNivelOut,
@@ -70,22 +72,26 @@ def top_productos(
 def detalle_ventas(
     desde: date | None = None,
     hasta: date | None = None,
+    id_usuario: int | None = None,
+    id_metodo: int | None = None,
     db: Session = Depends(get_db),
     _: Usuario = Depends(deps.require_admin),
 ):
     d, h = reporte_service.rango(desde, hasta)
-    return reporte_service.detalle_ventas(db, d, h)
+    return reporte_service.detalle_ventas(db, d, h, id_usuario, id_metodo)
 
 
 @router.get("/gastos", response_model=list[GastoDetalleOut])
 def detalle_gastos(
     desde: date | None = None,
     hasta: date | None = None,
+    id_usuario: int | None = None,
+    id_categoria: int | None = None,
     db: Session = Depends(get_db),
     _: Usuario = Depends(deps.require_admin),
 ):
     d, h = reporte_service.rango(desde, hasta)
-    return reporte_service.detalle_gastos(db, d, h)
+    return reporte_service.detalle_gastos(db, d, h, id_usuario, id_categoria)
 
 
 @router.get("/comparativo", response_model=ComparativoOut)
@@ -101,7 +107,20 @@ def comparativo(
 
 @router.get("/inventario-niveles", response_model=list[InventarioNivelOut])
 def inventario_niveles(
+    solo_bajo_minimo: bool = False,
     db: Session = Depends(get_db),
     _: Usuario = Depends(deps.require_admin),
 ):
-    return reporte_service.inventario_niveles(db)
+    return reporte_service.inventario_niveles(db, solo_bajo_minimo)
+
+
+@router.get("/estado-resultados", response_model=list[EstadoResultadoOut])
+def estado_resultados(
+    desde: date | None = None,
+    hasta: date | None = None,
+    agrupar: Literal["dia", "semana", "mes"] = "dia",
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(deps.require_admin),
+):
+    d, h = reporte_service.rango(desde, hasta)
+    return reporte_service.estado_resultados(db, d, h, agrupar)
