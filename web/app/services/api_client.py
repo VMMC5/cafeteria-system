@@ -154,30 +154,61 @@ def get_top_productos(access, desde=None, hasta=None, limite=10):
     return _check(r)
 
 
-def get_inventario_niveles(access):
+def get_inventario_niveles(access, solo_bajo_minimo=False):
     r = requests.get(
         f"{_base()}/reportes/inventario-niveles",
         headers=_headers(access),
+        params={"solo_bajo_minimo": solo_bajo_minimo} if solo_bajo_minimo else None,
         timeout=TIMEOUT,
     )
     return _check(r)
 
 
-def get_reporte_ventas(access, desde=None, hasta=None):
+def get_reporte_ventas(access, desde=None, hasta=None, id_usuario=None, id_metodo=None):
     r = requests.get(
         f"{_base()}/reportes/ventas",
         headers=_headers(access),
-        params={"desde": desde, "hasta": hasta},
+        params={
+            "desde": desde, "hasta": hasta,
+            "id_usuario": id_usuario, "id_metodo": id_metodo,
+        },
         timeout=TIMEOUT,
     )
     return _check(r)
 
 
-def get_reporte_gastos(access, desde=None, hasta=None):
+def get_reporte_gastos(access, desde=None, hasta=None, id_usuario=None, id_categoria=None):
     r = requests.get(
         f"{_base()}/reportes/gastos",
         headers=_headers(access),
-        params={"desde": desde, "hasta": hasta},
+        params={
+            "desde": desde, "hasta": hasta,
+            "id_usuario": id_usuario, "id_categoria": id_categoria,
+        },
         timeout=TIMEOUT,
+    )
+    return _check(r)
+
+
+def get_estado_resultados(access, desde=None, hasta=None, agrupar="dia"):
+    r = requests.get(
+        f"{_base()}/reportes/estado-resultados",
+        headers=_headers(access),
+        params={"desde": desde, "hasta": hasta, "agrupar": agrupar},
+        timeout=TIMEOUT,
+    )
+    return _check(r)
+
+
+def get_metodos_pago(access):
+    r = requests.get(
+        f"{_base()}/metodos_pago", headers=_headers(access), timeout=TIMEOUT
+    )
+    return _check(r)
+
+
+def get_gastos_categorias(access):
+    r = requests.get(
+        f"{_base()}/gastos/categorias", headers=_headers(access), timeout=TIMEOUT
     )
     return _check(r)

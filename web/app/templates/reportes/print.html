@@ -20,7 +20,7 @@
     <tbody>
       {% for row in rows %}<tr>{% for c in row %}<td>{{ c }}</td>{% endfor %}</tr>
       {% else %}<tr><td colspan="{{ headers|length }}">Sin datos en el rango.</td></tr>{% endfor %}
-      {% if rows %}<tr class="total">{% for c in total_row %}<td>{{ c }}</td>{% endfor %}</tr>{% endif %}
+      {% if total_row %}<tr class="total">{% for c in total_row %}<td>{{ c }}</td>{% endfor %}</tr>{% endif %}
     </tbody>
   </table>
 </body>

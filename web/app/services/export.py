@@ -11,7 +11,7 @@ def to_xlsx(sheet_title, headers, rows, total_row):
     ws.append(headers)
     for row in rows:
         ws.append(row)
-    if rows:
+    if rows and total_row is not None:
         ws.append(total_row)
     buf = BytesIO()
     wb.save(buf)
