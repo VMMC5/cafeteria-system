@@ -370,8 +370,11 @@ def test_dashboard_delta_gastos_positivo_es_down(client, monkeypatch):
     _stub_reportes(monkeypatch)
     cuerpo = client.get("/dashboard").get_data(as_text=True)
     # Gastos subió (+25%) => alerta => clase "down" (rojo), no "up".
+    # Ancla a la etiqueta de la tarjeta de KPI (kpi__label), no a cualquier
+    # aparición de "Gastos" en el documento: el chip "Indicadores a mostrar"
+    # (Task 4b) también trae el texto "Gastos" y aparece antes en el markup.
     import re
-    bloque = re.search(r'Gastos.*?kpi__delta--(\w+)', cuerpo, re.S).group(1)
+    bloque = re.search(r'kpi__label">Gastos<.*?kpi__delta--(\w+)', cuerpo, re.S).group(1)
     assert bloque == "down"
 
 
@@ -382,3 +385,84 @@ def test_dashboard_delta_ventas_positivo_es_up(client, monkeypatch):
     import re
     bloque = re.search(r'Total vendido.*?kpi__delta--(\w+)', cuerpo, re.S).group(1)
     assert bloque == "up"
+
+
+def test_dashboard_chips_indicadores_presentes(client, monkeypatch):
+    # Fila de chips "Indicadores a mostrar" (toggle cliente, Task 4b): los 7
+    # data-chip esperados deben estar en el markup, además del rótulo.
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+    assert "Indicadores a mostrar" in cuerpo
+    for key in ("ventas", "gastos", "ganancia", "pedidos", "productos", "inventario", "tickets"):
+        assert f'data-chip="{key}"' in cuerpo
+
+
+def test_dashboard_kpis_llevan_data_indicador_correcto(client, monkeypatch):
+    # Cada tarjeta de KPI debe llevar el data-indicador correcto para que el
+    # toggle de chips la oculte/muestre. Ancla con regex al bloque completo de
+    # la tarjeta (no a coincidencias sueltas en otro lugar del documento).
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+
+    def bloque_kpi(etiqueta):
+        # El filler no puede contener "<div"/"</div>": evita que el lazy
+        # match "salte" por encima de otras tarjetas de KPI y capture de más
+        # (lo que ocultaría un data-indicador ajeno como falso positivo).
+        m = re.search(
+            r'<div class="kpi[^>]*>(?:(?!<div|</div>).)*?'
+            r'<span class="kpi__label">' + re.escape(etiqueta) + r'</span>'
+            r'(?:(?!<div|</div>).)*?</div>',
+            cuerpo, re.S,
+        )
+        assert m, f"no se encontró la tarjeta de KPI '{etiqueta}'"
+        return m.group(0)
+
+    assert 'data-indicador="ventas"' in bloque_kpi("Total vendido")
+    assert 'data-indicador="pedidos"' in bloque_kpi("# Ventas")
+    assert 'data-indicador="tickets"' in bloque_kpi("Ticket promedio")
+    assert 'data-indicador="gastos"' in bloque_kpi("Gastos")
+    assert 'data-indicador="ganancia"' in bloque_kpi("Utilidad estimada")
+    # Compras NO tiene chip -> siempre visible, sin data-indicador.
+    assert "data-indicador" not in bloque_kpi("Compras")
+
+
+def test_dashboard_graficas_llevan_data_indicador(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+
+    def bloque_grafica(titulo):
+        m = re.search(
+            r'<div class="grafica[^>]*>(?:(?!<div).)*?<h2>' + re.escape(titulo) + r'</h2>',
+            cuerpo, re.S,
+        )
+        assert m, f"no se encontró la tarjeta de gráfica '{titulo}'"
+        return m.group(0)
+
+    assert 'data-indicador="ventas"' in bloque_grafica("Ventas vs Gastos")
+    assert 'data-indicador="productos"' in bloque_grafica("Productos más vendidos")
+    assert 'data-indicador="pedidos"' in bloque_grafica("Tendencia de pedidos diarios")
+    assert 'data-indicador="inventario"' in bloque_grafica("Nivel de inventario")
+
+
+def test_dashboard_boton_exportar_vista_apunta_a_reportes(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+    assert "Exportar vista" in cuerpo
+    m = re.search(r'<a[^>]*href="([^"]+)"[^>]*>Exportar vista</a>', cuerpo)
+    assert m, "no se encontró el enlace 'Exportar vista'"
+    assert m.group(1) == "/reportes"
+
+
+def test_dashboard_chips_toggle_js_presente(client, monkeypatch):
+    # El JS de toggle debe existir (script propio, cliente): busca los
+    # marcadores concretos que confirman su presencia real.
+    _login(client, monkeypatch)
+    _stub_reportes(monkeypatch)
+    cuerpo = client.get("/dashboard").get_data(as_text=True)
+    assert "data-chip" in cuerpo
+    assert "is-hidden" in cuerpo
+    assert "querySelectorAll" in cuerpo

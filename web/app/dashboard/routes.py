@@ -49,6 +49,18 @@ _KPI_DEFS = [
     ("Utilidad estimada", "utilidad_estimada", True, True, True),
 ]
 
+# Mapa key de KPI -> KEY del chip "Indicadores a mostrar" (toggle cliente,
+# Task 4b). `None` = sin chip asociado -> la tarjeta no lleva data-indicador
+# y por tanto queda siempre visible (caso "Compras").
+_INDICADOR_POR_KPI = {
+    "total_vendido": "ventas",
+    "num_ventas": "pedidos",
+    "ticket_promedio": "tickets",
+    "total_gastos": "gastos",
+    "total_compras": None,
+    "utilidad_estimada": "ganancia",
+}
+
 
 def _serie_ventas_vs_gastos(serie, gastos_serie):
     """Combina ventas y gastos por día en una serie alineada por fecha.
@@ -111,7 +123,8 @@ def _kpis(comp):
             color = "up" if (delta > 0) == up_good else "down"
         tarjetas.append(
             {"label": label, "valor": valor, "delta": delta,
-             "flecha": flecha, "color": color, "accent": accent}
+             "flecha": flecha, "color": color, "accent": accent,
+             "indicador": _INDICADOR_POR_KPI.get(key)}
         )
     return tarjetas
 

@@ -106,6 +106,13 @@ small { display:block; font-weight:400; margin-top:.25rem; color:var(--muted); }
 .pill { border:1px solid var(--border); background:var(--surface); border-radius:999px; padding:.35rem .8rem; cursor:pointer; font-size:.85rem; color:var(--ink-soft); font-family:inherit; }
 .pill.active { background:var(--accent); color:#fff; border-color:var(--accent); }
 
+/* Indicator chips (toggle cliente, sin recargar la página) */
+.indicadores { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin-bottom:1rem; }
+.indicadores__label { font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-right:.25rem; }
+
+/* Utilidad: oculta sin quitar del DOM (toggle de chips de indicadores) */
+.is-hidden { display:none; }
+
 /* Charts */
 .graficas { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:1.25rem; margin-top:1.25rem; }
 .grafica { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.1rem; box-shadow:var(--shadow); }

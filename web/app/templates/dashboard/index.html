@@ -6,6 +6,7 @@
     <h1>Estadísticas</h1>
     <p class="sub">Panel de indicadores</p>
   </div>
+  <a class="btn btn--accent" href="{{ url_for('reportes.index') }}">Exportar vista</a>
 </div>
 
 <form method="get" class="filtros">
@@ -17,9 +18,20 @@
   <button type="submit" name="preset" value="rango" class="pill {{ 'active' if preset == 'rango' }}">Rango</button>
 </form>
 
+<div class="indicadores">
+  <span class="indicadores__label">Indicadores a mostrar</span>
+  <button type="button" class="pill active" data-chip="ventas" aria-pressed="true">Ventas</button>
+  <button type="button" class="pill active" data-chip="gastos" aria-pressed="true">Gastos</button>
+  <button type="button" class="pill active" data-chip="ganancia" aria-pressed="true">Ganancia</button>
+  <button type="button" class="pill active" data-chip="pedidos" aria-pressed="true">Pedidos</button>
+  <button type="button" class="pill active" data-chip="productos" aria-pressed="true">Productos top</button>
+  <button type="button" class="pill active" data-chip="inventario" aria-pressed="true">Inventario</button>
+  <button type="button" class="pill active" data-chip="tickets" aria-pressed="true">Tickets promedio</button>
+</div>
+
 <section class="kpis">
   {% for k in kpis %}
-  <div class="kpi {{ 'kpi--accent' if k.accent }}">
+  <div class="kpi {{ 'kpi--accent' if k.accent }}"{% if k.indicador %} data-indicador="{{ k.indicador }}"{% endif %}>
     <span class="kpi__label">{{ k.label }}</span>
     <span class="kpi__value">{{ k.valor }}</span>
     {% if k.delta is not none %}
@@ -30,10 +42,10 @@
 </section>
 
 <section class="graficas">
-  <div class="grafica"><h2>Ventas vs Gastos</h2><div class="chart-box"><canvas id="chart-ventas"></canvas></div></div>
-  <div class="grafica"><h2>Productos más vendidos</h2><div class="chart-box"><canvas id="chart-top"></canvas></div></div>
-  <div class="grafica"><h2>Tendencia de pedidos diarios</h2><div class="chart-box"><canvas id="chart-pedidos"></canvas></div></div>
-  <div class="grafica">
+  <div class="grafica" data-indicador="ventas"><h2>Ventas vs Gastos</h2><div class="chart-box"><canvas id="chart-ventas"></canvas></div></div>
+  <div class="grafica" data-indicador="productos"><h2>Productos más vendidos</h2><div class="chart-box"><canvas id="chart-top"></canvas></div></div>
+  <div class="grafica" data-indicador="pedidos"><h2>Tendencia de pedidos diarios</h2><div class="chart-box"><canvas id="chart-pedidos"></canvas></div></div>
+  <div class="grafica" data-indicador="inventario">
     <h2>Nivel de inventario</h2>
     <div class="inv">
       {% for i in inventario %}
@@ -125,6 +137,26 @@
         },
         fill: true, tension: 0.38 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
+  });
+</script>
+<script>
+  // Toggle cliente de "Indicadores a mostrar": no recarga la página, solo
+  // alterna la visibilidad (clase .is-hidden) de todos los elementos que
+  // compartan el mismo data-indicador (p.ej. "pedidos" = KPI #Ventas +
+  // gráfica Tendencia). Todo activo al cargar.
+  // OJO: no usar nombres de variable globales reservados (top/name/parent/
+  // self/location/...): prefijamos con `chip`/`ind` para evitar colisiones.
+  const chipBotones = document.querySelectorAll("[data-chip]");
+  chipBotones.forEach((chipBoton) => {
+    chipBoton.addEventListener("click", () => {
+      const indicadorKey = chipBoton.dataset.chip;
+      const activo = chipBoton.classList.toggle("active");
+      chipBoton.setAttribute("aria-pressed", activo ? "true" : "false");
+      const indicadorEls = document.querySelectorAll('[data-indicador="' + indicadorKey + '"]');
+      indicadorEls.forEach((indicadorEl) => {
+        indicadorEl.classList.toggle("is-hidden", !activo);
+      });
+    });
   });
 </script>
 {% endblock %}
