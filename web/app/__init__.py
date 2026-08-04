@@ -24,11 +24,13 @@ def create_app(config_object=Config):
     from app.dashboard.routes import bp as dashboard_bp
     from app.reportes.routes import bp as reportes_bp
     from app.usuarios.routes import bp as usuarios_bp
+    from app.catalogo.routes import bp as catalogo_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(reportes_bp)
     app.register_blueprint(usuarios_bp)
+    app.register_blueprint(catalogo_bp)
 
     @app.route("/")
     def index():

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if producto else 'Nuevo' }} producto — Cafetería Aroma{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ 'Editar' if producto else 'Nuevo' }} producto</h1>
+    <p class="sub">Define el producto del menú y su precio</p>
+  </div>
+</div>
+
+<form method="post"
+      action="{{ url_for('catalogo.producto_actualizar', id_producto=producto.id_producto) if producto else url_for('catalogo.producto_crear') }}">
+  <div class="card">
+    <h2 class="card__title">Datos del producto</h2>
+    <label>Nombre
+      <input name="nombre_producto" value="{{ form.get('nombre_producto', '') }}" required></label>
+    <label>Descripción
+      <input name="descripcion" value="{{ form.get('descripcion', '') or '' }}"></label>
+    <label>Categoría
+      <select name="id_categoria" required>
+        {% for c in categorias %}
+        <option value="{{ c.id_categoria }}" {{ 'selected' if form.get('id_categoria')|string == c.id_categoria|string }}>{{ c.nombre_categoria }}</option>
+        {% endfor %}
+      </select></label>
+    <label>Precio de venta ($)
+      <input type="number" name="precio_venta" value="{{ form.get('precio_venta', '') }}" step="0.01" min="0" required></label>
+    <label class="inline">
+      <input type="checkbox" name="disponible" {{ 'checked' if form.get('disponible') in (True, 'on') }}>
+      Disponible
+    </label>
+    <div class="header-row" style="margin-top:1rem;">
+      <button type="submit">Guardar producto</button>
+      <a class="btn btn--ghost" href="{{ url_for('catalogo.productos') }}">Cancelar</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

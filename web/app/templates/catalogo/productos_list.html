@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Catálogo · Productos — Cafetería Aroma{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Catálogo</h1>
+    <p class="sub">{{ productos|length }} producto(s)</p>
+  </div>
+  <a class="btn btn--accent" href="{{ url_for('catalogo.producto_nuevo') }}">+ Nuevo producto</a>
+</div>
+
+{% set tab = 'productos' %}
+{% include "catalogo/_tabs.html" %}
+
+<form method="get" class="toolbar">
+  <select name="categoria" onchange="this.form.submit()">
+    <option value="">Categoría: Todas</option>
+    {% for c in categorias %}
+    <option value="{{ c.id_categoria }}" {{ 'selected' if categoria == c.id_categoria|string }}>{{ c.nombre_categoria }}</option>
+    {% endfor %}
+  </select>
+  <select name="disponible" onchange="this.form.submit()">
+    <option value="">Estado: Todos</option>
+    <option value="1" {{ 'selected' if disponible == '1' }}>Disponible</option>
+    <option value="0" {{ 'selected' if disponible == '0' }}>No disponible</option>
+  </select>
+</form>
+
+<div class="card" style="padding:0;overflow:hidden;">
+<table class="table">
+  <thead>
+    <tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Estado</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for p in productos %}
+    <tr>
+      <td>{{ p.nombre_producto }}{% if p.descripcion %}<br><small>{{ p.descripcion }}</small>{% endif %}</td>
+      <td>{{ p.categoria.nombre_categoria }}</td>
+      <td>$ {{ p.precio_venta }}</td>
+      <td><span class="badge badge--{{ 'on' if p.disponible else 'off' }}">{{ 'Disponible' if p.disponible else 'No disponible' }}</span></td>
+      <td class="actions">
+        <a class="icon-btn" href="{{ url_for('catalogo.producto_editar', id_producto=p.id_producto) }}" title="Editar">✎</a>
+        <form method="post" action="{{ url_for('catalogo.producto_toggle', id_producto=p.id_producto) }}">
+          <input type="hidden" name="disponible" value="{{ '0' if p.disponible else '1' }}">
+          {% if p.disponible %}
+          <button class="link-danger" type="submit" title="Desactivar">Desactivar</button>
+          {% else %}
+          <button class="link-ok" type="submit" title="Activar">Activar</button>
+          {% endif %}
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">Sin productos.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
