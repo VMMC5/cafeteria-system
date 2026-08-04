@@ -110,3 +110,72 @@ def producto_toggle(id_producto):
     except ApiError as e:
         flash(e.detail, "error")
     return redirect(url_for("catalogo.productos"))
+
+
+def _payload_categoria(form):
+    return {
+        "nombre_categoria": form["nombre_categoria"].strip(),
+        "descripcion": (form.get("descripcion") or "").strip() or None,
+    }
+
+
+@bp.route("/categorias")
+@login_required
+def categorias():
+    items = api_gateway.call(api_client.list_categorias)
+    return render_template("catalogo/categorias_list.html", categorias=items)
+
+
+@bp.route("/categorias/nueva")
+@login_required
+def categoria_nueva():
+    return render_template("catalogo/categorias_form.html", categoria=None, form={})
+
+
+@bp.route("/categorias", methods=["POST"])
+@login_required
+def categoria_crear():
+    try:
+        api_gateway.call(api_client.create_categoria, _payload_categoria(request.form))
+    except ApiError as e:
+        flash(e.detail, "error")
+        return (
+            render_template("catalogo/categorias_form.html", categoria=None, form=request.form),
+            e.status_code,
+        )
+    flash("Categoría creada.", "info")
+    return redirect(url_for("catalogo.categorias"))
+
+
+@bp.route("/categorias/<int:id_categoria>/editar")
+@login_required
+def categoria_editar(id_categoria):
+    categoria = api_gateway.call(api_client.get_categoria, id_categoria)
+    return render_template("catalogo/categorias_form.html", categoria=categoria, form=categoria)
+
+
+@bp.route("/categorias/<int:id_categoria>", methods=["POST"])
+@login_required
+def categoria_actualizar(id_categoria):
+    try:
+        api_gateway.call(api_client.update_categoria, id_categoria, _payload_categoria(request.form))
+    except ApiError as e:
+        flash(e.detail, "error")
+        categoria = api_gateway.call(api_client.get_categoria, id_categoria)
+        return (
+            render_template("catalogo/categorias_form.html", categoria=categoria, form=request.form),
+            e.status_code,
+        )
+    flash("Categoría actualizada.", "info")
+    return redirect(url_for("catalogo.categorias"))
+
+
+@bp.route("/categorias/<int:id_categoria>/eliminar", methods=["POST"])
+@login_required
+def categoria_eliminar(id_categoria):
+    try:
+        api_gateway.call(api_client.delete_categoria, id_categoria)
+        flash("Categoría eliminada.", "info")
+    except ApiError as e:
+        flash(e.detail, "error")
+    return redirect(url_for("catalogo.categorias"))

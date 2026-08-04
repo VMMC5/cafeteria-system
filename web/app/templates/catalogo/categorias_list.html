@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Catálogo · Categorías — Cafetería Aroma{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Catálogo</h1>
+    <p class="sub">{{ categorias|length }} categoría(s)</p>
+  </div>
+  <a class="btn btn--accent" href="{{ url_for('catalogo.categoria_nueva') }}">+ Nueva categoría</a>
+</div>
+
+{% set tab = 'categorias' %}
+{% include "catalogo/_tabs.html" %}
+
+<div class="card" style="padding:0;overflow:hidden;">
+<table class="table">
+  <thead>
+    <tr><th>Categoría</th><th>Descripción</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for c in categorias %}
+    <tr>
+      <td>{{ c.nombre_categoria }}</td>
+      <td>{{ c.descripcion or '—' }}</td>
+      <td class="actions">
+        <a class="icon-btn" href="{{ url_for('catalogo.categoria_editar', id_categoria=c.id_categoria) }}" title="Editar">✎</a>
+        <form method="post" action="{{ url_for('catalogo.categoria_eliminar', id_categoria=c.id_categoria) }}"
+              onsubmit="return confirm('¿Eliminar la categoría {{ c.nombre_categoria }}?')">
+          <button class="link-danger" type="submit" title="Eliminar">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="3" class="muted">Sin categorías.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

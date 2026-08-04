@@ -137,3 +137,88 @@ def test_sidebar_muestra_catalogo(client, monkeypatch):
     monkeypatch.setattr(api_client, "list_categorias", lambda a: [])
     cuerpo = client.get("/catalogo/productos").get_data(as_text=True)
     assert "Catálogo" in cuerpo
+
+
+def test_lista_categorias_renderiza(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_categorias", lambda a: CATEGORIAS)
+    cuerpo = client.get("/catalogo/categorias").get_data(as_text=True)
+    assert "Bebidas calientes" in cuerpo
+    assert "Postres" in cuerpo
+
+
+def test_crear_categoria_ok_redirige(client, monkeypatch):
+    _login(client, monkeypatch)
+    capturado = {}
+
+    def fake_create(access, payload):
+        capturado["payload"] = payload
+        return {"id_categoria": 9, **payload}
+
+    monkeypatch.setattr(api_client, "create_categoria", fake_create)
+    r = client.post("/catalogo/categorias", data={
+        "nombre_categoria": "Ensaladas", "descripcion": "",
+    })
+    assert r.status_code == 302
+    assert capturado["payload"] == {"nombre_categoria": "Ensaladas", "descripcion": None}
+
+
+def test_crear_categoria_error_api_rerenderiza(client, monkeypatch):
+    _login(client, monkeypatch)
+    from app.services.api_client import ApiError
+
+    def fake_create(access, payload):
+        raise ApiError(409, "La categoría ya existe")
+
+    monkeypatch.setattr(api_client, "create_categoria", fake_create)
+    r = client.post("/catalogo/categorias", data={
+        "nombre_categoria": "Postres", "descripcion": "",
+    })
+    assert r.status_code == 409
+    assert "ya existe" in r.get_data(as_text=True)
+
+
+def test_actualizar_categoria_llama_api(client, monkeypatch):
+    _login(client, monkeypatch)
+    llamado = {}
+
+    def fake_update(access, id_categoria, payload):
+        llamado["id"] = id_categoria
+        llamado["payload"] = payload
+        return {"id_categoria": id_categoria, **payload}
+
+    monkeypatch.setattr(api_client, "update_categoria", fake_update)
+    r = client.post("/catalogo/categorias/2", data={
+        "nombre_categoria": "Repostería", "descripcion": "Dulces",
+    })
+    assert r.status_code == 302
+    assert llamado["id"] == 2
+    assert llamado["payload"]["nombre_categoria"] == "Repostería"
+
+
+def test_eliminar_categoria_ok(client, monkeypatch):
+    _login(client, monkeypatch)
+    llamado = {}
+    monkeypatch.setattr(
+        api_client, "delete_categoria",
+        lambda a, i: llamado.setdefault("id", i),
+    )
+    monkeypatch.setattr(api_client, "list_categorias", lambda a: CATEGORIAS)
+    r = client.post("/catalogo/categorias/2/eliminar", follow_redirects=True)
+    assert r.status_code == 200
+    assert llamado["id"] == 2
+    assert "Categoría eliminada." in r.get_data(as_text=True)
+
+
+def test_eliminar_categoria_con_productos_flashea_error(client, monkeypatch):
+    _login(client, monkeypatch)
+    from app.services.api_client import ApiError
+
+    def fake_delete(access, id_categoria):
+        raise ApiError(409, "La categoría tiene productos asociados")
+
+    monkeypatch.setattr(api_client, "delete_categoria", fake_delete)
+    monkeypatch.setattr(api_client, "list_categorias", lambda a: CATEGORIAS)
+    r = client.post("/catalogo/categorias/1/eliminar", follow_redirects=True)
+    assert r.status_code == 200  # la lista sigue viva
+    assert "productos asociados" in r.get_data(as_text=True)

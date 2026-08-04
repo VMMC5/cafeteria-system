@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if categoria else 'Nueva' }} categoría — Cafetería Aroma{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ 'Editar' if categoria else 'Nueva' }} categoría</h1>
+    <p class="sub">Agrupa los productos del menú</p>
+  </div>
+</div>
+
+<form method="post"
+      action="{{ url_for('catalogo.categoria_actualizar', id_categoria=categoria.id_categoria) if categoria else url_for('catalogo.categoria_crear') }}">
+  <div class="card">
+    <h2 class="card__title">Datos de la categoría</h2>
+    <label>Nombre
+      <input name="nombre_categoria" value="{{ form.get('nombre_categoria', '') }}" required></label>
+    <label>Descripción
+      <input name="descripcion" value="{{ form.get('descripcion', '') or '' }}"></label>
+    <div class="header-row" style="margin-top:1rem;">
+      <button type="submit">Guardar categoría</button>
+      <a class="btn btn--ghost" href="{{ url_for('catalogo.categorias') }}">Cancelar</a>
+    </div>
+  </div>
+</form>
+{% endblock %}
