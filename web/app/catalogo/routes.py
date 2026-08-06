@@ -28,7 +28,7 @@ def index():
 def productos():
     cat = request.args.get("categoria") or ""
     disp = request.args.get("disponible") or ""
-    id_categoria = int(cat) if cat else None
+    id_categoria = int(cat) if cat.isdigit() else None
     disponible = None if disp == "" else disp == "1"
     items = api_gateway.call(api_client.list_productos, id_categoria, disponible)
     categorias = api_gateway.call(api_client.list_categorias)
@@ -231,8 +231,14 @@ def mesa_editar(id_mesa):
 @bp.route("/mesas/<int:id_mesa>", methods=["POST"])
 @login_required
 def mesa_actualizar(id_mesa):
+    payload = _payload_mesa(request.form)
+    if "estado" in payload:
+        mesa_actual = api_gateway.call(api_client.get_mesa, id_mesa)
+        if mesa_actual.get("estado") == "Ocupada":
+            del payload["estado"]
+            flash("La mesa está Ocupada; su estado no se modificó.", "info")
     try:
-        api_gateway.call(api_client.update_mesa, id_mesa, _payload_mesa(request.form))
+        api_gateway.call(api_client.update_mesa, id_mesa, payload)
     except ApiError as e:
         flash(e.detail, "error")
         mesa = api_gateway.call(api_client.get_mesa, id_mesa)

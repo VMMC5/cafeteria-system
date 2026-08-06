@@ -67,6 +67,14 @@ def test_lista_productos_pasa_filtros_a_la_api(client, monkeypatch):
     assert llamado == {"id_categoria": 2, "disponible": False}
 
 
+def test_lista_productos_filtro_categoria_invalido_no_revienta(client, monkeypatch):
+    _login(client, monkeypatch)
+    monkeypatch.setattr(api_client, "list_productos", lambda a, c=None, d=None: [])
+    monkeypatch.setattr(api_client, "list_categorias", lambda a: CATEGORIAS)
+    r = client.get("/catalogo/productos?categoria=abc")
+    assert r.status_code == 200
+
+
 def test_crear_producto_ok_redirige(client, monkeypatch):
     _login(client, monkeypatch)
     capturado = {}
@@ -285,6 +293,25 @@ def test_actualizar_mesa_sin_estado_no_lo_manda(client, monkeypatch):
     assert llamado["id"] == 2
     assert "estado" not in llamado["payload"]
     assert llamado["payload"]["capacidad"] == 4
+
+
+def test_actualizar_mesa_que_se_ocupo_no_pisa_estado(client, monkeypatch):
+    _login(client, monkeypatch)
+    llamado = {}
+
+    def fake_update(access, id_mesa, payload):
+        llamado["payload"] = payload
+        return {"id_mesa": id_mesa, **payload}
+
+    # la mesa se ocupó después de abrir el form: el GET actual la reporta Ocupada
+    monkeypatch.setattr(api_client, "get_mesa", lambda a, i: {**MESAS[0], "estado": "Ocupada"})
+    monkeypatch.setattr(api_client, "update_mesa", fake_update)
+    r = client.post("/catalogo/mesas/1", data={
+        "numero_mesa": "1", "capacidad": "4", "ubicacion": "Terraza",
+        "estado": "Disponible",
+    })
+    assert r.status_code == 302
+    assert "estado" not in llamado["payload"]
 
 
 def test_eliminar_mesa_referenciada_flashea_error(client, monkeypatch):

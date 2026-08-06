@@ -113,7 +113,7 @@ CRUD completo de Productos/Categorías/Mesas desde el panel Flask (antes solo v�
 ## ⏳ Pendiente
 
 ### Próximo
-- Sprint 6 + fix móvil (PR #20) en `main`; módulo Catálogo web verificado en rama de trabajo (`feat-web-catalogo`), pendiente de PR/merge a `main`.
+- Sprint 6 + fix móvil (PR #20) en `main`; módulo Catálogo web verificado en rama de trabajo (`feat/web-catalogo`), pendiente de PR/merge a `main`.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas
