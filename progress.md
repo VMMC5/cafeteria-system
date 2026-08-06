@@ -141,7 +141,7 @@ URLs: API `localhost:8000/docs` · Web `localhost:5000` · Adminer `localhost:80
 ## Credenciales de prueba
 | Rol | Correo | Contraseña |
 |-----|--------|-----------|
-| Administrador | `admin@cafeteria.com` | `cambiar_en_local` |
+| Administrador | `admin@cafeteria.com` | `cafeteria123` |
 | Mesero | `mesero@cafeteria.com` | `cafeteria123` |
 | Cajero | `cajero@cafeteria.com` | `cafeteria123` |
 | Cocinero | `cocinero@cafeteria.com` | `cafeteria123` |
