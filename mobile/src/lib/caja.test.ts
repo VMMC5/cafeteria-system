@@ -82,3 +82,24 @@ test("aPayload recorta la referencia y la omite si queda vacía", () => {
     { id_metodo_pago: EFECTIVO, monto: 100 },
   ]);
 });
+
+test("montos con centavos no fallan por precisión flotante", () => {
+  // 33.3 + 66.6 = 99.89999999999999 en float; debe contar como 99.90 exacto
+  expect(
+    puedeCobrarPagos([linea(TARJETA, 33.3), linea(EFECTIVO, 66.6)], 99.9, EFECTIVO)
+  ).toBe(true);
+  // split exacto solo-tarjetas de 116.30: 16.1 + 100.2 "excede" por epsilon
+  expect(puedeCobrarPagos([linea(TARJETA, 16.1), linea(TARJETA, 100.2)], 116.3, null)).toBe(true);
+  expect(excedeNoEfectivo([linea(TARJETA, 16.1), linea(TARJETA, 100.2)], 116.3, EFECTIVO)).toBe(false);
+});
+
+test("faltante y cambioPagos con lista vacía y total 0", () => {
+  expect(faltante([], 100)).toBe(100);
+  expect(faltante([], 0)).toBe(0);
+  expect(cambioPagos([], 0)).toBe(0);
+});
+
+test("excedeNoEfectivo con idEfectivo null cuenta todo como no-Efectivo", () => {
+  expect(excedeNoEfectivo([linea(EFECTIVO, 130)], 125, null)).toBe(true);
+  expect(excedeNoEfectivo([linea(EFECTIVO, 125)], 125, null)).toBe(false);
+});

@@ -14,12 +14,15 @@ export function sumaPagos(pagos: PagoLinea[]): number {
   return pagos.reduce((acc, p) => acc + p.monto, 0);
 }
 
+/** Redondea a centavos para comparar sumas sin arrastrar el error de precisión de floats. */
+const centavos = (n: number): number => Math.round(n * 100);
+
 export function faltante(pagos: PagoLinea[], total: number): number {
-  return Math.max(0, total - sumaPagos(pagos));
+  return Math.max(0, centavos(total) - centavos(sumaPagos(pagos))) / 100;
 }
 
 export function cambioPagos(pagos: PagoLinea[], total: number): number {
-  return Math.max(0, sumaPagos(pagos) - total);
+  return Math.max(0, centavos(sumaPagos(pagos)) - centavos(total)) / 100;
 }
 
 function montoNoEfectivo(pagos: PagoLinea[], idEfectivo: number | null): number {
@@ -36,8 +39,8 @@ export function puedeCobrarPagos(
 ): boolean {
   if (total <= 0 || pagos.length === 0) return false;
   if (pagos.some((p) => p.monto <= 0)) return false;
-  if (sumaPagos(pagos) < total) return false;
-  return montoNoEfectivo(pagos, idEfectivo) <= total;
+  if (centavos(sumaPagos(pagos)) < centavos(total)) return false;
+  return centavos(montoNoEfectivo(pagos, idEfectivo)) <= centavos(total);
 }
 
 export function excedeNoEfectivo(
@@ -45,7 +48,7 @@ export function excedeNoEfectivo(
   total: number,
   idEfectivo: number | null
 ): boolean {
-  return montoNoEfectivo(pagos, idEfectivo) > total;
+  return centavos(montoNoEfectivo(pagos, idEfectivo)) > centavos(total);
 }
 
 export function aPayload(pagos: PagoLinea[]): PagoPayload[] {
