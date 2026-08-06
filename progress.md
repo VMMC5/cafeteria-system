@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-06 (Sprint 6 en `main` + **PR #20 `0993569`** mergeado: fix de importes en móvil + **módulo Catálogo en la web admin**, verificado en rama de trabajo)
+**Última actualización:** 2026-08-06 (**PR #21 `fcd15b4`** mergeado: módulo Catálogo en la web admin; antes PR #20 fix de importes móvil)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -113,7 +113,7 @@ CRUD completo de Productos/Categorías/Mesas desde el panel Flask (antes solo v�
 ## ⏳ Pendiente
 
 ### Próximo
-- Sprint 6 + fix móvil (PR #20) en `main`; módulo Catálogo web verificado en rama de trabajo (`feat/web-catalogo`), pendiente de PR/merge a `main`.
+- Módulo Catálogo web mergeado a `main` (**PR #21 `fcd15b4`**). Sin trabajo activo en curso. Candidatos: pago dividido en Caja móvil, pantalla de recetas, CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas
