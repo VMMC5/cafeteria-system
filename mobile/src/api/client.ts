@@ -250,7 +250,7 @@ export async function getPedido(access: string, id: number): Promise<Pedido> {
 export async function cobrarVenta(
   access: string,
   id_pedido: number,
-  pagos: { id_metodo_pago: number; monto: number }[]
+  pagos: { id_metodo_pago: number; monto: number; referencia?: string }[]
 ): Promise<Venta> {
   const { data } = await http.post("/ventas", { id_pedido, pagos }, authCfg(access));
   return data;
