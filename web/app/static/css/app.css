@@ -177,3 +177,11 @@ small { display:block; font-weight:400; margin-top:.25rem; color:var(--muted); }
   .cols { grid-template-columns:1fr; }
   .login { grid-template-columns:1fr; }
 }
+
+/* Pestañas del catálogo */
+.tabs { display:flex; gap:.25rem; margin-bottom:1rem; border-bottom:1px solid var(--border); }
+.tab { padding:.55rem .9rem; color:var(--muted); text-decoration:none; font-weight:600; border-bottom:2px solid transparent; margin-bottom:-1px; }
+.tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.tab:hover { color:var(--ink); }
+/* Badge ámbar para mesa Reservada (Task 4 lo usa) */
+.badge--reservada { background:var(--accent-soft); color:#8a5a12; }

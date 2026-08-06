@@ -212,3 +212,115 @@ def get_gastos_categorias(access):
         f"{_base()}/gastos/categorias", headers=_headers(access), timeout=TIMEOUT
     )
     return _check(r)
+
+
+# --- Catálogo ---
+
+def _check_no_content(resp):
+    """DELETE de catálogo: 204 sin cuerpo en éxito; error JSON en fallo."""
+    if resp.status_code >= 400:
+        raise ApiError(resp.status_code, _detail(resp))
+    return None
+
+
+def list_productos(access, id_categoria=None, disponible=None):
+    params = {}
+    if id_categoria is not None:
+        params["id_categoria"] = id_categoria
+    if disponible is not None:
+        params["disponible"] = disponible
+    r = requests.get(
+        f"{_base()}/productos", headers=_headers(access),
+        params=params or None, timeout=TIMEOUT,
+    )
+    return _check(r)
+
+
+def get_producto(access, id_producto):
+    r = requests.get(
+        f"{_base()}/productos/{id_producto}", headers=_headers(access), timeout=TIMEOUT
+    )
+    return _check(r)
+
+
+def create_producto(access, payload):
+    r = requests.post(
+        f"{_base()}/productos", headers=_headers(access), json=payload, timeout=TIMEOUT
+    )
+    return _check(r, ok=None)
+
+
+def update_producto(access, id_producto, payload):
+    r = requests.patch(
+        f"{_base()}/productos/{id_producto}",
+        headers=_headers(access), json=payload, timeout=TIMEOUT,
+    )
+    return _check(r, ok=None)
+
+
+def list_categorias(access):
+    r = requests.get(f"{_base()}/categorias", headers=_headers(access), timeout=TIMEOUT)
+    return _check(r)
+
+
+def get_categoria(access, id_categoria):
+    r = requests.get(
+        f"{_base()}/categorias/{id_categoria}", headers=_headers(access), timeout=TIMEOUT
+    )
+    return _check(r)
+
+
+def create_categoria(access, payload):
+    r = requests.post(
+        f"{_base()}/categorias", headers=_headers(access), json=payload, timeout=TIMEOUT
+    )
+    return _check(r, ok=None)
+
+
+def update_categoria(access, id_categoria, payload):
+    r = requests.patch(
+        f"{_base()}/categorias/{id_categoria}",
+        headers=_headers(access), json=payload, timeout=TIMEOUT,
+    )
+    return _check(r, ok=None)
+
+
+def delete_categoria(access, id_categoria):
+    r = requests.delete(
+        f"{_base()}/categorias/{id_categoria}", headers=_headers(access), timeout=TIMEOUT
+    )
+    return _check_no_content(r)
+
+
+def list_mesas(access):
+    r = requests.get(f"{_base()}/mesas", headers=_headers(access), timeout=TIMEOUT)
+    return _check(r)
+
+
+def get_mesa(access, id_mesa):
+    r = requests.get(
+        f"{_base()}/mesas/{id_mesa}", headers=_headers(access), timeout=TIMEOUT
+    )
+    return _check(r)
+
+
+def create_mesa(access, payload):
+    r = requests.post(
+        f"{_base()}/mesas", headers=_headers(access), json=payload, timeout=TIMEOUT
+    )
+    return _check(r, ok=None)
+
+
+def update_mesa(access, id_mesa, payload):
+    r = requests.patch(
+        f"{_base()}/mesas/{id_mesa}",
+        headers=_headers(access), json=payload, timeout=TIMEOUT,
+    )
+    return _check(r, ok=None)
+
+
+def delete_mesa(access, id_mesa):
+    r = requests.delete(
+        f"{_base()}/mesas/{id_mesa}", headers=_headers(access), timeout=TIMEOUT
+    )
+    return _check_no_content(r)

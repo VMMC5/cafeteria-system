@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Catálogo · Mesas — Cafetería Aroma{% endblock %}
+{% set badge_de = {'Disponible': 'on', 'Ocupada': 'off', 'Reservada': 'reservada'} %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Catálogo</h1>
+    <p class="sub">{{ mesas|length }} mesa(s)</p>
+  </div>
+  <a class="btn btn--accent" href="{{ url_for('catalogo.mesa_nueva') }}">+ Nueva mesa</a>
+</div>
+
+{% set tab = 'mesas' %}
+{% include "catalogo/_tabs.html" %}
+
+<div class="card" style="padding:0;overflow:hidden;">
+<table class="table">
+  <thead>
+    <tr><th>Mesa</th><th>Capacidad</th><th>Ubicación</th><th>Estado</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for m in mesas %}
+    <tr>
+      <td>Mesa {{ m.numero_mesa }}</td>
+      <td>{{ m.capacidad }} persona(s)</td>
+      <td>{{ m.ubicacion or '—' }}</td>
+      <td><span class="badge badge--{{ badge_de.get(m.estado, 'off') }}">{{ m.estado }}</span></td>
+      <td class="actions">
+        <a class="icon-btn" href="{{ url_for('catalogo.mesa_editar', id_mesa=m.id_mesa) }}" title="Editar">✎</a>
+        <form method="post" action="{{ url_for('catalogo.mesa_eliminar', id_mesa=m.id_mesa) }}"
+              onsubmit="return confirm('¿Eliminar la mesa {{ m.numero_mesa }}?')">
+          <button class="link-danger" type="submit" title="Eliminar">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">Sin mesas.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

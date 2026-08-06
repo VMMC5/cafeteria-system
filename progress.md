@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-07-08 (Sprint 6 en `main` + **PR #20 `0993569`** mergeado: fix de importes en móvil)
+**Última actualización:** 2026-08-06 (Sprint 6 en `main` + **PR #20 `0993569`** mergeado: fix de importes en móvil + **módulo Catálogo en la web admin**, verificado en rama de trabajo)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -93,9 +93,19 @@ Al probar la app en dispositivo físico varias pantallas reventaban con `Render 
 - Efecto colateral: `stockBajo` comparaba strings (lexicográfico, bug latente) → ahora numérico correcto.
 - Revisión de código: corregida la regresión de formato del precio del menú; el stock se deja como "12" (más limpio que "12.00") a propósito.
 
+### Post-Sprint 6 — Catálogo en la web admin
+CRUD completo de Productos/Categorías/Mesas desde el panel Flask (antes solo vía API/Swagger).
+- **`api_client`**: 14 funciones nuevas (`list_/get_/create_/update_` para productos, categorías y mesas, más `delete_categoria`/`delete_mesa`).
+- **Blueprint `catalogo`** (`web/app/catalogo/routes.py`, prefijo `/catalogo`) con 3 sub-recursos y navegación por pestañas (`_tabs.html`, activa según `request.endpoint`); `/catalogo` redirige a `/catalogo/productos`. Entrada "Catálogo" en el sidebar, entre Usuarios y Reportes.
+- **Semántica de borrado por recurso**: Productos usa **toggle** Activar/Desactivar (`disponible`, no hay DELETE real); Categorías y Mesas usan **DELETE FK-safe** — si el recurso tiene productos/pedidos asociados, la API devuelve el error como flash y la lista sobrevive.
+- **Regla de mesa Ocupada**: el form de una mesa en estado Ocupada no ofrece selector de estado (`_payload_mesa` solo manda `estado` si el campo vino en el POST), así el panel nunca pisa una mesa que el flujo de pedidos está gestionando.
+- Precios como Decimal-string (mismo patrón que Estadísticas): templates y stubs de test usan strings, no floats.
+- **26 tests nuevos** (5 de Task 1 sobre `api_client` + 21 en `test_catalogo.py`): 86 → **112** tests web.
+- Verificación end-to-end contra la API real (worktree Flask en :5001, DB con seed): login admin, `/catalogo` → 302 a productos, las 3 pestañas cargan 200 con nombres de producto/categoría y mesas seed, precios `$ 30.00`…`$ 85.00`, Mesa 1 (Ocupada) con badge, sidebar con "Catálogo" activo.
+
 ### Cobertura de tests
 - **Backend:** 201 tests (`docker compose exec api pytest`).
-- **Web:** 86 tests (`docker compose exec web pytest`).
+- **Web:** 112 tests (`docker compose exec web pytest`) — incluye el módulo Catálogo (26 tests nuevos).
 - **Móvil:** 58 tests jest (`cd mobile && npm test`) + `tsc` limpio.
 
 ---
@@ -103,7 +113,7 @@ Al probar la app en dispositivo físico varias pantallas reventaban con `Render 
 ## ⏳ Pendiente
 
 ### Próximo
-- Sprint 6 + fix móvil (PR #20) en `main`. Sin trabajo activo en curso.
+- Sprint 6 + fix móvil (PR #20) en `main`; módulo Catálogo web verificado en rama de trabajo (`feat/web-catalogo`), pendiente de PR/merge a `main`.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas
@@ -112,7 +122,6 @@ Al probar la app en dispositivo físico varias pantallas reventaban con `Render 
 - **Pago dividido** en la Caja móvil: la API lo soporta, pero la UI cobra con un solo método.
 - **Recetas** se gestionan solo por API (Swagger); sin pantalla móvil.
 - **Costo de insumo** por compra = último costo (no promedio ponderado).
-- CRUD de catálogo en la **web admin** (hoy solo vía API/Swagger).
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
 - RF-M03 (recuperar contraseña) solo como nota; sin implementar.
 - Sin refresh-on-401 global en el móvil (el bootstrap cubre la expiración al arrancar).
