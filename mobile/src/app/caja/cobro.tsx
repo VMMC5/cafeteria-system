@@ -229,7 +229,12 @@ export default function Cobro() {
                   <TouchableOpacity
                     key={m.id_metodo_pago}
                     style={[styles.chip, sel && styles.chipSel]}
-                    onPress={() => setLinea(i, { id_metodo_pago: m.id_metodo_pago })}
+                    onPress={() =>
+                      setLinea(i, {
+                        id_metodo_pago: m.id_metodo_pago,
+                        referencia: m.id_metodo_pago === idEfectivo ? "" : l.referencia,
+                      })
+                    }
                   >
                     <Text style={[styles.chipTxt, sel && styles.chipTxtSel]}>
                       {m.nombre_metodo}
