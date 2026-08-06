@@ -19,9 +19,23 @@ import {
   Pedido,
   Venta,
 } from "@/api/client";
-import { cambio, puedeCobrar } from "@/lib/caja";
+import {
+  aPayload,
+  cambioPagos,
+  excedeNoEfectivo,
+  faltante,
+  PagoLinea,
+  puedeCobrarPagos,
+  sumaPagos,
+} from "@/lib/caja";
 import { money } from "@/lib/format";
 import { useAuth } from "@/store/auth";
+
+type LineaUI = {
+  id_metodo_pago: number | null;
+  montoTxt: string;
+  referencia: string;
+};
 
 function Row({
   label,
@@ -46,8 +60,7 @@ export default function Cobro() {
   const pid = Number(id_pedido);
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [metodos, setMetodos] = useState<MetodoPago[]>([]);
-  const [metodoSel, setMetodoSel] = useState<number | null>(null);
-  const [recibidoTxt, setRecibidoTxt] = useState("");
+  const [lineas, setLineas] = useState<LineaUI[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cobrando, setCobrando] = useState(false);
@@ -65,7 +78,13 @@ export default function Cobro() {
         ]);
         setPedido(p);
         setMetodos(ms);
-        if (ms.length > 0) setMetodoSel(ms[0].id_metodo_pago);
+        setLineas([
+          {
+            id_metodo_pago: ms[0]?.id_metodo_pago ?? null,
+            montoTxt: "",
+            referencia: "",
+          },
+        ]);
       } catch {
         setError("No se pudo cargar el cobro.");
       } finally {
@@ -75,16 +94,45 @@ export default function Cobro() {
   }, [access, pid]);
 
   const total = Number(pedido?.total ?? 0);
-  const recibido = Number(recibidoTxt) || 0;
-  const habilitado = metodoSel !== null && puedeCobrar(recibido, total);
+  const idEfectivo =
+    metodos.find((m) => m.nombre_metodo === "Efectivo")?.id_metodo_pago ?? null;
+
+  const parseadas: PagoLinea[] = lineas
+    .filter((l) => l.id_metodo_pago !== null)
+    .map((l) => ({
+      id_metodo_pago: l.id_metodo_pago as number,
+      monto: Number(l.montoTxt) || 0,
+      referencia: l.referencia,
+    }));
+  const completas = parseadas.length === lineas.length;
+  const habilitado = completas && puedeCobrarPagos(parseadas, total, idEfectivo);
+  const avisoExcedente =
+    completas && excedeNoEfectivo(parseadas, total, idEfectivo);
+
+  function setLinea(i: number, patch: Partial<LineaUI>) {
+    setLineas((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+  }
+
+  function agregarLinea() {
+    setLineas((ls) => [
+      ...ls,
+      {
+        id_metodo_pago: metodos[0]?.id_metodo_pago ?? null,
+        montoTxt: "",
+        referencia: "",
+      },
+    ]);
+  }
+
+  function quitarLinea(i: number) {
+    setLineas((ls) => ls.filter((_, j) => j !== i));
+  }
 
   async function confirmar() {
-    if (!access || metodoSel === null || !habilitado) return;
+    if (!access || !habilitado) return;
     setCobrando(true);
     try {
-      const v = await cobrarVenta(access, pid, [
-        { id_metodo_pago: metodoSel, monto: recibido },
-      ]);
+      const v = await cobrarVenta(access, pid, aPayload(parseadas));
       setVenta(v);
     } catch (e: any) {
       const msg =
@@ -129,7 +177,14 @@ export default function Cobro() {
           <Row label="Total" value={venta.total} bold />
           <View style={styles.sep} />
           {venta.pagos.map((pg) => (
-            <Row key={pg.id_pago} label={pg.metodo.nombre_metodo} value={pg.monto} />
+            <Row
+              key={pg.id_pago}
+              label={
+                pg.metodo.nombre_metodo +
+                (pg.referencia ? ` (${pg.referencia})` : "")
+              }
+              value={pg.monto}
+            />
           ))}
           <Row label="Cambio" value={venta.cambio} bold />
         </View>
@@ -152,35 +207,73 @@ export default function Cobro() {
             {d.cantidad} × {d.producto.nombre_producto}
           </Text>
         ))}
-        <Text style={styles.total}>Total: ${total.toFixed(2)}</Text>
+        <Text style={styles.total}>Total: {money(total)}</Text>
 
-        <Text style={styles.label}>Método de pago</Text>
-        <View style={styles.chips}>
-          {metodos.map((m) => {
-            const sel = metodoSel === m.id_metodo_pago;
-            return (
-              <TouchableOpacity
-                key={m.id_metodo_pago}
-                style={[styles.chip, sel && styles.chipSel]}
-                onPress={() => setMetodoSel(m.id_metodo_pago)}
-              >
-                <Text style={[styles.chipTxt, sel && styles.chipTxtSel]}>
-                  {m.nombre_metodo}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        {lineas.map((l, i) => (
+          <View key={i} style={styles.lineaPago}>
+            <View style={styles.lineaHead}>
+              <Text style={styles.label}>Pago {i + 1}</Text>
+              {lineas.length > 1 && (
+                <TouchableOpacity
+                  onPress={() => quitarLinea(i)}
+                  accessibilityLabel={`Quitar pago ${i + 1}`}
+                >
+                  <Text style={styles.quitar}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <View style={styles.chips}>
+              {metodos.map((m) => {
+                const sel = l.id_metodo_pago === m.id_metodo_pago;
+                return (
+                  <TouchableOpacity
+                    key={m.id_metodo_pago}
+                    style={[styles.chip, sel && styles.chipSel]}
+                    onPress={() =>
+                      setLinea(i, {
+                        id_metodo_pago: m.id_metodo_pago,
+                        referencia: m.id_metodo_pago === idEfectivo ? "" : l.referencia,
+                      })
+                    }
+                  >
+                    <Text style={[styles.chipTxt, sel && styles.chipTxtSel]}>
+                      {m.nombre_metodo}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={l.montoTxt}
+              onChangeText={(t) => setLinea(i, { montoTxt: t })}
+              placeholder="0.00"
+            />
+            {l.id_metodo_pago !== idEfectivo && (
+              <TextInput
+                style={styles.input}
+                value={l.referencia}
+                onChangeText={(t) => setLinea(i, { referencia: t })}
+                placeholder="Referencia (opcional)"
+              />
+            )}
+          </View>
+        ))}
+
+        <TouchableOpacity onPress={agregarLinea}>
+          <Text style={styles.agregar}>+ Agregar pago</Text>
+        </TouchableOpacity>
+
+        <View style={styles.resumen}>
+          <Row label="Total" value={total} bold />
+          <Row label="Pagado" value={sumaPagos(parseadas)} />
+          <Row label="Falta" value={faltante(parseadas, total)} />
+          <Row label="Cambio" value={cambioPagos(parseadas, total)} bold />
         </View>
-
-        <Text style={styles.label}>Monto recibido</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={recibidoTxt}
-          onChangeText={setRecibidoTxt}
-          placeholder="0.00"
-        />
-        <Text style={styles.cambio}>Cambio: ${cambio(recibido, total).toFixed(2)}</Text>
+        {avisoExcedente && (
+          <Text style={styles.aviso}>El excedente solo se permite en Efectivo</Text>
+        )}
       </ScrollView>
       <TouchableOpacity
         style={[styles.btn, (!habilitado || cobrando) && styles.btnDisabled]}
@@ -215,7 +308,20 @@ const styles = StyleSheet.create({
     textAlign: "right",
     marginVertical: 12,
   },
-  label: { fontWeight: "600", color: "#4a5568", marginTop: 8, marginBottom: 6 },
+  label: { fontWeight: "600", color: "#4a5568" },
+  lineaPago: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    gap: 8,
+  },
+  lineaHead: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  quitar: { color: "#c53030", fontSize: 16, fontWeight: "700", padding: 4 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     borderWidth: 1,
@@ -228,20 +334,27 @@ const styles = StyleSheet.create({
   chipTxt: { color: "#2d3748" },
   chipTxtSel: { color: "#fff", fontWeight: "700" },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#f7fafc",
     borderWidth: 1,
     borderColor: "#cbd5e0",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
   },
-  cambio: {
-    fontSize: 16,
+  agregar: {
+    color: "#2b6cb0",
     fontWeight: "700",
-    color: "#22543d",
-    marginTop: 10,
-    textAlign: "right",
+    paddingVertical: 8,
+    marginBottom: 4,
   },
+  resumen: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
+    marginBottom: 8,
+  },
+  aviso: { color: "#c05621", marginBottom: 8, textAlign: "right" },
   ticket: { backgroundColor: "#fff", borderRadius: 12, padding: 16, gap: 6 },
   folio: { fontWeight: "700", color: "#2d3748", marginBottom: 6 },
   row: { flexDirection: "row", justifyContent: "space-between" },

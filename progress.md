@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-06 (**PR #21 `fcd15b4`** mergeado: módulo Catálogo en la web admin; antes PR #20 fix de importes móvil)
+**Última actualización:** 2026-08-06 (pago dividido en la Caja móvil, commits `2e786ae`/`8eb946c`/`38229f7`; antes PR #21 `fcd15b4` módulo Catálogo en la web admin)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -103,29 +103,36 @@ CRUD completo de Productos/Categorías/Mesas desde el panel Flask (antes solo v�
 - **26 tests nuevos** (5 de Task 1 sobre `api_client` + 21 en `test_catalogo.py`): 86 → **112** tests web.
 - Verificación end-to-end contra la API real (worktree Flask en :5001, DB con seed): login admin, `/catalogo` → 302 a productos, las 3 pestañas cargan 200 con nombres de producto/categoría y mesas seed, precios `$ 30.00`…`$ 85.00`, Mesa 1 (Ocupada) con badge, sidebar con "Catálogo" activo.
 
+### Post-Sprint 6 — Pago dividido en la Caja móvil
+La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba varios (`POST /ventas` acepta `pagos: [...]`). Ahora Cobro soporta una **lista dinámica de líneas de pago**.
+- **Lógica pura** (`mobile/src/lib/caja.ts`): agregar/quitar líneas de pago; `puedeCobrarPagos` valida que la suma cubra el total y aplica la **regla de excedente solo-Efectivo** (el cambio solo se permite si el sobrante queda cubierto por una línea en Efectivo, nunca en Tarjeta/Transferencia/Otro); `aPayload` arma el array de pagos para la API con `referencia` opcional (trim, se omite si queda vacía) solo en métodos no-Efectivo.
+- **Pantalla de Cobro**: líneas de pago dinámicas (método + monto + referencia condicional para no-Efectivo), resumen de suma/faltante/cambio, aviso de excedente en método no-Efectivo, comprobante final lista cada pago con su referencia.
+- Tipo del cliente API (`cobrarVenta`) ampliado con `referencia?` opcional por línea de pago.
+- **67 tests móviles** (58 → 67, 11 nuevos) + `tsc --noEmit` limpio.
+- **Smoke contra la API real** (`docker compose up -d db api`, login cajero, pedido de prueba mesa Disponible + producto del seed, `POST /api/v1/ventas` con `pagos: [Efectivo con excedente, Tarjeta con referencia: "V-123"]`): **201**, `pagos[1].referencia == "V-123"`, `cambio == suma − total` (Decimal-strings) — payload de `aPayload` validado end-to-end.
+
 ### Cobertura de tests
 - **Backend:** 201 tests (`docker compose exec api pytest`).
 - **Web:** 112 tests (`docker compose exec web pytest`) — incluye el módulo Catálogo (26 tests nuevos).
-- **Móvil:** 58 tests jest (`cd mobile && npm test`) + `tsc` limpio.
+- **Móvil:** 67 tests jest (`cd mobile && npm test`) + `tsc` limpio.
 
 ---
 
 ## ⏳ Pendiente
 
 ### Próximo
-- Módulo Catálogo web mergeado a `main` (**PR #21 `fcd15b4`**). Sin trabajo activo en curso. Candidatos: pago dividido en Caja móvil, pantalla de recetas, CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
+- Pago dividido en Caja móvil implementado y verificado (commits `2e786ae`/`8eb946c`/`38229f7`, sin PR abierto todavía). Candidatos siguientes: pantalla de recetas en el móvil, o hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas
 - **Deuda menor post-merge (triada en la revisión final, no bloquea):** quitar código muerto `api_client.get_reporte_resumen`; relabel "# Pedidos" → "# Ventas"; paleta de dona (6 colores < `limite` 10); un par de tests poco específicos; tests de no-regresión de filtros usan subconjunto en vez de igualdad; documentar `Pedido.id_usuario` (mesero) vs `Venta.id_usuario` (cajero) a nivel de modelo; la leyenda de la dona acopla a `Chart.overrides` (revisar en upgrade de Chart.js); el nombre de archivo del export refleja `desde`/`hasta` sin validar (fechas inválidas → 500, no explotable).
 - Módulos móviles Mesero/Cocina/Caja implementados; el placeholder `modulo/[key].tsx` ya no se usa por ningún rol.
-- **Pago dividido** en la Caja móvil: la API lo soporta, pero la UI cobra con un solo método.
 - **Recetas** se gestionan solo por API (Swagger); sin pantalla móvil.
 - **Costo de insumo** por compra = último costo (no promedio ponderado).
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
 - RF-M03 (recuperar contraseña) solo como nota; sin implementar.
 - Sin refresh-on-401 global en el móvil (el bootstrap cubre la expiración al arrancar).
-- Los endpoints de detalle de reportes no paginan (N+1 leve en ventas); falta test de pago dividido en el cobro.
+- Los endpoints de detalle de reportes no paginan (N+1 leve en ventas); falta test de API para venta con pagos múltiples.
 - Tras registrar un blueprint nuevo en el web, hay que **reiniciar el contenedor** (`docker compose restart web`); el hot-reload no recarga el registro de rutas.
 
 ---
