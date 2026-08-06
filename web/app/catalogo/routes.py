@@ -179,3 +179,77 @@ def categoria_eliminar(id_categoria):
     except ApiError as e:
         flash(e.detail, "error")
     return redirect(url_for("catalogo.categorias"))
+
+
+def _payload_mesa(form):
+    data = {
+        "numero_mesa": int(form["numero_mesa"]),
+        "capacidad": int(form["capacidad"]),
+        "ubicacion": (form.get("ubicacion") or "").strip() or None,
+    }
+    # El form de una mesa Ocupada no manda estado: nunca se pisa desde el panel.
+    if form.get("estado"):
+        data["estado"] = form["estado"]
+    return data
+
+
+@bp.route("/mesas")
+@login_required
+def mesas():
+    items = api_gateway.call(api_client.list_mesas)
+    return render_template("catalogo/mesas_list.html", mesas=items)
+
+
+@bp.route("/mesas/nueva")
+@login_required
+def mesa_nueva():
+    return render_template("catalogo/mesas_form.html", mesa=None, form={})
+
+
+@bp.route("/mesas", methods=["POST"])
+@login_required
+def mesa_crear():
+    try:
+        api_gateway.call(api_client.create_mesa, _payload_mesa(request.form))
+    except ApiError as e:
+        flash(e.detail, "error")
+        return (
+            render_template("catalogo/mesas_form.html", mesa=None, form=request.form),
+            e.status_code,
+        )
+    flash("Mesa creada.", "info")
+    return redirect(url_for("catalogo.mesas"))
+
+
+@bp.route("/mesas/<int:id_mesa>/editar")
+@login_required
+def mesa_editar(id_mesa):
+    mesa = api_gateway.call(api_client.get_mesa, id_mesa)
+    return render_template("catalogo/mesas_form.html", mesa=mesa, form=mesa)
+
+
+@bp.route("/mesas/<int:id_mesa>", methods=["POST"])
+@login_required
+def mesa_actualizar(id_mesa):
+    try:
+        api_gateway.call(api_client.update_mesa, id_mesa, _payload_mesa(request.form))
+    except ApiError as e:
+        flash(e.detail, "error")
+        mesa = api_gateway.call(api_client.get_mesa, id_mesa)
+        return (
+            render_template("catalogo/mesas_form.html", mesa=mesa, form=request.form),
+            e.status_code,
+        )
+    flash("Mesa actualizada.", "info")
+    return redirect(url_for("catalogo.mesas"))
+
+
+@bp.route("/mesas/<int:id_mesa>/eliminar", methods=["POST"])
+@login_required
+def mesa_eliminar(id_mesa):
+    try:
+        api_gateway.call(api_client.delete_mesa, id_mesa)
+        flash("Mesa eliminada.", "info")
+    except ApiError as e:
+        flash(e.detail, "error")
+    return redirect(url_for("catalogo.mesas"))
