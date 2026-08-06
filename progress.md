@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-06 (pago dividido en la Caja móvil, commits `2e786ae`/`8eb946c`/`38229f7`; antes PR #21 `fcd15b4` módulo Catálogo en la web admin)
+**Última actualización:** 2026-08-06 (pago dividido en la Caja móvil **mergeado a `main` — PR #22**, squash `7021077`; antes PR #21 `fcd15b4` módulo Catálogo en la web admin)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -121,7 +121,7 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 ## ⏳ Pendiente
 
 ### Próximo
-- Pago dividido en Caja móvil implementado y verificado (commits `2e786ae`/`8eb946c`/`38229f7`, sin PR abierto todavía). Candidatos siguientes: pantalla de recetas en el móvil, o hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
+- Pago dividido en Caja móvil **mergeado a `main` (PR #22, squash `7021077`)**; suite móvil 70/70 verificada post-merge. Candidatos siguientes: pantalla de recetas en el móvil, o hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21). Pendientes del PR #22: smoke manual del cobro dividido en la app y test de API para venta con pagos múltiples.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas

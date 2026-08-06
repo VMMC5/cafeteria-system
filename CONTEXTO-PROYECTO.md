@@ -23,8 +23,7 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 
 ## 2. Estado actual (agosto 2026)
 
-- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web: productos, categorías y mesas).
-- Trabajo en curso: **PR #22** (`feat/mobile-pago-dividido`) — pago dividido en Caja móvil, implementado y verificado, pendiente de review/merge.
+- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil). No hay trabajo activo en curso.
 - Ramas locales residuales ya mergeadas: `feature/compras`, `feature/dashboard`, `feature/web-redesign`.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
