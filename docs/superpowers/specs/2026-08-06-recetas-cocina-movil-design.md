@@ -14,23 +14,26 @@ Cerrar el pendiente "Recetas se gestionan solo por API (Swagger); sin pantalla m
 - **PATCH nuevo en la API** para editar cantidad (único cambio de backend). Se descartó DELETE+POST encadenado por no ser atómico.
 - **Sin conteo de líneas en la lista** de productos: `GET /productos` no lo trae y no vale N requests ni tocar ese endpoint. El nº de líneas se ve al entrar al detalle. Mejora futura si se extraña.
 
-## Backend — `PATCH /productos/{id_producto}/receta/{id_insumo}`
+## Backend — `PATCH /productos/{id_producto}/receta/{id_producto_insumo}`
 
+- El path usa `id_producto_insumo` (PK de la línea), **igual que el DELETE existente**, no `id_insumo`.
 - Body: `{"cantidad_requerida": Decimal > 0}` (mismo `Field(gt=0)` que el create; nuevo schema `RecetaLineaUpdate`).
 - Respuesta 200: la línea actualizada (`RecetaLineaOut`).
-- Reusa `_check_rol` (Cocinero/Administrador → si no, 403) y `_producto_or_404` de `receta_service`.
-- 404 si el producto no existe o la línea (producto, insumo) no existe; 422 si la cantidad es ≤ 0.
-- Servicio: `receta_service.actualizar_linea(db, id_producto, id_insumo, data, usuario)`.
+- Reusa `_check_rol` (Cocinero/Administrador → si no, 403).
+- 404 si la línea no existe o no pertenece al producto (misma validación que `eliminar_linea`); 422 si la cantidad es ≤ 0.
+- Servicio: `receta_service.actualizar_linea(db, id_producto, id_producto_insumo, data, usuario)`.
 
 ## API-client móvil (`src/api/client.ts`)
 
-Tipos `RecetaLinea { id_producto_insumo, id_insumo, insumo: { id_insumo, nombre_insumo, unidad: { abreviatura } }, cantidad_requerida }`. `cantidad_requerida` llega como **string** (Decimal serializado) y se coacciona con el patrón de `coerce.ts`.
+Tipos `RecetaLinea { id_producto_insumo, id_insumo, insumo: { id_insumo, nombre_insumo, unidad: { abreviatura } }, cantidad_requerida: number }`.
+
+**Cambio necesario en `coerce.ts`:** `cantidad_requerida` **no** está en `DECIMAL_FIELDS` (el set tiene `cantidad`, que es otra clave). Sin agregarlo, la cantidad llega como string y rompe cualquier aritmética o `.toFixed`. Hay que añadirlo al set.
 
 Funciones nuevas (con `authCfg` como las existentes):
 - `getReceta(access, idProducto): Promise<RecetaLinea[]>`
-- `addRecetaLinea(access, idProducto, { id_insumo, cantidad_requerida })` — la cantidad se envía como string.
-- `patchRecetaLinea(access, idProducto, idInsumo, cantidad)` — idem.
-- `deleteRecetaLinea(access, idProducto, idInsumo)` — 204 sin cuerpo.
+- `addRecetaLinea(access, idProducto, { id_insumo, cantidad_requerida })` — cantidad como número (axios la serializa; la API acepta Decimal desde número, como ya hace `registrarMovimiento`).
+- `patchRecetaLinea(access, idProducto, idProductoInsumo, cantidad): Promise<RecetaLinea>`
+- `deleteRecetaLinea(access, idProducto, idProductoInsumo): Promise<void>` — 204 sin cuerpo.
 
 `getProductos` y `getInsumos` ya existen; no se tocan.
 
@@ -38,8 +41,8 @@ Funciones nuevas (con `authCfg` como las existentes):
 
 - `cantidadValida(txt): boolean` — número > 0, hasta 3 decimales (lo que acepta la API), acepta coma o punto decimal.
 - `filtrarProductos(productos, query)` — filtro por nombre, case/acento-insensible (mismo criterio de búsqueda usado en otras listas si existe helper; si no, `toLowerCase` + `normalize`).
-- `insumosDisponibles(insumos, receta)` — excluye del selector los insumos ya presentes en la receta (previene el 400 de duplicado en lugar de provocarlo).
-- `aPayloadLinea(idInsumo, cantidadTxt)` — normaliza coma→punto y arma el payload con la cantidad como string.
+- `insumosDisponibles(insumos, receta)` — excluye del selector los insumos ya presentes en la receta (previene el **409** de duplicado en lugar de provocarlo).
+- `aCantidad(cantidadTxt): number` — normaliza coma→punto y devuelve el número para el payload.
 
 ## UI
 
@@ -61,8 +64,8 @@ Mismo manejo que Compras/Inventario: spinner de carga; si el GET falla, mensaje 
 
 ## Tests (TDD)
 
-- **Backend** (`test_recetas_api.py`): PATCH feliz (cambia cantidad y responde la línea), 404 producto inexistente, 404 línea inexistente, 422 cantidad ≤ 0, 403 rol no autorizado (Mesero).
-- **Móvil** (`src/lib/recetas.test.ts` + `src/api/client.test.ts`): `cantidadValida` (enteros, decimales, coma, 0, negativo, >3 decimales, texto), `filtrarProductos` (acentos, mayúsculas, query vacía), `insumosDisponibles` (excluye presentes, lista vacía), `aPayloadLinea` (coma→punto, string); las 4 funciones del client con stubs **Decimal-string** (convención del proyecto).
+- **Backend** (`test_recetas_api.py`): PATCH feliz (cambia cantidad y responde la línea), 404 línea inexistente, 404 línea de otro producto, 422 cantidad ≤ 0, 403 rol no autorizado (Mesero).
+- **Móvil** (`src/lib/recetas.test.ts` + `src/api/client.test.ts` + `src/api/coerce.test.ts`): `cantidadValida` (enteros, decimales, coma, 0, negativo, >3 decimales, texto), `filtrarProductos` (acentos, mayúsculas, query vacía), `insumosDisponibles` (excluye presentes, lista vacía), `aCantidad` (coma→punto); coerción de `cantidad_requerida` string→number; las 4 funciones del client con stubs **Decimal-string** (convención del proyecto).
 - Pantallas: smoke manual con la API local (login Cocinero → Recetas → agregar/editar/eliminar línea), como el resto de pantallas del móvil.
 
 ## Fuera de alcance
