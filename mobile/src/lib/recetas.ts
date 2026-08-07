@@ -3,10 +3,14 @@ function normalizar(txt: string): string {
   return txt.trim().replace(",", ".");
 }
 
-/** Cantidad de receta válida: número > 0 con hasta 3 decimales (lo que acepta la API). */
+/**
+ * Cantidad de receta válida: número > 0 con hasta 2 decimales.
+ * El inventario (stock_actual y MovimientoInventario.cantidad) es Numeric(10,2);
+ * una cantidad de receta con 3 decimales desincroniza el stock del kárdex.
+ */
 export function cantidadValida(txt: string): boolean {
   const t = normalizar(txt);
-  if (!/^\d+(\.\d{1,3})?$/.test(t)) return false;
+  if (!/^\d+(\.\d{1,2})?$/.test(t)) return false;
   return Number(t) > 0;
 }
 

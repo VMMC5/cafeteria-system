@@ -5,11 +5,11 @@ import {
   insumosDisponibles,
 } from "./recetas";
 
-test("cantidadValida exige número > 0 con hasta 3 decimales", () => {
+test("cantidadValida exige número > 0 con hasta 2 decimales", () => {
   expect(cantidadValida("2")).toBe(true);
   expect(cantidadValida("0.25")).toBe(true);
   expect(cantidadValida("0,25")).toBe(true);
-  expect(cantidadValida("0.125")).toBe(true);
+  expect(cantidadValida("0.125")).toBe(false);
   expect(cantidadValida("0.1255")).toBe(false);
   expect(cantidadValida("0")).toBe(false);
   expect(cantidadValida("-1")).toBe(false);

@@ -135,6 +135,7 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 - Sin refresh-on-401 global en el móvil (el bootstrap cubre la expiración al arrancar).
 - Los endpoints de detalle de reportes no paginan (N+1 leve en ventas); falta test de API para venta con pagos múltiples.
 - Tras registrar un blueprint nuevo en el web, hay que **reiniciar el contenedor** (`docker compose restart web`); el hot-reload no recarga el registro de rutas.
+- Inventario a 2 decimales vs. `cantidad_requerida` a 3: `cantidadValida` (móvil) limita la cantidad de receta a 2 decimales para no desincronizar stock/kárdex; pendiente migración Alembic para ampliar el inventario a 3 decimales (revisar también reportes web).
 
 ---
 
