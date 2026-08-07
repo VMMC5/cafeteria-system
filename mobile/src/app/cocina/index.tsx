@@ -87,6 +87,9 @@ export default function Cocina() {
       <View style={styles.header}>
         <Text style={styles.title}>Cocina</Text>
         <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => router.push("/cocina/recetas" as any)}>
+            <Text style={styles.link}>Recetas</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/cocina/compras" as any)}>
             <Text style={styles.link}>Compras</Text>
           </TouchableOpacity>
