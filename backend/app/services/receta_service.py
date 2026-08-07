@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Insumo, MovimientoInventario, Producto, ProductoInsumo
-from app.schemas.receta import RecetaLineaCreate
+from app.schemas.receta import RecetaLineaCreate, RecetaLineaUpdate
 
 _ROLES_INV = {"Cocinero", "Administrador"}
 
@@ -61,6 +61,25 @@ def agregar_linea(
         cantidad_requerida=data.cantidad_requerida,
     )
     db.add(linea)
+    db.commit()
+    db.refresh(linea)
+    return linea
+
+
+def actualizar_linea(
+    db: Session,
+    id_producto: int,
+    id_producto_insumo: int,
+    data: RecetaLineaUpdate,
+    usuario,
+) -> ProductoInsumo:
+    _check_rol(usuario)
+    linea = db.get(ProductoInsumo, id_producto_insumo)
+    if linea is None or linea.id_producto != id_producto:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Línea de receta no encontrada"
+        )
+    linea.cantidad_requerida = data.cantidad_requerida
     db.commit()
     db.refresh(linea)
     return linea

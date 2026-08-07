@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core import deps
 from app.db.session import get_db
 from app.models import Usuario
-from app.schemas.receta import RecetaLineaCreate, RecetaLineaOut
+from app.schemas.receta import RecetaLineaCreate, RecetaLineaOut, RecetaLineaUpdate
 from app.services import receta_service
 
 router = APIRouter(prefix="/productos", tags=["recetas"])
@@ -31,6 +31,22 @@ def agregar(
     current: Usuario = Depends(deps.get_current_user),
 ):
     return receta_service.agregar_linea(db, id_producto, data, current)
+
+
+@router.patch(
+    "/{id_producto}/receta/{id_producto_insumo}",
+    response_model=RecetaLineaOut,
+)
+def actualizar(
+    id_producto: int,
+    id_producto_insumo: int,
+    data: RecetaLineaUpdate,
+    db: Session = Depends(get_db),
+    current: Usuario = Depends(deps.get_current_user),
+):
+    return receta_service.actualizar_linea(
+        db, id_producto, id_producto_insumo, data, current
+    )
 
 
 @router.delete(

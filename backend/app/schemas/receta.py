@@ -8,6 +8,10 @@ class RecetaLineaCreate(BaseModel):
     cantidad_requerida: Decimal = Field(gt=0)
 
 
+class RecetaLineaUpdate(BaseModel):
+    cantidad_requerida: Decimal = Field(gt=0)
+
+
 class UnidadAbrev(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
