@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-06 (pago dividido en la Caja móvil **mergeado a `main` — PR #22**, squash `7021077`; antes PR #21 `fcd15b4` módulo Catálogo en la web admin)
+**Última actualización:** 2026-08-07 (recetas en el módulo Cocina móvil — implementado y verificado en rama `feat/mobile-recetas`, PR pendiente de abrir; antes PR #22 `7021077` pago dividido en la Caja móvil mergeado a `main`)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -121,13 +121,14 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 ## ⏳ Pendiente
 
 ### Próximo
-- Pago dividido en Caja móvil **mergeado a `main` (PR #22, squash `7021077`)**; suite móvil 70/70 verificada post-merge. Candidatos siguientes: pantalla de recetas en el móvil, o hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21). Pendientes del PR #22: smoke manual del cobro dividido en la app y test de API para venta con pagos múltiples.
+- Recetas en Cocina móvil: implementado y verificado (rama `feat/mobile-recetas`, PR aún sin abrir). Suites verificadas — backend 205/206 (1 falla preexistente y ambiental de `test_seed_admin`, no causada por esta rama) y móvil 79/79 + `tsc --noEmit` limpio. **Pendiente:** smoke manual en dispositivo/emulador (no ejecutado en esta verificación). Candidatos siguientes: hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
+- Pago dividido en Caja móvil **mergeado a `main` (PR #22, squash `7021077`)**; suite móvil 70/70 verificada post-merge. Pendientes del PR #22: smoke manual del cobro dividido en la app y test de API para venta con pagos múltiples.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas
 - **Deuda menor post-merge (triada en la revisión final, no bloquea):** quitar código muerto `api_client.get_reporte_resumen`; relabel "# Pedidos" → "# Ventas"; paleta de dona (6 colores < `limite` 10); un par de tests poco específicos; tests de no-regresión de filtros usan subconjunto en vez de igualdad; documentar `Pedido.id_usuario` (mesero) vs `Venta.id_usuario` (cajero) a nivel de modelo; la leyenda de la dona acopla a `Chart.overrides` (revisar en upgrade de Chart.js); el nombre de archivo del export refleja `desde`/`hasta` sin validar (fechas inválidas → 500, no explotable).
 - Módulos móviles Mesero/Cocina/Caja implementados; el placeholder `modulo/[key].tsx` ya no se usa por ningún rol.
-- **Recetas** se gestionan solo por API (Swagger); sin pantalla móvil.
+- Recetas: gestión completa desde el móvil (Cocina → Recetas). La lista de productos no muestra el nº de líneas de receta (`GET /productos` no lo trae); se ve al entrar al detalle.
 - **Costo de insumo** por compra = último costo (no promedio ponderado).
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
 - RF-M03 (recuperar contraseña) solo como nota; sin implementar.
