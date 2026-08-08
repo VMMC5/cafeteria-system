@@ -23,14 +23,14 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 
 ## 2. Estado actual (agosto 2026)
 
-- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil). No hay trabajo activo en curso.
+- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil) + **PR #24** (guard de mesa Ocupada en la API). No hay trabajo activo en curso.
 - Ramas locales residuales ya mergeadas: `feature/compras`, `feature/dashboard`, `feature/web-redesign`.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
 ### Cobertura de tests
 | Suite | Cantidad | Comando |
 |---|---|---|
-| Backend | 206 tests | `docker compose exec api pytest` |
+| Backend | 217 tests | `docker compose exec api pytest` |
 | Web | 114 tests | `docker compose exec web pytest` |
 | Móvil | 79 tests + `tsc` limpio | `cd mobile && npm test` |
 
@@ -119,6 +119,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 **Funcional:**
 - CRUD de catálogo (mesas/categorías/productos) en el **panel web** — hoy solo vía API/Swagger. *(candidato a próximo sprint)*
 - **Pago dividido** en la UI de Caja móvil (la API ya lo soporta; falta también test de pago dividido).
+- **Estado de mesa `Ocupada` lo gestiona el sistema** (PR #24): la API responde 409 si se intenta cambiar el estado de una mesa con pedido activo (no cancelado y sin venta) y 422 si se asigna `"Ocupada"` a mano, tanto al crear como al editar. Consecuencia confirmada en uso: **un pedido Entregado que nadie paga deja la mesa trabada** — `cancelar` rechaza estados terminales y el guard impide liberarla, así que falta un camino de "cerrar sin cobro".
 - **Recetas** con pantalla en Cocina móvil (PR #23). La cantidad se captura con **2 decimales**: el inventario (`stock_actual`, `MovimientoInventario.cantidad`) es `Numeric(10,2)` aunque `cantidad_requerida` sea `Numeric(10,3)`; ampliarlo a 3 decimales requiere migración Alembic + revisar reportes web.
 - RF-M03 (recuperar contraseña): solo nota, sin implementar.
 - Widgets diferidos: rebanada "Otros" en la dona; capacidad real de almacén en nivel de inventario.
