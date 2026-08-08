@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Mesa, Pedido
 from app.schemas.mesa import MesaCreate, MesaUpdate
+from app.services import pedido_service
 
 
 def list_mesas(db: Session, estado: str | None = None) -> list[Mesa]:
@@ -46,6 +47,21 @@ def update(db: Session, id_mesa: int, data: MesaUpdate) -> Mesa:
     obj = get_or_404(db, id_mesa)
     if data.numero_mesa is not None:
         _ensure_unico(db, data.numero_mesa, exclude_id=id_mesa)
+    if data.estado is not None and data.estado != obj.estado:
+        # "Ocupada" no se asigna a mano: lo pone el sistema al crear un pedido y
+        # lo quita el cobro o la cancelación.
+        if data.estado == "Ocupada":
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                "El estado Ocupada lo asigna el sistema al crear un pedido",
+            )
+        # Se consulta el pedido real, no la bandera de la mesa: así una mesa que
+        # quedó marcada Ocupada sin pedido activo se puede corregir.
+        if pedido_service.tiene_pedido_activo(db, id_mesa):
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "La mesa tiene un pedido activo; su estado lo gestiona el sistema",
+            )
     for campo in ("numero_mesa", "capacidad", "ubicacion", "estado"):
         valor = getattr(data, campo)
         if valor is not None:
