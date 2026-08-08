@@ -121,7 +121,7 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 ## ⏳ Pendiente
 
 ### Próximo
-- Recetas en Cocina móvil **mergeado a `main` (PR #23, squash `07aaeb7`)**. Suites post-merge: móvil 79/79 + `tsc --noEmit` limpio; backend 205/206 (la falla de `test_seed_admin` es preexistente y ambiental, reproduce en `main` sin esa rama). Smoke manual en dispositivo **ejecutado y OK** (alta, edición inline, selector sin duplicados, baja con confirmación, rechazo de 3 decimales). Candidatos siguientes: migración del inventario a 3 decimales (ver deuda técnica), o hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
+- Recetas en Cocina móvil **mergeado a `main` (PR #23, squash `07aaeb7`)**. Suites post-merge: móvil 79/79 + `tsc --noEmit` limpio; backend **206/206** (la falla de `test_seed_admin` que arrastraba la suite se corrigió aparte, `6e154c3`). Smoke manual en dispositivo **ejecutado y OK** (alta, edición inline, selector sin duplicados, baja con confirmación, rechazo de 3 decimales). Candidatos siguientes: migración del inventario a 3 decimales (ver deuda técnica), o hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
 - Pago dividido en Caja móvil **mergeado a `main` (PR #22, squash `7021077`)**; suite móvil 70/70 verificada post-merge. Pendientes del PR #22: smoke manual del cobro dividido en la app y test de API para venta con pagos múltiples.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
@@ -135,6 +135,7 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 - Sin refresh-on-401 global en el móvil (el bootstrap cubre la expiración al arrancar).
 - Los endpoints de detalle de reportes no paginan (N+1 leve en ventas); falta test de API para venta con pagos múltiples.
 - Tras registrar un blueprint nuevo en el web, hay que **reiniciar el contenedor** (`docker compose restart web`); el hot-reload no recarga el registro de rutas.
+- `seed_admin` **no resincroniza la contraseña** de un admin existente (solo restaura el rol): cambiar `ADMIN_PASSWORD` en `.env` no surte efecto sobre una BD ya sembrada; hay que cambiarla por el PATCH de la API. Se evaluó hacer `.env` autoritativo y se descartó: un seed rutinario revertiría silenciosamente una contraseña cambiada desde el panel. El test de `seed_admin` ya no depende de esa coincidencia (`6e154c3`).
 - Inventario a 2 decimales vs. `cantidad_requerida` a 3: `cantidadValida` (móvil) limita la cantidad de receta a 2 decimales para no desincronizar stock/kárdex; pendiente migración Alembic para ampliar el inventario a 3 decimales (revisar también reportes web).
 
 ---
