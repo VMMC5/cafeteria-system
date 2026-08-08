@@ -129,6 +129,73 @@ def test_receta_rol_mesero_403(client, db, admin_headers, mesero_headers):
     assert r.status_code == 403
 
 
+def _linea(client, db, admin_headers, cocinero_headers, prod, ins, cant=0.02):
+    pid = _producto_id(client, db, admin_headers, nombre=prod)
+    iid = _insumo_id(client, db, cocinero_headers, nombre=ins)
+    linea = client.post(
+        f"/api/v1/productos/{pid}/receta",
+        headers=cocinero_headers,
+        json={"id_insumo": iid, "cantidad_requerida": cant},
+    ).json()
+    return pid, linea["id_producto_insumo"]
+
+
+def test_patch_linea_ok(client, db, admin_headers, cocinero_headers):
+    pid, lid = _linea(client, db, admin_headers, cocinero_headers, "Mocaccino", "Cacao2")
+    r = client.patch(
+        f"/api/v1/productos/{pid}/receta/{lid}",
+        headers=cocinero_headers,
+        json={"cantidad_requerida": 0.5},
+    )
+    assert r.status_code == 200
+    assert float(r.json()["cantidad_requerida"]) == 0.5
+    lista = client.get(
+        f"/api/v1/productos/{pid}/receta", headers=cocinero_headers
+    ).json()
+    assert float(lista[0]["cantidad_requerida"]) == 0.5
+
+
+def test_patch_linea_inexistente_404(client, db, admin_headers, cocinero_headers):
+    pid = _producto_id(client, db, admin_headers, nombre="Ristretto")
+    r = client.patch(
+        f"/api/v1/productos/{pid}/receta/999999",
+        headers=cocinero_headers,
+        json={"cantidad_requerida": 1.0},
+    )
+    assert r.status_code == 404
+
+
+def test_patch_linea_de_otro_producto_404(client, db, admin_headers, cocinero_headers):
+    _, lid = _linea(client, db, admin_headers, cocinero_headers, "Macchiato", "Vainilla")
+    otro = _producto_id(client, db, admin_headers, nombre="Affogato")
+    r = client.patch(
+        f"/api/v1/productos/{otro}/receta/{lid}",
+        headers=cocinero_headers,
+        json={"cantidad_requerida": 1.0},
+    )
+    assert r.status_code == 404
+
+
+def test_patch_cantidad_cero_422(client, db, admin_headers, cocinero_headers):
+    pid, lid = _linea(client, db, admin_headers, cocinero_headers, "Lungo", "Agua2")
+    r = client.patch(
+        f"/api/v1/productos/{pid}/receta/{lid}",
+        headers=cocinero_headers,
+        json={"cantidad_requerida": 0},
+    )
+    assert r.status_code == 422
+
+
+def test_patch_rol_mesero_403(client, db, admin_headers, cocinero_headers, mesero_headers):
+    pid, lid = _linea(client, db, admin_headers, cocinero_headers, "Irlandés", "Crema")
+    r = client.patch(
+        f"/api/v1/productos/{pid}/receta/{lid}",
+        headers=mesero_headers,
+        json={"cantidad_requerida": 1.0},
+    )
+    assert r.status_code == 403
+
+
 def _mesa_id(client, admin_headers, numero):
     return client.post(
         "/api/v1/mesas",

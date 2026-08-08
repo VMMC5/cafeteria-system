@@ -39,7 +39,7 @@ Funciones nuevas (con `authCfg` como las existentes):
 
 ## Lógica pura (`src/lib/recetas.ts`)
 
-- `cantidadValida(txt): boolean` — número > 0, hasta 3 decimales (lo que acepta la API), acepta coma o punto decimal.
+- `cantidadValida(txt): boolean` — número > 0, hasta 2 decimales (el inventario, `stock_actual` y `MovimientoInventario.cantidad`, es `Numeric(10,2)`, no 3 como `cantidad_requerida`), acepta coma o punto decimal.
 - `filtrarProductos(productos, query)` — filtro por nombre, case/acento-insensible (mismo criterio de búsqueda usado en otras listas si existe helper; si no, `toLowerCase` + `normalize`).
 - `insumosDisponibles(insumos, receta)` — excluye del selector los insumos ya presentes en la receta (previene el **409** de duplicado en lugar de provocarlo).
 - `aCantidad(cantidadTxt): number` — normaliza coma→punto y devuelve el número para el payload.
@@ -65,7 +65,7 @@ Mismo manejo que Compras/Inventario: spinner de carga; si el GET falla, mensaje 
 ## Tests (TDD)
 
 - **Backend** (`test_recetas_api.py`): PATCH feliz (cambia cantidad y responde la línea), 404 línea inexistente, 404 línea de otro producto, 422 cantidad ≤ 0, 403 rol no autorizado (Mesero).
-- **Móvil** (`src/lib/recetas.test.ts` + `src/api/client.test.ts` + `src/api/coerce.test.ts`): `cantidadValida` (enteros, decimales, coma, 0, negativo, >3 decimales, texto), `filtrarProductos` (acentos, mayúsculas, query vacía), `insumosDisponibles` (excluye presentes, lista vacía), `aCantidad` (coma→punto); coerción de `cantidad_requerida` string→number; las 4 funciones del client con stubs **Decimal-string** (convención del proyecto).
+- **Móvil** (`src/lib/recetas.test.ts` + `src/api/client.test.ts` + `src/api/coerce.test.ts`): `cantidadValida` (enteros, decimales, coma, 0, negativo, >2 decimales, texto), `filtrarProductos` (acentos, mayúsculas, query vacía), `insumosDisponibles` (excluye presentes, lista vacía), `aCantidad` (coma→punto); coerción de `cantidad_requerida` string→number; las 4 funciones del client con stubs **Decimal-string** (convención del proyecto).
 - Pantallas: smoke manual con la API local (login Cocinero → Recetas → agregar/editar/eliminar línea), como el resto de pantallas del móvil.
 
 ## Fuera de alcance

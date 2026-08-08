@@ -219,3 +219,52 @@ test("crearCompra postea a /compras con el cuerpo", async () => {
   expect(body).toEqual(payload);
   expect(config.headers.Authorization).toBe("Bearer tok");
 });
+
+const LINEA_STUB = {
+  id_producto_insumo: 3,
+  id_insumo: 7,
+  insumo: { id_insumo: 7, nombre_insumo: "Leche entera", unidad: { abreviatura: "L" } },
+  cantidad_requerida: "0.25",
+};
+
+test("getReceta pega a la receta del producto con el Bearer", async () => {
+  const spy = jest
+    .spyOn(client.http, "get")
+    .mockResolvedValue({ data: [LINEA_STUB] } as any);
+  const out = await client.getReceta("tok", 12);
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/productos/12/receta");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+  expect(out[0].insumo.nombre_insumo).toBe("Leche entera");
+});
+
+test("addRecetaLinea postea insumo y cantidad a la receta del producto", async () => {
+  const spy = jest
+    .spyOn(client.http, "post")
+    .mockResolvedValue({ data: LINEA_STUB } as any);
+  await client.addRecetaLinea("tok", 12, { id_insumo: 7, cantidad_requerida: 0.25 });
+  const [url, body, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/productos/12/receta");
+  expect(body).toEqual({ id_insumo: 7, cantidad_requerida: 0.25 });
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});
+
+test("patchRecetaLinea usa el id de línea y manda solo la cantidad", async () => {
+  const spy = jest
+    .spyOn(client.http, "patch")
+    .mockResolvedValue({ data: LINEA_STUB } as any);
+  await client.patchRecetaLinea("tok", 12, 3, 0.5);
+  const [url, body] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/productos/12/receta/3");
+  expect(body).toEqual({ cantidad_requerida: 0.5 });
+});
+
+test("deleteRecetaLinea usa el id de línea", async () => {
+  const spy = jest
+    .spyOn(client.http, "delete")
+    .mockResolvedValue({ status: 204 } as any);
+  await client.deleteRecetaLinea("tok", 12, 3);
+  const [url, config] = spy.mock.calls[0] as any[];
+  expect(url).toBe("/productos/12/receta/3");
+  expect(config.headers.Authorization).toBe("Bearer tok");
+});

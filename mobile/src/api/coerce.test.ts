@@ -32,3 +32,17 @@ test("deja intactos numbers, null y valores no numéricos", () => {
   expect(out.monto).toBeNull();
   expect(out.precio_venta).toBe("abc"); // no corrompe si no es numérico
 });
+
+test("coacciona cantidad_requerida de las líneas de receta", () => {
+  const receta = [
+    {
+      id_producto_insumo: 1,
+      id_insumo: 7,
+      insumo: { id_insumo: 7, nombre_insumo: "Leche", unidad: { abreviatura: "L" } },
+      cantidad_requerida: "0.250",
+    },
+  ];
+  const out = coerceDecimals(receta) as any[];
+  expect(out[0].cantidad_requerida).toBe(0.25);
+  expect(typeof out[0].cantidad_requerida).toBe("number");
+});

@@ -14,6 +14,7 @@ export const DECIMAL_FIELDS = new Set<string>([
   "cambio",
   "monto",
   "cantidad",
+  "cantidad_requerida",
   "precio_venta",
   "costo_unitario",
   "stock_actual",

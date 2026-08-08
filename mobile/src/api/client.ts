@@ -175,6 +175,17 @@ export type Compra = {
   detalle: DetalleCompra[];
 };
 
+export type RecetaLinea = {
+  id_producto_insumo: number;
+  id_insumo: number;
+  insumo: {
+    id_insumo: number;
+    nombre_insumo: string;
+    unidad: { abreviatura: string };
+  };
+  cantidad_requerida: number;
+};
+
 export async function getMesas(access: string, estado?: string): Promise<Mesa[]> {
   const { data } = await http.get("/mesas", {
     ...authCfg(access),
@@ -317,4 +328,50 @@ export async function crearCompra(
 ): Promise<Compra> {
   const { data: res } = await http.post("/compras", data, authCfg(access));
   return res;
+}
+
+export async function getReceta(
+  access: string,
+  idProducto: number
+): Promise<RecetaLinea[]> {
+  const { data } = await http.get(`/productos/${idProducto}/receta`, authCfg(access));
+  return data;
+}
+
+export async function addRecetaLinea(
+  access: string,
+  idProducto: number,
+  data: { id_insumo: number; cantidad_requerida: number }
+): Promise<RecetaLinea> {
+  const { data: res } = await http.post(
+    `/productos/${idProducto}/receta`,
+    data,
+    authCfg(access)
+  );
+  return res;
+}
+
+export async function patchRecetaLinea(
+  access: string,
+  idProducto: number,
+  idProductoInsumo: number,
+  cantidad: number
+): Promise<RecetaLinea> {
+  const { data } = await http.patch(
+    `/productos/${idProducto}/receta/${idProductoInsumo}`,
+    { cantidad_requerida: cantidad },
+    authCfg(access)
+  );
+  return data;
+}
+
+export async function deleteRecetaLinea(
+  access: string,
+  idProducto: number,
+  idProductoInsumo: number
+): Promise<void> {
+  await http.delete(
+    `/productos/${idProducto}/receta/${idProductoInsumo}`,
+    authCfg(access)
+  );
 }
