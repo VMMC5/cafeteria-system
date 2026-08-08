@@ -23,16 +23,16 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 
 ## 2. Estado actual (agosto 2026)
 
-- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil). No hay trabajo activo en curso.
+- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil). No hay trabajo activo en curso.
 - Ramas locales residuales ya mergeadas: `feature/compras`, `feature/dashboard`, `feature/web-redesign`.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
 ### Cobertura de tests
 | Suite | Cantidad | Comando |
 |---|---|---|
-| Backend | 201 tests | `docker compose exec api pytest` |
+| Backend | 206 tests | `docker compose exec api pytest` |
 | Web | 114 tests | `docker compose exec web pytest` |
-| Móvil | 70 tests + `tsc` limpio | `cd mobile && npm test` |
+| Móvil | 79 tests + `tsc` limpio | `cd mobile && npm test` |
 
 Los tests de backend usan una **BD dedicada** (`<db>_test`, autoprovisionada con `seed_base`) con guardia que impide tocar la BD de dev.
 
@@ -119,7 +119,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 **Funcional:**
 - CRUD de catálogo (mesas/categorías/productos) en el **panel web** — hoy solo vía API/Swagger. *(candidato a próximo sprint)*
 - **Pago dividido** en la UI de Caja móvil (la API ya lo soporta; falta también test de pago dividido).
-- **Recetas** sin pantalla (solo API/Swagger).
+- **Recetas** con pantalla en Cocina móvil (PR #23). La cantidad se captura con **2 decimales**: el inventario (`stock_actual`, `MovimientoInventario.cantidad`) es `Numeric(10,2)` aunque `cantidad_requerida` sea `Numeric(10,3)`; ampliarlo a 3 decimales requiere migración Alembic + revisar reportes web.
 - RF-M03 (recuperar contraseña): solo nota, sin implementar.
 - Widgets diferidos: rebanada "Otros" en la dona; capacidad real de almacén en nivel de inventario.
 

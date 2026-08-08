@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-07 (recetas en el módulo Cocina móvil — implementado y verificado en rama `feat/mobile-recetas`, PR pendiente de abrir; antes PR #22 `7021077` pago dividido en la Caja móvil mergeado a `main`)
+**Última actualización:** 2026-08-07 (recetas en el módulo Cocina móvil **mergeado a `main` — PR #23**, squash `07aaeb7`; antes PR #22 `7021077` pago dividido en la Caja móvil)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -121,7 +121,7 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 ## ⏳ Pendiente
 
 ### Próximo
-- Recetas en Cocina móvil: implementado y verificado (rama `feat/mobile-recetas`, PR aún sin abrir). Suites verificadas — backend 205/206 (1 falla preexistente y ambiental de `test_seed_admin`, no causada por esta rama) y móvil 79/79 + `tsc --noEmit` limpio. **Pendiente:** smoke manual en dispositivo/emulador (no ejecutado en esta verificación). Candidatos siguientes: hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
+- Recetas en Cocina móvil **mergeado a `main` (PR #23, squash `07aaeb7`)**. Suites post-merge: móvil 79/79 + `tsc --noEmit` limpio; backend 205/206 (la falla de `test_seed_admin` es preexistente y ambiental, reproduce en `main` sin esa rama). Smoke manual en dispositivo **ejecutado y OK** (alta, edición inline, selector sin duplicados, baja con confirmación, rechazo de 3 decimales). Candidatos siguientes: migración del inventario a 3 decimales (ver deuda técnica), o hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
 - Pago dividido en Caja móvil **mergeado a `main` (PR #22, squash `7021077`)**; suite móvil 70/70 verificada post-merge. Pendientes del PR #22: smoke manual del cobro dividido en la app y test de API para venta con pagos múltiples.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
