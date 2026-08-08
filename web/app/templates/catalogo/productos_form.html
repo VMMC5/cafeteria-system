@@ -10,6 +10,7 @@
 
 <form method="post"
       action="{{ url_for('catalogo.producto_actualizar', id_producto=producto.id_producto) if producto else url_for('catalogo.producto_crear') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="card">
     <h2 class="card__title">Datos del producto</h2>
     <label>Nombre

@@ -10,6 +10,7 @@
 
 <form method="post"
       action="{{ url_for('catalogo.mesa_actualizar', id_mesa=mesa.id_mesa) if mesa else url_for('catalogo.mesa_crear') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="card">
     <h2 class="card__title">Datos de la mesa</h2>
     <label>Número de mesa

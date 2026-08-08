@@ -10,6 +10,7 @@
 
 <form method="post"
       action="{{ url_for('catalogo.categoria_actualizar', id_categoria=categoria.id_categoria) if categoria else url_for('catalogo.categoria_crear') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="card">
     <h2 class="card__title">Datos de la categoría</h2>
     <label>Nombre

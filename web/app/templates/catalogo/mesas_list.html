@@ -29,6 +29,7 @@
         <a class="icon-btn" href="{{ url_for('catalogo.mesa_editar', id_mesa=m.id_mesa) }}" title="Editar">✎</a>
         <form method="post" action="{{ url_for('catalogo.mesa_eliminar', id_mesa=m.id_mesa) }}"
               onsubmit="return confirm('¿Eliminar la mesa {{ m.numero_mesa }}?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="link-danger" type="submit" title="Eliminar">Eliminar</button>
         </form>
       </td>

@@ -1,5 +1,6 @@
 from flask import Flask, redirect, url_for
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 
 from app.auth import load_user_from_session
 from app.config import Config
@@ -7,6 +8,7 @@ from app.services.api_gateway import ReloginRequired
 
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
+csrf = CSRFProtect()
 
 
 def create_app(config_object=Config):
@@ -15,6 +17,7 @@ def create_app(config_object=Config):
     app.json.ensure_ascii = False
 
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     @login_manager.user_loader
     def _loader(user_id):
