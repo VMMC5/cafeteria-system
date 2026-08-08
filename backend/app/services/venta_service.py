@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     Configuracion,
-    EstadoPedido,
     MetodoPago,
     Pago,
     Pedido,
@@ -14,6 +13,7 @@ from app.models import (
     Venta,
 )
 from app.schemas.venta import PagoOut, VentaCreate, VentaOut
+from app.services import pedido_service
 
 _IVA_DEFAULT = Decimal("0.16")
 _ROLES_COBRO = {"Cajero", "Administrador"}
@@ -109,15 +109,9 @@ def to_out(db: Session, venta: Venta) -> VentaOut:
 
 
 def listar_por_cobrar(db: Session) -> list[Pedido]:
-    cancelado = db.execute(
-        select(EstadoPedido.id_estado).where(
-            EstadoPedido.nombre_estado == "Cancelado"
-        )
-    ).scalar_one()
-    con_venta = select(Venta.id_pedido)
     stmt = (
         select(Pedido)
-        .where(Pedido.id_estado != cancelado, Pedido.id_pedido.not_in(con_venta))
+        .where(*pedido_service.condiciones_pedido_activo(db))
         .order_by(Pedido.id_pedido.desc())
     )
     return list(db.execute(stmt).scalars())
