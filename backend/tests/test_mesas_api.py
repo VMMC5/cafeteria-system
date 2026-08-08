@@ -48,12 +48,11 @@ def test_capacidad_invalida_422(client, admin_headers):
     )
 
 
-def test_editar_estado(client, admin_headers):
-    creada = client.post("/api/v1/mesas", headers=admin_headers, json=_nueva()).json()
-    r = client.patch(
-        f"/api/v1/mesas/{creada['id_mesa']}", headers=admin_headers, json={"estado": "Reservada"}
+def test_crear_ocupada_a_mano_422(client, admin_headers):
+    r = client.post(
+        "/api/v1/mesas", headers=admin_headers, json=_nueva(estado="Ocupada")
     )
-    assert r.status_code == 200 and r.json()["estado"] == "Reservada"
+    assert r.status_code == 422
 
 
 def test_borrar_sin_pedidos_204(client, admin_headers):

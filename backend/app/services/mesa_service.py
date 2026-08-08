@@ -31,6 +31,13 @@ def _ensure_unico(db: Session, numero: int, exclude_id: int | None = None) -> No
 
 def create(db: Session, data: MesaCreate) -> Mesa:
     _ensure_unico(db, data.numero_mesa)
+    # "Ocupada" no se asigna a mano: lo pone el sistema al crear un pedido y
+    # lo quita el cobro o la cancelación.
+    if data.estado == "Ocupada":
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "El estado Ocupada lo asigna el sistema al crear un pedido",
+        )
     obj = Mesa(
         numero_mesa=data.numero_mesa,
         capacidad=data.capacidad,
