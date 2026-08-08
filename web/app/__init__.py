@@ -1,6 +1,6 @@
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, render_template, url_for
 from flask_login import LoginManager
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFError, CSRFProtect
 
 from app.auth import load_user_from_session
 from app.config import Config
@@ -42,5 +42,9 @@ def create_app(config_object=Config):
     @app.errorhandler(ReloginRequired)
     def _relogin(_e):
         return redirect(url_for("auth.login"))
+
+    @app.errorhandler(CSRFError)
+    def _csrf_error(_e):
+        return render_template("errors/csrf.html"), 400
 
     return app
