@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-07 (recetas en el módulo Cocina móvil **mergeado a `main` — PR #23**, squash `07aaeb7`; antes PR #22 `7021077` pago dividido en la Caja móvil)
+**Última actualización:** 2026-08-08 (guard de mesa Ocupada en la API, rama `feat/api-guard-ocupada` — pendiente de PR; antes recetas en el módulo Cocina móvil **mergeado a `main` — PR #23**, squash `07aaeb7`)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -121,11 +121,13 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 ## ⏳ Pendiente
 
 ### Próximo
-- Recetas en Cocina móvil **mergeado a `main` (PR #23, squash `07aaeb7`)**. Suites post-merge: móvil 79/79 + `tsc --noEmit` limpio; backend **206/206** (la falla de `test_seed_admin` que arrastraba la suite se corrigió aparte, `6e154c3`). Smoke manual en dispositivo **ejecutado y OK** (alta, edición inline, selector sin duplicados, baja con confirmación, rechazo de 3 decimales). Candidatos siguientes: migración del inventario a 3 decimales (ver deuda técnica), o hardening CSRF app-wide + guard de Ocupada en la API (diferidos del review del PR #21).
+- **Guard de mesa Ocupada en la API** — listo en `feat/api-guard-ocupada`, pendiente de abrir PR (cierra ese diferido del review del PR #21). Backend **217/217**, web **114/114** (la suite web no es evidencia del guard: stubea el cliente API por completo con monkeypatch, nunca llama a la API real; ver Deuda técnica). Sigue pendiente como slice aparte: **hardening CSRF del panel web** (el otro diferido del PR #21).
+- Recetas en Cocina móvil **mergeado a `main` (PR #23, squash `07aaeb7`)**. Suites post-merge: móvil 79/79 + `tsc --noEmit` limpio; backend **206/206** (la falla de `test_seed_admin` que arrastraba la suite se corrigió aparte, `6e154c3`). Smoke manual en dispositivo **ejecutado y OK** (alta, edición inline, selector sin duplicados, baja con confirmación, rechazo de 3 decimales). Candidato siguiente: migración del inventario a 3 decimales (ver deuda técnica).
 - Pago dividido en Caja móvil **mergeado a `main` (PR #22, squash `7021077`)**; suite móvil 70/70 verificada post-merge. Pendientes del PR #22: smoke manual del cobro dividido en la app y test de API para venta con pagos múltiples.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas
+- Guard de mesa Ocupada: la API rechaza cambiar el estado de una mesa con pedido activo (409) y asignar "Ocupada" a mano (422). La web mantiene su propio aviso mirando la bandera `mesa.estado`, así que en el caso raro de una mesa marcada Ocupada sin pedido activo el panel seguirá bloqueando el cambio aunque la API lo permita; destrabarla se hace por API.
 - **Deuda menor post-merge (triada en la revisión final, no bloquea):** quitar código muerto `api_client.get_reporte_resumen`; relabel "# Pedidos" → "# Ventas"; paleta de dona (6 colores < `limite` 10); un par de tests poco específicos; tests de no-regresión de filtros usan subconjunto en vez de igualdad; documentar `Pedido.id_usuario` (mesero) vs `Venta.id_usuario` (cajero) a nivel de modelo; la leyenda de la dona acopla a `Chart.overrides` (revisar en upgrade de Chart.js); el nombre de archivo del export refleja `desde`/`hasta` sin validar (fechas inválidas → 500, no explotable).
 - Módulos móviles Mesero/Cocina/Caja implementados; el placeholder `modulo/[key].tsx` ya no se usa por ningún rol.
 - Recetas: gestión completa desde el móvil (Cocina → Recetas). La lista de productos no muestra el nº de líneas de receta (`GET /productos` no lo trae); se ve al entrar al detalle.
