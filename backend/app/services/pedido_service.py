@@ -2,7 +2,15 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Cancelacion, DetallePedido, EstadoPedido, Mesa, Pedido, Producto
+from app.models import (
+    Cancelacion,
+    DetallePedido,
+    EstadoPedido,
+    Mesa,
+    Pedido,
+    Producto,
+    Venta,
+)
 from app.schemas.pedido import PedidoCreate
 from app.services import receta_service
 
@@ -143,3 +151,29 @@ def cancelar(db: Session, id_pedido: int, motivo: str, usuario) -> Pedido:
     db.commit()
     db.refresh(pedido)
     return pedido
+
+
+def condiciones_pedido_activo(db: Session) -> tuple:
+    """Condiciones que definen un pedido **activo**: ni cancelado ni cobrado.
+
+    Única definición de la regla. La comparten `venta_service.listar_por_cobrar`
+    y el guard de estado de mesas: si divergieran, la API podría liberar una mesa
+    que en realidad sigue ocupada.
+    """
+    cancelado = db.execute(
+        select(EstadoPedido.id_estado).where(
+            EstadoPedido.nombre_estado == "Cancelado"
+        )
+    ).scalar_one()
+    return (
+        Pedido.id_estado != cancelado,
+        Pedido.id_pedido.not_in(select(Venta.id_pedido)),
+    )
+
+
+def tiene_pedido_activo(db: Session, id_mesa: int) -> bool:
+    """True si la mesa tiene al menos un pedido activo (ni cancelado ni cobrado)."""
+    stmt = select(Pedido.id_pedido).where(
+        Pedido.id_mesa == id_mesa, *condiciones_pedido_activo(db)
+    )
+    return db.execute(stmt).first() is not None
