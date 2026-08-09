@@ -15,22 +15,22 @@ class InsumoCreate(BaseModel):
     nombre_insumo: str = Field(min_length=1)
     id_unidad: int
     descripcion: str | None = None
-    stock_actual: Decimal = Field(default=Decimal("0"), ge=0)
-    stock_minimo: Decimal = Field(default=Decimal("0"), ge=0)
+    stock_actual: Decimal = Field(default=Decimal("0"), ge=0, max_digits=10, decimal_places=3)
+    stock_minimo: Decimal = Field(default=Decimal("0"), ge=0, max_digits=10, decimal_places=3)
     costo_unitario: Decimal = Field(default=Decimal("0"), ge=0)
 
 
 class InsumoUpdate(BaseModel):
     nombre_insumo: str | None = None
     descripcion: str | None = None
-    stock_minimo: Decimal | None = Field(default=None, ge=0)
+    stock_minimo: Decimal | None = Field(default=None, ge=0, max_digits=10, decimal_places=3)
     costo_unitario: Decimal | None = Field(default=None, ge=0)
 
 
 class MovimientoCreate(BaseModel):
     tipo: str
     motivo: str
-    cantidad: Decimal = Field(gt=0)
+    cantidad: Decimal = Field(gt=0, max_digits=10, decimal_places=3)
 
 
 class InsumoOut(BaseModel):

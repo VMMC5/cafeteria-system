@@ -211,3 +211,23 @@ def test_compra_admite_3_decimales_y_subtotal_cuadra(client, db, cocinero_header
     assert Decimal(body["detalle"][0]["subtotal"]) == Decimal("12.50")
     stock, _ = _stock_costo(client, cocinero_headers, ins["id_insumo"])
     assert stock == 0.125
+
+
+def test_compra_cantidad_4_decimales_422(client, db, cocinero_headers):
+    prov = _proveedor_id(client, cocinero_headers, "Granos Finos")
+    ins = _insumo(client, db, cocinero_headers, nombre="Anís")
+    r = client.post(
+        "/api/v1/compras",
+        headers=cocinero_headers,
+        json={
+            "id_proveedor": prov,
+            "items": [
+                {
+                    "id_insumo": ins["id_insumo"],
+                    "cantidad": "0.1234",
+                    "costo_unitario": "10.00",
+                }
+            ],
+        },
+    )
+    assert r.status_code == 422

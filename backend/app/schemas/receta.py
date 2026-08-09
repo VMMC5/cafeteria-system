@@ -5,11 +5,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class RecetaLineaCreate(BaseModel):
     id_insumo: int
-    cantidad_requerida: Decimal = Field(gt=0)
+    cantidad_requerida: Decimal = Field(gt=0, max_digits=10, decimal_places=3)
 
 
 class RecetaLineaUpdate(BaseModel):
-    cantidad_requerida: Decimal = Field(gt=0)
+    cantidad_requerida: Decimal = Field(gt=0, max_digits=10, decimal_places=3)
 
 
 class UnidadAbrev(BaseModel):

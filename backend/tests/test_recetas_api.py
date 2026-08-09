@@ -304,3 +304,14 @@ def test_cancelar_repone_stock(client, db, admin_headers, cocinero_headers):
         json={"motivo": "prueba"},
     )
     assert _stock(client, cocinero_headers, iid) == 100.0
+
+
+def test_receta_cantidad_4_decimales_422(client, db, admin_headers, cocinero_headers):
+    pid = _producto_id(client, db, admin_headers, nombre="Té especiado")
+    iid = _insumo_id(client, db, cocinero_headers, nombre="Jengibre")
+    r = client.post(
+        f"/api/v1/productos/{pid}/receta",
+        headers=cocinero_headers,
+        json={"id_insumo": iid, "cantidad_requerida": "0.1234"},
+    )
+    assert r.status_code == 422
