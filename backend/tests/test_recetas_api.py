@@ -212,6 +212,26 @@ def _stock(client, cocinero_headers, id_insumo):
     )
 
 
+def test_consumo_receta_3_decimales_exacto(client, db, admin_headers, cocinero_headers):
+    """0.125 × 3 = 0.375 exacto. Con el inventario en 2 decimales cada línea de
+    receta se redondeaba a 0.13 al descontar y el stock derivaba del kárdex."""
+    pid = _producto_id(client, db, admin_headers, nombre="Chai especiado")
+    iid = _insumo_id(client, db, cocinero_headers, nombre="Cardamomo", stock=1.0)
+    client.post(
+        f"/api/v1/productos/{pid}/receta",
+        headers=cocinero_headers,
+        json={"id_insumo": iid, "cantidad_requerida": "0.125"},
+    )
+    mesa = _mesa_id(client, admin_headers, 731)
+    r = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={"id_mesa": mesa, "items": [{"id_producto": pid, "cantidad": 3}]},
+    )
+    assert r.status_code == 201
+    assert _stock(client, cocinero_headers, iid) == 0.625
+
+
 def test_descuento_al_crear_pedido(client, db, admin_headers, cocinero_headers):
     pid = _producto_id(client, db, admin_headers, nombre="Latte1")
     iid = _insumo_id(client, db, cocinero_headers, nombre="Leche1", stock=100.0)

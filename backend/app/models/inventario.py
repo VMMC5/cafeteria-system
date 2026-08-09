@@ -30,8 +30,8 @@ class Insumo(Base):
     )
     nombre_insumo = Column(String(100), nullable=False)
     descripcion = Column(String(255))
-    stock_actual = Column(Numeric(10, 2), nullable=False, server_default=text("0"))
-    stock_minimo = Column(Numeric(10, 2), nullable=False, server_default=text("0"))
+    stock_actual = Column(Numeric(10, 3), nullable=False, server_default=text("0"))
+    stock_minimo = Column(Numeric(10, 3), nullable=False, server_default=text("0"))
     costo_unitario = Column(Numeric(10, 2), nullable=False, server_default=text("0"))
     fecha_registro = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -56,7 +56,7 @@ class MovimientoInventario(Base):
     id_compra = Column(Integer, ForeignKey("compras.id_compra"), index=True)
     tipo_movimiento = Column(String(10), nullable=False)  # Entrada / Salida
     motivo = Column(String(30), nullable=False)  # Compra, Venta, Ajuste, Merma, Inicial
-    cantidad = Column(Numeric(10, 2), nullable=False)
+    cantidad = Column(Numeric(10, 3), nullable=False)
     fecha_movimiento = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
