@@ -142,6 +142,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 ```bash
 cp .env.example .env                             # ajustar secretos (solo la primera vez)
 docker compose up -d                             # db + api + web + adminer
+docker compose exec api alembic upgrade head     # esquema al día (migraciones, a mano tras cada pull)
 docker compose exec api python -m app.db.seed    # catálogos + admin + demo (idempotente)
 docker compose exec api python -m app.db.seed_demo   # opcional: 60 días de datos demo para reportes
 cd mobile && npx expo start                      # móvil

@@ -152,6 +152,7 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 ## Cómo arrancar
 ```bash
 docker compose up -d              # db + api + web + adminer
+docker compose exec api alembic upgrade head    # esquema al día (migraciones, a mano tras cada pull)
 docker compose exec api python -m app.db.seed   # catálogos + admin + demo (idempotente)
 cd mobile && npx expo start       # móvil (poner IP LAN en mobile/.env para teléfono físico)
 ```
