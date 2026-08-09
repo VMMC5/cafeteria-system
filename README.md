@@ -18,9 +18,14 @@ cafeteria-system/
 ## Arranque rápido
 
 ```bash
-cp .env.example .env      # ajustar secretos
-docker compose up -d      # levanta db + api + web + adminer
+cp .env.example .env              # ajustar secretos
+docker compose up -d --build      # levanta db + api + web + adminer
 ```
+
+Las dependencias del panel web viven en la imagen (se instalan en el
+`Dockerfile`), no en el volumen montado: tras un `git pull` que las cambie,
+un `docker compose up -d` sin `--build` reutiliza la imagen vieja y el panel
+no arranca. Usa siempre `--build` al levantar tras actualizar el repo.
 
 - API docs → http://localhost:8000/docs
 - Web admin → http://localhost:5000

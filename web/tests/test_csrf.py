@@ -25,7 +25,10 @@ def test_toda_plantilla_con_post_lleva_csrf_token():
     for archivo in sorted(PLANTILLAS.rglob("*.html")):
         texto = archivo.read_text(encoding="utf-8")
         for formulario in re.findall(r"<form\b.*?</form>", texto, re.S):
-            if 'method="post"' not in formulario:
+            # Insensible a mayúsculas y a la comilla usada (method="POST",
+            # method='post', ...), para que una plantilla futura no se cuele
+            # sin protección solo por variar el estilo de la etiqueta.
+            if not re.search(r'method\s*=\s*[\'"]post[\'"]', formulario, re.I):
                 continue
             if "csrf_token" not in formulario:
                 accion = re.search(r'action="([^"]*)"', formulario)
@@ -97,6 +100,16 @@ def test_post_sin_token_no_ejecuta_la_accion(csrf_client, monkeypatch):
     )
     csrf_client.post("/usuarios/2/desactivar")
     assert llamadas == []
+
+
+def test_post_sin_token_anonimo_no_muestra_chrome_autenticado(csrf_client):
+    """Un visitante que nunca inició sesión (ej. el cookie se perdió entre el
+    GET y el POST de /login) también debe ser rechazado con 400 al mandar un
+    POST sin token — y la página de rechazo no debe filtrar el sidebar
+    autenticado (con su enlace "Salir") a alguien sin sesión."""
+    r = csrf_client.post("/usuarios/2/desactivar")
+    assert r.status_code == 400
+    assert "Salir" not in r.get_data(as_text=True)
 
 
 def test_post_con_token_valido_pasa(csrf_client, monkeypatch):

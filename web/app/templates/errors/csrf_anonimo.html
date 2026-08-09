@@ -1,0 +1,12 @@
+{% extends "base_public.html" %}
+{% block title %}Sesión expirada · Cafetería Aroma{% endblock %}
+{% block fullpage %}
+<section class="card card--narrow">
+  <h1>La sesión del formulario expiró</h1>
+  <p>
+    Por seguridad, los formularios del panel caducan tras un rato sin usarse.
+    No se realizó ningún cambio: vuelve a iniciar sesión e inténtalo de nuevo.
+  </p>
+  <p><a class="btn" href="{{ url_for('auth.login') }}">Volver a iniciar sesión</a></p>
+</section>
+{% endblock %}
