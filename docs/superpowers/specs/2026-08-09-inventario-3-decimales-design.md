@@ -58,6 +58,25 @@ El `downgrade` vuelve a `(10,2)` y **pierde el tercer decimal por redondeo**. No
 impedirlo; se documenta en el docstring de la revisión para que quien lo ejecute sepa lo que
 pierde.
 
+#### `detalle_compra.cantidad` necesita tratamiento especial
+
+`DetalleCompra.subtotal` es una columna **generada y persistida**
+(`Computed("cantidad * costo_unitario", persisted=True)`, `backend/app/models/compra.py:58-60`)
+que depende de `cantidad`. Postgres rechaza alterar el tipo de una columna de la que depende una
+generada — verificado contra el contenedor `db` del proyecto:
+
+```
+ERROR:  cannot alter type of a column used by a generated column
+DETAIL:  Column "cantidad" is used by generated column "subtotal".
+```
+
+La migración debe, para esa tabla y solo para esa tabla: eliminar `subtotal`, alterar `cantidad`
+y volver a crear `subtotal` con la misma expresión. La secuencia se probó con datos dentro:
+Postgres recalcula la columna generada para las filas existentes al recrearla, así que no hay
+pérdida (`2.50 × 4.00` sigue dando `10.00`, y una fila nueva de `0.125 × 100.00` da `12.50`).
+
+El `downgrade` repite la misma coreografía en sentido inverso.
+
 #### Dos avisos operativos
 
 - **BD del volumen (dev/producción):** requiere `docker compose exec api alembic upgrade head`.
@@ -133,31 +152,40 @@ solo pinta `nombre`, `nivel_pct` y `bajo_minimo` — ninguna cantidad, **no camb
 `reporte_service.inventario_niveles` tampoco: su `float()` es para calcular el porcentaje, y
 `stock_actual`/`stock_minimo` salen como `Decimal` intactos.
 
-Queda un solo punto: `web/app/reportes/routes.py:36-37`, donde el armador de filas hace
-`float(f["stock_actual"])`. Esas filas alimentan tres salidas a la vez —vista previa HTML, CSV y
-celdas tipadas del XLSX—, así que no pueden volverse strings formateados sin romper el tipado
-numérico de la hoja de cálculo.
+Queda un solo punto, y es más profundo de lo que aparenta. El armador de filas
+(`web/app/reportes/routes.py:36-37`) hace `float(f["stock_actual"])`, y esas filas alimentan tres
+salidas: vista previa HTML, PDF y celdas tipadas del XLSX. Las dos primeras pasan por
+`_fmt_cell` (`web/app/reportes/routes.py:79-84`), que **formatea todo `float` con `.2f`**. O sea
+que sin tocar nada, un stock de `0.125` se mostraría como `0.13` en el panel y en el PDF: la
+funcionalidad nueva quedaría invisible justo donde el administrador la consulta.
 
-Helper local `_cantidad(x)`: devuelve `int` si el valor es entero, `float` redondeado a 3 en
-cualquier otro caso. Las celdas siguen siendo numéricas para XLSX y CSV, y la vista previa deja
-de mostrar `500.0` para 500 servilletas — muestra `500`, `12.5`, `0.125`. Misma regla de recorte
-que el móvil, sin sacrificar el tipo.
+No basta con redondear a 3 en el armador de filas, y tampoco se puede mandar un string
+formateado, porque el XLSX perdería el tipado numérico (SUM/orden/filtro en Excel).
+
+Solución: un tipo marcador `class Cantidad(float)` y un helper `_cantidad(x)` que lo construye
+redondeando a 3 decimales. `_fmt_cell` lo intercepta **antes** de la rama genérica de `float` y
+lo formatea con hasta 3 decimales sin ceros de relleno. Como `Cantidad` es subclase de `float`,
+openpyxl lo sigue escribiendo como celda numérica (su comprobación es `isinstance`), así que el
+XLSX no cambia de comportamiento. La vista previa y el PDF pasan a mostrar `500`, `12.5`,
+`0.125` — la misma regla de recorte del móvil, sin sacrificar el tipo.
 
 ## Pruebas
 
 **Backend** (`backend/tests/`):
 - Round-trip exacto de 3 decimales: alta de insumo con `stock_actual = 0.125`; movimiento manual
   de `0.005`; ítem de compra de `0.125`.
-- Consumo por receta: una línea de receta de `0.125` descontada tres veces deja `0.375` de stock
-  y tres movimientos de `0.125` — el caso que hoy no cuadra.
+- Consumo por receta: un producto con línea de receta de `0.125` pedido con `cantidad: 3`
+  descuenta exactamente `0.375` (el descuento ocurre **al crear el pedido**, ver
+  `receta_service.consumir` y `test_descuento_al_crear_pedido`) — el caso que hoy no cuadra.
 - 422 con 4 decimales en cada uno de los cinco campos de entrada.
 - Los tests de inventario, compras y recetas existentes siguen pasando sin cambios.
 
 **Web** (`web/tests/`):
-- `_cantidad` en sus tres formas: entero → `int`, fraccionario → `float` a 3, redondeo del cuarto
-  decimal.
-- Fila de reporte de inventario con stock fraccionario, con el stub Decimal-string de la
-  convención del proyecto.
+- `_fmt_cell` sobre un `Cantidad`: entero sin decimales, fraccionario con hasta 3, sin ceros de
+  relleno — y un `float` normal (dinero) que sigue saliendo con `.2f`, para que la regla nueva no
+  se coma a la vieja.
+- Vista previa del reporte de inventario con stock fraccionario (`"0.125"`), usando el stub
+  Decimal-string de la convención del proyecto: el cuerpo HTML debe contener `0.125`, no `0.13`.
 
 **Móvil** (`mobile/src/**/*.test.ts`):
 - `decimalesValidos` y las tres funciones que lo consumen: 2, 3 y 4 decimales, coma decimal,
@@ -169,9 +197,10 @@ que el móvil, sin sacrificar el tipo.
 1. `docker compose exec api alembic upgrade head` sobre la BD real.
 2. Alta de un insumo con stock `0.125` — se guarda y se muestra `0.125`, no `0.13`.
 3. Ajuste de `0.005` sobre ese insumo — stock resultante `0.130`, mostrado como `0.13`.
-4. Compra con cantidad fraccionaria — el kárdex registra la cantidad exacta.
-5. Receta con `0.125` de un insumo: al entregar el pedido, el descuento es exacto.
-6. Reporte de Inventario en el panel: vista previa, CSV y XLSX con las cantidades recortadas.
+4. Compra con cantidad fraccionaria — el kárdex registra la cantidad exacta y el subtotal de la
+   compra sigue cuadrando (la columna generada se recreó en la migración).
+5. Receta con `0.125` de un insumo: al **crear** el pedido, el descuento es exacto.
+6. Reporte de Inventario en el panel: vista previa, PDF y XLSX con las cantidades recortadas.
 
 ## Deuda que queda anotada
 
