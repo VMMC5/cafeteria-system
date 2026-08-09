@@ -51,11 +51,13 @@
         {% if u.activo %}
         <form method="post" action="{{ url_for('usuarios.desactivar', id_usuario=u.id_usuario) }}"
               onsubmit="return confirm('¿Desactivar a {{ u.nombre }}?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="link-danger" type="submit" title="Desactivar">Desactivar</button>
         </form>
         {% else %}
         <form method="post" action="{{ url_for('usuarios.activar', id_usuario=u.id_usuario) }}"
               onsubmit="return confirm('¿Activar a {{ u.nombre }}?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="link-ok" type="submit" title="Activar">Activar</button>
         </form>
         {% endif %}

@@ -41,6 +41,7 @@
       <td class="actions">
         <a class="icon-btn" href="{{ url_for('catalogo.producto_editar', id_producto=p.id_producto) }}" title="Editar">✎</a>
         <form method="post" action="{{ url_for('catalogo.producto_toggle', id_producto=p.id_producto) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="disponible" value="{{ '0' if p.disponible else '1' }}">
           {% if p.disponible %}
           <button class="link-danger" type="submit" title="Desactivar">Desactivar</button>

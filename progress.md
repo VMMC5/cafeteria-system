@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-08 (guard de mesa Ocupada en la API **mergeado a `main` — PR #24**, squash `bbe830d`; antes recetas en el módulo Cocina móvil, PR #23 `07aaeb7`)
+**Última actualización:** 2026-08-08 (protección **CSRF en el panel web**, rama `feat/web-csrf`; antes guard de mesa Ocupada en la API mergeado a `main` — PR #24, squash `bbe830d`)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -122,13 +122,14 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 
 ### Próximo
 - **Guard de mesa Ocupada en la API mergeado a `main` (PR #24, squash `bbe830d`)** — cierra ese diferido del review del PR #21. Backend **217/217** verificado post-merge. La suite web (114/114) no es evidencia del guard: stubea el cliente API con monkeypatch y nunca llama a la API real; el panel se verificó por inspección de código (`mesa_crear`/`mesa_actualizar` capturan `ApiError` y muestran `detail` como flash) más recorrido manual en móvil y web.
-- **Siguiente slice: hardening CSRF del panel web** (el otro diferido del PR #21). No hay `flask-wtf` en `requirements.txt`; son 14 rutas POST (login, 4 de usuarios, 9 de catálogo) y 9 plantillas con formulario, y activar `CSRFProtect` rompe las 26 llamadas `client.post` de los tests si no se ajusta la config de test.
-- **Candidato con prioridad tras el hallazgo confirmado:** camino de "cerrar sin cobro" para el pedido entregado que nadie paga (ver Deuda técnica).
+- **Protección CSRF en el panel web (rama `feat/web-csrf`, pendiente de PR)** — cierra el segundo diferido del review del PR #21. Con esto quedan cerrados **los dos** diferidos de aquel review: guard de Ocupada (PR #24) y CSRF (esta rama).
+- **Candidato siguiente:** camino de "cerrar sin cobro" para el pedido entregado que nadie paga (ver Deuda técnica).
 - Recetas en Cocina móvil **mergeado a `main` (PR #23, squash `07aaeb7`)**. Suites post-merge: móvil 79/79 + `tsc --noEmit` limpio; backend **206/206** (la falla de `test_seed_admin` que arrastraba la suite se corrigió aparte, `6e154c3`). Smoke manual en dispositivo **ejecutado y OK** (alta, edición inline, selector sin duplicados, baja con confirmación, rechazo de 3 decimales). Candidato siguiente: migración del inventario a 3 decimales (ver deuda técnica).
 - Pago dividido en Caja móvil **mergeado a `main` (PR #22, squash `7021077`)**; suite móvil 70/70 verificada post-merge. Pendientes del PR #22: smoke manual del cobro dividido en la app y test de API para venta con pagos múltiples.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
 ### Deuda técnica / mejoras conocidas
+- **CSRF en el panel web — protección activa (rama `feat/web-csrf`).** `CSRFProtect` global en el factory cubre las 14 rutas POST sin decorar ninguna; token en los 10 formularios de las 9 plantillas (los 4 dentro de bucles `{% for %}` lo emiten por fila); rechazo renderiza una página propia con status 400 (no redirect). Los tests del panel desactivan la validación en su fixture (`WTF_CSRF_ENABLED=False`) salvo `web/tests/test_csrf.py`, que la activa a propósito para probarla de verdad — incluye un test que recorre todas las plantillas y exige un `csrf_token` dentro de cada bloque `<form method="post">`, así que un formulario futuro sin token rompe la suite. `requirements.txt` cambió (`flask-wtf`), así que desplegar requiere `docker compose build web`, no solo reiniciar el contenedor.
 - Guard de mesa Ocupada: la API rechaza cambiar el estado de una mesa con pedido activo (409) y asignar "Ocupada" a mano (422). La web mantiene su propio aviso mirando la bandera `mesa.estado`, así que en el caso raro de una mesa marcada Ocupada sin pedido activo el panel seguirá bloqueando el cambio aunque la API lo permita; destrabarla se hace por API.
 - **Pedido entregado sin cobrar traba la mesa sin salida limpia — CONFIRMADO en móvil y web (2026-08-08).** `pedido_service.cancelar` rechaza pedidos en estado terminal (Entregado, Cancelado) con 409, y el guard rechaza liberar la mesa mientras ese pedido siga activo; la única salida hoy es registrar una venta que nunca ocurrió. Falta un camino de "cerrar sin cobro" (p. ej. permitir cancelar un Entregado con motivo, o un endpoint de cierre sin venta que libere la mesa dejando rastro). Es el candidato con más prioridad operativa.
 - `venta_service.cobrar` y `pedido_service.cancelar` ponen `mesa.estado = "Disponible"` sin condición, sin consultar si la mesa tiene otro pedido activo. Hoy no es alcanzable (`crear` exige mesa Disponible, así que una mesa no puede acumular dos pedidos), pero ya que existe `tiene_pedido_activo` ambos sitios deberían consultarlo.

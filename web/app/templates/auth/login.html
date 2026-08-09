@@ -19,6 +19,7 @@
       <h1>Iniciar sesión</h1>
       <p class="sub">Acceso exclusivo para administradores</p>
       <form method="post" action="{{ url_for('auth.login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Correo electrónico
           <input type="email" name="correo" placeholder="admin@cafeteria.com" required autofocus>
         </label>

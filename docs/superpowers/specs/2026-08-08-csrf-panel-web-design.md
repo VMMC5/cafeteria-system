@@ -76,4 +76,14 @@ El punto 3 es el que da valor real: un test que solo mira el 400 pasaría aunque
 - `SESSION_COOKIE_SAMESITE` y `SESSION_COOKIE_SECURE`.
 - CSRF en la API (stateless con JWT en header; no aplica).
 - Migrar los formularios a clases `FlaskForm` de WTForms: el panel construye sus formularios a mano en las plantillas y ese refactor es mucho mayor que este slice.
-- Rotación del token por petición o límites de tiempo distintos del que trae `flask-wtf` por defecto.
+- Rotación del token por petición.
+
+**Actualización post-revisión final:** el límite de tiempo del token sí se
+tocó. El review final encontró que `WTF_CSRF_TIME_LIMIT` a una hora (el
+default de `flask-wtf`) mientras la sesión dura todo el navegador es una
+trampa de pérdida de datos: un admin que abre "Nuevo producto", lo deja a
+medias y retoma 70 minutos después pierde el formulario completo al enviarlo.
+El dueño del proyecto revisó el hallazgo y decidió que el fix gobierna sobre
+esta línea del spec: se adoptó `WTF_CSRF_TIME_LIMIT = None` en
+`web/app/config.py`. El token sigue atado a la sesión, así que no se debilita
+la protección — solo se quita el vencimiento independiente de esta.

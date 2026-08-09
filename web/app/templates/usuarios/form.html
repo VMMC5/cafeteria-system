@@ -10,6 +10,7 @@
 
 <form method="post"
       action="{{ url_for('usuarios.actualizar', id_usuario=usuario.id_usuario) if usuario else url_for('usuarios.crear') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div class="cols">
   <div class="card">
     <h2 class="card__title">Datos del usuario</h2>

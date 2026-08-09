@@ -1,5 +1,6 @@
-from flask import Flask, redirect, url_for
-from flask_login import LoginManager
+from flask import Flask, redirect, render_template, url_for
+from flask_login import LoginManager, current_user
+from flask_wtf.csrf import CSRFError, CSRFProtect
 
 from app.auth import load_user_from_session
 from app.config import Config
@@ -7,6 +8,7 @@ from app.services.api_gateway import ReloginRequired
 
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
+csrf = CSRFProtect()
 
 
 def create_app(config_object=Config):
@@ -15,6 +17,7 @@ def create_app(config_object=Config):
     app.json.ensure_ascii = False
 
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     @login_manager.user_loader
     def _loader(user_id):
@@ -39,5 +42,15 @@ def create_app(config_object=Config):
     @app.errorhandler(ReloginRequired)
     def _relogin(_e):
         return redirect(url_for("auth.login"))
+
+    @app.errorhandler(CSRFError)
+    def _csrf_error(_e):
+        # Sin sesión (p. ej. el cookie se perdió entre el GET y el POST de
+        # /login) no hay que mostrar el chrome autenticado: la plantilla
+        # anónima usa el layout sin sidebar y enlaza a auth.login en vez de
+        # dashboard.index.
+        if current_user.is_authenticated:
+            return render_template("errors/csrf.html"), 400
+        return render_template("errors/csrf_anonimo.html"), 400
 
     return app
