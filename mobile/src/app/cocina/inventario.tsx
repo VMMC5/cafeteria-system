@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { getInsumos, Insumo } from "@/api/client";
+import { cantidad } from "@/lib/format";
 import { stockBajo } from "@/lib/inventario";
 import { useAuth } from "@/store/auth";
 
@@ -72,12 +73,12 @@ export default function Inventario() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.nombre}>{item.nombre_insumo}</Text>
                 <Text style={styles.meta}>
-                  mín. {item.stock_minimo} {item.unidad.abreviatura}
+                  mín. {cantidad(item.stock_minimo)} {item.unidad.abreviatura}
                 </Text>
               </View>
               <View style={{ alignItems: "flex-end" }}>
                 <Text style={[styles.stock, bajo && styles.stockBajoTxt]}>
-                  {item.stock_actual} {item.unidad.abreviatura}
+                  {cantidad(item.stock_actual)} {item.unidad.abreviatura}
                 </Text>
                 {bajo && <Text style={styles.alerta}>Stock bajo</Text>}
               </View>

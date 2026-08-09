@@ -20,6 +20,7 @@ import {
 } from "@/api/client";
 import { compraTotal, compraValida, lineaCompraValida } from "@/lib/compras";
 import { aCantidad } from "@/lib/decimales";
+import { cantidad } from "@/lib/format";
 import { useAuth } from "@/store/auth";
 
 type LineaLocal = {
@@ -196,7 +197,7 @@ export default function CompraNueva() {
         {lineas.map((l, i) => (
           <View key={i} style={styles.row}>
             <Text style={styles.rowL}>
-              {l.cantidad} × {l.nombre}
+              {cantidad(l.cantidad)} × {l.nombre}
             </Text>
             <Text style={styles.rowV}>
               ${(l.cantidad * l.costo_unitario).toFixed(2)}

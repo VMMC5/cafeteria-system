@@ -20,6 +20,7 @@ import {
   patchRecetaLinea,
   RecetaLinea,
 } from "@/api/client";
+import { cantidad } from "@/lib/format";
 import { aCantidad, cantidadValida, insumosDisponibles } from "@/lib/recetas";
 import { useAuth } from "@/store/auth";
 
@@ -219,7 +220,7 @@ export default function RecetaDetalle() {
                     }}
                   >
                     <Text style={styles.cantidad}>
-                      {item.cantidad_requerida} {item.insumo.unidad.abreviatura}
+                      {cantidad(item.cantidad_requerida)} {item.insumo.unidad.abreviatura}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity disabled={ocupado} onPress={() => confirmarEliminar(item)}>
