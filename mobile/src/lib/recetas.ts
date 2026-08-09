@@ -1,21 +1,13 @@
-/** Normaliza la coma decimal a punto: los teclados numéricos varían por locale. */
-function normalizar(txt: string): string {
-  return txt.trim().replace(",", ".");
-}
+import { decimalesValidos } from "./decimales";
+
+export { aCantidad } from "./decimales";
 
 /**
- * Cantidad de receta válida: número > 0 con hasta 2 decimales.
- * El inventario (stock_actual y MovimientoInventario.cantidad) es Numeric(10,2);
- * una cantidad de receta con 3 decimales desincroniza el stock del kárdex.
+ * Cantidad de receta válida: número > 0 con hasta 3 decimales, lo mismo que
+ * aceptan el inventario y el kárdex desde la migración a Numeric(10,3).
  */
 export function cantidadValida(txt: string): boolean {
-  const t = normalizar(txt);
-  if (!/^\d+(\.\d{1,2})?$/.test(t)) return false;
-  return Number(t) > 0;
-}
-
-export function aCantidad(txt: string): number {
-  return Number(normalizar(txt));
+  return decimalesValidos(txt, 3);
 }
 
 /** Quita acentos y baja a minúsculas para que la búsqueda sea tolerante. */

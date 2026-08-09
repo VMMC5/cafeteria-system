@@ -1,8 +1,10 @@
 import { compraTotal, compraValida, lineaCompraValida } from "./compras";
 
-test("lineaCompraValida exige insumo, cantidad > 0 y costo >= 0 no vacío", () => {
+test("lineaCompraValida exige insumo, cantidad > 0 de hasta 3 decimales y costo >= 0 no vacío", () => {
   expect(lineaCompraValida(1, "2", "30")).toBe(true);
+  expect(lineaCompraValida(1, "0.125", "30")).toBe(true);
   expect(lineaCompraValida(1, "2", "0")).toBe(true);
+  expect(lineaCompraValida(1, "0.1255", "30")).toBe(false);
   expect(lineaCompraValida(null, "2", "30")).toBe(false);
   expect(lineaCompraValida(1, "0", "30")).toBe(false);
   expect(lineaCompraValida(1, "2", "")).toBe(false);

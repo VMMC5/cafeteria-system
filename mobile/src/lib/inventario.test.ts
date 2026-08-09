@@ -6,8 +6,11 @@ test("stockBajo cuando stock_actual <= stock_minimo", () => {
   expect(stockBajo({ stock_actual: 9, stock_minimo: 5 })).toBe(false);
 });
 
-test("movimientoValido exige tipo, motivo y cantidad > 0", () => {
+test("movimientoValido exige tipo, motivo y cantidad > 0 de hasta 3 decimales", () => {
   expect(movimientoValido("Salida", "Merma", "2")).toBe(true);
+  expect(movimientoValido("Salida", "Merma", "0.125")).toBe(true);
+  expect(movimientoValido("Salida", "Merma", "0,125")).toBe(true);
+  expect(movimientoValido("Salida", "Merma", "0.1255")).toBe(false);
   expect(movimientoValido(null, "Merma", "2")).toBe(false);
   expect(movimientoValido("Salida", null, "2")).toBe(false);
   expect(movimientoValido("Salida", "Merma", "0")).toBe(false);

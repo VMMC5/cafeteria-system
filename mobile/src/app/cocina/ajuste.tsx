@@ -11,6 +11,7 @@ import {
 } from "react-native";
 
 import { getInsumo, Insumo, registrarMovimiento } from "@/api/client";
+import { aCantidad } from "@/lib/decimales";
 import { movimientoValido } from "@/lib/inventario";
 import { useAuth } from "@/store/auth";
 
@@ -53,7 +54,7 @@ export default function Ajuste() {
       const actualizado = await registrarMovimiento(access, iid, {
         tipo,
         motivo,
-        cantidad: Number(cantidadTxt),
+        cantidad: aCantidad(cantidadTxt),
       });
       setInsumo(actualizado);
       setCantidadTxt("");
