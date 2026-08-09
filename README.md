@@ -27,6 +27,15 @@ Las dependencias del panel web viven en la imagen (se instalan en el
 un `docker compose up -d` sin `--build` reutiliza la imagen vieja y el panel
 no arranca. Usa siempre `--build` al levantar tras actualizar el repo.
 
+El stack tampoco aplica migraciones al arrancar: tras un `git pull` que
+traiga una revisión Alembic nueva, hay que correrla a mano antes (o después)
+del seed.
+
+```bash
+docker compose exec api alembic upgrade head   # esquema al día (migraciones)
+docker compose exec api python -m app.db.seed  # catálogos + admin + demo
+```
+
 - API docs → http://localhost:8000/docs
 - Web admin → http://localhost:5000
 - Adminer (BD) → http://localhost:8080

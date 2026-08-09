@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-09 (protección **CSRF en el panel web mergeada a `main` — PR #25**, squash `64bc9e8`; antes guard de mesa Ocupada en la API, PR #24 `bbe830d`)
+**Última actualización:** 2026-08-09 (inventario a 3 decimales en rama `feat/inventario-3-decimales`, lista para PR; antes protección **CSRF en el panel web mergeada a `main` — PR #25**, squash `64bc9e8`; antes guard de mesa Ocupada en la API, PR #24 `bbe830d`)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -123,8 +123,9 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 ### Próximo
 - **Guard de mesa Ocupada en la API mergeado a `main` (PR #24, squash `bbe830d`)** — cierra ese diferido del review del PR #21. Backend **217/217** verificado post-merge. La suite web (114/114) no es evidencia del guard: stubea el cliente API con monkeypatch y nunca llama a la API real; el panel se verificó por inspección de código (`mesa_crear`/`mesa_actualizar` capturan `ApiError` y muestran `detail` como flash) más recorrido manual en móvil y web.
 - **Protección CSRF en el panel web mergeada a `main` (PR #25, squash `64bc9e8`)** — cierra el segundo diferido del review del PR #21. Verificado post-merge: web 120/120, backend 217/217. Smoke manual en navegador **ejecutado y OK**: login, crear producto y desactivar usuario (las tres formas de formulario), más la página de rechazo en sus dos variantes (con sesión y anónima). Con esto quedan cerrados **los dos** diferidos de aquel review: guard de Ocupada (PR #24) y CSRF (esta rama).
+- **Inventario a 3 decimales — rama `feat/inventario-3-decimales` lista para PR (aún sin mergear).** Migración Alembic `7f3a9c2b1d84` amplía `insumos.stock_actual`, `insumos.stock_minimo`, `movimientos_inventario.cantidad` y `detalle_compra.cantidad` de `Numeric(10,2)` a `Numeric(10,3)`; la API rechaza con 422 las cantidades de más de 3 decimales; móvil valida decimales y muestra la cantidad sin ceros de relleno (`cantidad()`, redondea el 4º decimal); el reporte de Inventario del panel web ya no trunca el stock a 2 decimales en la vista previa ni en el PDF. Suites verificadas en este worktree: backend **226**, web **123**, móvil **84** (+ `tsc --noEmit` limpio). Al desplegar: correr `docker compose exec api alembic upgrade head` a mano — el stack no aplica migraciones al arrancar.
 - **Candidato siguiente:** camino de "cerrar sin cobro" para el pedido entregado que nadie paga (ver Deuda técnica).
-- Recetas en Cocina móvil **mergeado a `main` (PR #23, squash `07aaeb7`)**. Suites post-merge: móvil 79/79 + `tsc --noEmit` limpio; backend **206/206** (la falla de `test_seed_admin` que arrastraba la suite se corrigió aparte, `6e154c3`). Smoke manual en dispositivo **ejecutado y OK** (alta, edición inline, selector sin duplicados, baja con confirmación, rechazo de 3 decimales). Candidato siguiente: migración del inventario a 3 decimales (ver deuda técnica).
+- Recetas en Cocina móvil **mergeado a `main` (PR #23, squash `07aaeb7`)**. Suites post-merge: móvil 79/79 + `tsc --noEmit` limpio; backend **206/206** (la falla de `test_seed_admin` que arrastraba la suite se corrigió aparte, `6e154c3`). Smoke manual en dispositivo **ejecutado y OK** (alta, edición inline, selector sin duplicados, baja con confirmación, rechazo de 3 decimales).
 - Pago dividido en Caja móvil **mergeado a `main` (PR #22, squash `7021077`)**; suite móvil 70/70 verificada post-merge. Pendientes del PR #22: smoke manual del cobro dividido en la app y test de API para venta con pagos múltiples.
 - Widgets analíticos diferidos: rebanada "Otros" en la dona; capacidad real de almacén para el nivel de inventario.
 
@@ -143,7 +144,8 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 - Los endpoints de detalle de reportes no paginan (N+1 leve en ventas); falta test de API para venta con pagos múltiples.
 - Tras registrar un blueprint nuevo en el web, hay que **reiniciar el contenedor** (`docker compose restart web`); el hot-reload no recarga el registro de rutas.
 - `seed_admin` **no resincroniza la contraseña** de un admin existente (solo restaura el rol): cambiar `ADMIN_PASSWORD` en `.env` no surte efecto sobre una BD ya sembrada; hay que cambiarla por el PATCH de la API. Se evaluó hacer `.env` autoritativo y se descartó: un seed rutinario revertiría silenciosamente una contraseña cambiada desde el panel. El test de `seed_admin` ya no depende de esa coincidencia (`6e154c3`).
-- Inventario a 2 decimales vs. `cantidad_requerida` a 3: `cantidadValida` (móvil) limita la cantidad de receta a 2 decimales para no desincronizar stock/kárdex; pendiente migración Alembic para ampliar el inventario a 3 decimales (revisar también reportes web).
+- Los campos de **dinero** (importes, precios, pagos) siguen sin `decimal_places` en los schemas Pydantic: Postgres redondea en silencio igual que hacía el inventario antes de este slice, pero con un radio de impacto mayor (ventas, pagos, reportes). Mismo arreglo que ya se aplicó a las cantidades, pendiente de aplicar al dinero.
+- El `downgrade` de la migración `7f3a9c2b1d84` (inventario a 3 decimales) redondea el tercer decimal de forma irreversible: un stock de `0.125` vuelve como `0.13` al revertir.
 
 ---
 
