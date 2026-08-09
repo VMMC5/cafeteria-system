@@ -227,6 +227,9 @@ def seed_base(db) -> int:
             if not existe:
                 db.add(model(**row))
                 total += 1
+    # SessionLocal usa autoflush=False: sin este flush, sobre una BD vacía
+    # `seed_admin` no ve los roles recién añadidos y muere con NoResultFound.
+    db.flush()
     total += seed_admin(db)
     total += seed_usuarios_demo(db)
     total += seed_catalogo(db)
