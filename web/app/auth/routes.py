@@ -44,7 +44,7 @@ def login():
     return render_template("auth/login.html", support_url=SUPPORT_URL)
 
 
-@bp.route("/logout")
+@bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
     logout_user()

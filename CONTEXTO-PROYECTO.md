@@ -24,16 +24,18 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 ## 2. Estado actual (agosto 2026)
 
 - **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil) + **PR #24** (guard de mesa Ocupada en la API) + **PR #25** (protección CSRF en el panel web) + **PR #26** (inventario y kárdex a 3 decimales, squash `84d8161`; incluye el fix de `seed_base` sobre BD vacía).
-- **Sin trabajo activo en curso.** Candidato siguiente: camino de "cerrar sin cobro" para el pedido Entregado que nadie paga (el pendiente con más prioridad operativa).
+- **Trabajo activo en curso:** rama `feat/fixes-logout-refresh-pagos`, lista para PR (sin mergear, sin número de PR asignado todavía). Tres fixes menores: test de API para venta con pagos múltiples (cierra el último pendiente del PR #22), `/logout` del panel web de GET a POST (cerraba una vulnerabilidad de logout-CSRF que quedó fuera del alcance del PR #25) y refresh-on-401 global en el móvil (interceptor de axios con single-flight). Candidato siguiente tras mergear esta rama: camino de "cerrar sin cobro" para el pedido Entregado que nadie paga (el pendiente con más prioridad operativa).
 - Ramas locales residuales ya mergeadas: `feature/compras`, `feature/dashboard`, `feature/web-redesign`.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
 ### Cobertura de tests
 | Suite | Cantidad | Comando |
 |---|---|---|
-| Backend | 227 tests | `docker compose exec api pytest` |
-| Web | 123 tests | `docker compose exec web pytest` |
-| Móvil | 84 tests + `tsc` limpio | `cd mobile && npm test` |
+| Backend | 228 tests | `docker compose exec api pytest` |
+| Web | 126 tests | `docker compose exec web pytest` |
+| Móvil | 91 tests + `tsc` limpio | `cd mobile && npm test` |
+
+> Conteos verificados en la rama `feat/fixes-logout-refresh-pagos` (lista para PR, sin mergear). `main` sigue en 227/123/84 hasta el merge.
 
 Los tests de backend usan una **BD dedicada** (`<db>_test`, autoprovisionada con `seed_base`) con guardia que impide tocar la BD de dev.
 
@@ -85,7 +87,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 - `api/client.ts` — cliente axios con tipos; `api/coerce.ts` — **coacción Decimal string→number en el borde** (interceptor de respuesta, allowlist: `total, subtotal, iva, cambio, monto, cantidad, precio_venta, costo_unitario, stock_actual, stock_minimo`).
 - `lib/` — lógica pura testeable por módulo + `format.ts` con el helper **`money()`** (`$X.XX` defensivo).
 - `store/` — `auth.ts` (sesión en `expo-secure-store`; en web cae a `localStorage`), `cart.ts`.
-- Polling (10s) para vistas en vivo; sin refresh-on-401 global (el bootstrap cubre expiración al arrancar).
+- Polling (10s) para vistas en vivo; **refresh-on-401 global** vía interceptor de respuesta de axios con single-flight (rama `feat/fixes-logout-refresh-pagos`, lista para PR): N 401 concurrentes disparan un solo refresh, un reintento por petición, tokens renovados en el store + `SecureStore`; si el refresh falla, Alert único + `router.replace` al login. Complementa, no reemplaza, el patrón de **token como argumento** en las pantallas (`lib/authRefresh.ts` + `api/authInterceptor.ts`).
 
 ---
 

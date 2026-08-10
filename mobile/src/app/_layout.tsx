@@ -1,5 +1,9 @@
 import { Stack } from "expo-router";
 
+import { instalarAuthInterceptor } from "@/api/authInterceptor";
+
+instalarAuthInterceptor();
+
 export default function RootLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>

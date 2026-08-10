@@ -214,3 +214,35 @@ def test_pedidos_por_cobrar(client, db, admin_headers, cajero_headers):
     assert p_activo["id_pedido"] in ids
     assert p_cobrado["id_pedido"] not in ids
     assert p_cancel["id_pedido"] not in ids
+
+
+def test_cobrar_pago_dividido_excedente_y_referencia(
+    client, db, admin_headers, cajero_headers
+):
+    """El caso del smoke manual del PR #22 que nunca tuvo test: pago dividido
+    donde el Efectivo trae excedente (genera cambio) y la Tarjeta lleva
+    referencia. La referencia debe persistir y el cambio ser suma − total."""
+    pedido = _pedido(client, db, admin_headers, numero=606, precio=116.0)
+    ef = _metodo_id(db, "Efectivo")
+    ta = _metodo_id(db, "Tarjeta")
+    r = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={
+            "id_pedido": pedido["id_pedido"],
+            "pagos": [
+                {"id_metodo_pago": ef, "monto": 150.0},
+                {"id_metodo_pago": ta, "monto": 16.0, "referencia": "V-123"},
+            ],
+        },
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert float(body["cambio"]) == 50.0  # 166 − 116
+    assert len(body["pagos"]) == 2
+    # Por método, no por índice: el orden de la relación no está garantizado.
+    por_metodo = {p["id_metodo_pago"]: p for p in body["pagos"]}
+    assert por_metodo[ta]["referencia"] == "V-123"
+    assert por_metodo[ef]["referencia"] is None
+    m = client.get(f"/api/v1/mesas/{pedido['id_mesa']}", headers=admin_headers).json()
+    assert m["estado"] == "Disponible"

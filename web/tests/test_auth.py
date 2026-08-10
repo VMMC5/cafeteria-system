@@ -78,3 +78,31 @@ def test_usuarios_lista_renderiza(client, monkeypatch):
     assert r.status_code == 200
     assert b"Ana" in r.data
     assert b"Mesero" in r.data
+
+
+def _login_admin(client, monkeypatch):
+    monkeypatch.setattr(api_client, "login", lambda c, p: ADMIN_TOKENS)
+    monkeypatch.setattr(api_client, "get_me", lambda a: ADMIN_ME)
+    client.post("/login", data={"correo": "admin@cafeteria.com", "password": "secret123"})
+
+
+def test_logout_por_post_cierra_sesion(client, monkeypatch):
+    _login_admin(client, monkeypatch)
+    r = client.post("/logout")
+    assert r.status_code == 302
+    assert "/login" in r.headers["Location"]
+    # La sesión quedó cerrada: una página protegida vuelve a redirigir al login.
+    r2 = client.get("/usuarios")
+    assert r2.status_code == 302
+    assert "/login" in r2.headers["Location"]
+
+
+def test_logout_por_get_405(client, monkeypatch):
+    """El logout por GET era vulnerable a CSRF (un <img src=/logout> cerraba la
+    sesión del admin). La ruta ya solo acepta POST."""
+    _login_admin(client, monkeypatch)
+    r = client.get("/logout")
+    assert r.status_code == 405
+    # Y la sesión sigue viva: la página protegida carga (no redirige a login).
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: [])
+    assert client.get("/usuarios").status_code == 200
