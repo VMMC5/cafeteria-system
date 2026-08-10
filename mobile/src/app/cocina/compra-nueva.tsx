@@ -19,6 +19,8 @@ import {
   Proveedor,
 } from "@/api/client";
 import { compraTotal, compraValida, lineaCompraValida } from "@/lib/compras";
+import { aCantidad } from "@/lib/decimales";
+import { cantidad } from "@/lib/format";
 import { useAuth } from "@/store/auth";
 
 type LineaLocal = {
@@ -75,7 +77,7 @@ export default function CompraNueva() {
       {
         id_insumo: insumoSel,
         nombre: insumo ? insumo.nombre_insumo : String(insumoSel),
-        cantidad: Number(cantidadTxt),
+        cantidad: aCantidad(cantidadTxt),
         costo_unitario: Number(costoTxt),
       },
     ]);
@@ -195,7 +197,7 @@ export default function CompraNueva() {
         {lineas.map((l, i) => (
           <View key={i} style={styles.row}>
             <Text style={styles.rowL}>
-              {l.cantidad} × {l.nombre}
+              {cantidad(l.cantidad)} × {l.nombre}
             </Text>
             <Text style={styles.rowV}>
               ${(l.cantidad * l.costo_unitario).toFixed(2)}

@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+
 def test_proveedores_lista_rol(client, cocinero_headers, mesero_headers):
     assert client.get("/api/v1/proveedores", headers=cocinero_headers).status_code == 200
     assert client.get("/api/v1/proveedores", headers=mesero_headers).status_code == 403
@@ -181,3 +184,50 @@ def test_listar_compras(client, db, cocinero_headers):
     ).json()
     lista = client.get("/api/v1/compras", headers=cocinero_headers).json()
     assert any(c["id_compra"] == compra["id_compra"] for c in lista)
+
+
+def test_compra_admite_3_decimales_y_subtotal_cuadra(client, db, cocinero_headers):
+    """La cantidad comprada llega al kárdex sin redondear, y el subtotal —columna
+    generada en la BD— sigue calculándose sobre la cantidad exacta."""
+    prov = _proveedor_id(client, cocinero_headers, "Especias del Sur")
+    ins = _insumo(client, db, cocinero_headers, nombre="Nuez moscada", stock=0)
+    r = client.post(
+        "/api/v1/compras",
+        headers=cocinero_headers,
+        json={
+            "id_proveedor": prov,
+            "items": [
+                {
+                    "id_insumo": ins["id_insumo"],
+                    "cantidad": "0.125",
+                    "costo_unitario": "100.00",
+                }
+            ],
+        },
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert Decimal(body["detalle"][0]["cantidad"]) == Decimal("0.125")
+    assert Decimal(body["detalle"][0]["subtotal"]) == Decimal("12.50")
+    stock, _ = _stock_costo(client, cocinero_headers, ins["id_insumo"])
+    assert stock == 0.125
+
+
+def test_compra_cantidad_4_decimales_422(client, db, cocinero_headers):
+    prov = _proveedor_id(client, cocinero_headers, "Granos Finos")
+    ins = _insumo(client, db, cocinero_headers, nombre="Anís")
+    r = client.post(
+        "/api/v1/compras",
+        headers=cocinero_headers,
+        json={
+            "id_proveedor": prov,
+            "items": [
+                {
+                    "id_insumo": ins["id_insumo"],
+                    "cantidad": "0.1234",
+                    "costo_unitario": "10.00",
+                }
+            ],
+        },
+    )
+    assert r.status_code == 422

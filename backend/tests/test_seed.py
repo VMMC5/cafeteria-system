@@ -55,3 +55,44 @@ def test_seed_admin_corrige_rol_incorrecto(db):
     assert seed_admin(db) == 1  # corrige
     db.refresh(admin)
     assert admin.id_rol == admin_rol
+
+
+def test_seed_base_sobre_bd_vacia(db):
+    """`seed_base` debe funcionar sobre una BD totalmente vacía — el caso de un
+    despliegue fresco (`alembic upgrade head` + `python -m app.db.seed`).
+
+    Regresión: `SessionLocal` usa autoflush=False, y `seed_admin` consultaba los
+    roles que el bucle de catálogos acababa de añadir a la sesión SIN flush
+    previo: sobre una BD vacía la consulta no los veía y el seed moría con
+    NoResultFound. Nunca se notó porque el seed siempre había corrido sobre una
+    BD ya sembrada. Este fixture (`TestingSessionLocal`) comparte el
+    autoflush=False de la app, así que reproduce el bug fielmente; los DELETE
+    ocurren dentro de la transacción del fixture y se revierten al salir.
+    """
+    from app.core.config import settings
+    from app.models import (
+        Categoria,
+        CategoriaGasto,
+        Configuracion,
+        EstadoPedido,
+        Mesa,
+        MetodoPago,
+        Producto,
+        Proveedor,
+        UnidadMedida,
+    )
+    from app.db.seed import seed_base
+
+    # Vaciar en orden FK-seguro (primero quien referencia, luego el catálogo).
+    for modelo in (
+        Producto, Usuario, Mesa, Proveedor, Configuracion, CategoriaGasto,
+        UnidadMedida, Categoria, MetodoPago, EstadoPedido, Rol,
+    ):
+        db.query(modelo).delete()
+
+    total = seed_base(db)
+
+    assert total > 0
+    assert db.query(Rol).count() == 4
+    admin = db.query(Usuario).filter(Usuario.correo == settings.ADMIN_CORREO).one()
+    assert db.get(Rol, admin.id_rol).nombre_rol == "Administrador"

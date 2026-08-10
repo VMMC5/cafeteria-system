@@ -23,7 +23,7 @@ class ProveedorOut(BaseModel):
 
 class CompraItemIn(BaseModel):
     id_insumo: int
-    cantidad: Decimal = Field(gt=0)
+    cantidad: Decimal = Field(gt=0, max_digits=10, decimal_places=3)
     costo_unitario: Decimal = Field(ge=0)
 
 

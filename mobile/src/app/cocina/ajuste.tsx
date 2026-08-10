@@ -11,6 +11,8 @@ import {
 } from "react-native";
 
 import { getInsumo, Insumo, registrarMovimiento } from "@/api/client";
+import { aCantidad } from "@/lib/decimales";
+import { cantidad } from "@/lib/format";
 import { movimientoValido } from "@/lib/inventario";
 import { useAuth } from "@/store/auth";
 
@@ -53,13 +55,13 @@ export default function Ajuste() {
       const actualizado = await registrarMovimiento(access, iid, {
         tipo,
         motivo,
-        cantidad: Number(cantidadTxt),
+        cantidad: aCantidad(cantidadTxt),
       });
       setInsumo(actualizado);
       setCantidadTxt("");
       Alert.alert(
         "Listo",
-        `Stock actualizado: ${actualizado.stock_actual} ${actualizado.unidad.abreviatura}`
+        `Stock actualizado: ${cantidad(actualizado.stock_actual)} ${actualizado.unidad.abreviatura}`
       );
     } catch (e: any) {
       const msg =
@@ -102,7 +104,7 @@ export default function Ajuste() {
       </View>
       <Text style={styles.nombre}>{insumo.nombre_insumo}</Text>
       <Text style={styles.stock}>
-        Stock: {insumo.stock_actual} {insumo.unidad.abreviatura}
+        Stock: {cantidad(insumo.stock_actual)} {insumo.unidad.abreviatura}
       </Text>
 
       <Text style={styles.label}>Tipo</Text>

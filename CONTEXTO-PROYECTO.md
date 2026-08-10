@@ -14,7 +14,7 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 | `backend/` | **Python + FastAPI** + SQLAlchemy + Alembic | API REST (fuente única de verdad, JWT) |
 | `web/` | **Flask** + Jinja2 + Chart.js (vendorizado) | Panel de administración (admin-only): usuarios, dashboard, estadísticas, reportes BI con export PDF/XLSX |
 | `mobile/` | **React Native + Expo** (expo-router, TypeScript) | App operativa por rol: Mesero, Cocina, Caja |
-| BD | **PostgreSQL 16** | 23 tablas (migración Alembic única + seeds) |
+| BD | **PostgreSQL 16** | 23 tablas (2 migraciones Alembic + seeds) |
 | Infra | **Docker Compose** | Servicios: `db`, `api` (:8000), `web` (:5000), `adminer` (:8080). El móvil corre fuera de Docker con Expo. |
 
 **Metodología:** cada slice pasa por brainstorming → spec → plan → implementación TDD → PR. Los specs y planes viven en `docs/superpowers/specs/` y `docs/superpowers/plans/` (21 planes, 20 specs).
@@ -23,16 +23,17 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 
 ## 2. Estado actual (agosto 2026)
 
-- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil) + **PR #24** (guard de mesa Ocupada en la API) + **PR #25** (protección CSRF en el panel web). No hay trabajo activo en curso.
+- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil) + **PR #24** (guard de mesa Ocupada en la API) + **PR #25** (protección CSRF en el panel web).
+- **Trabajo activo:** rama `feat/inventario-3-decimales` (inventario y kárdex a 3 decimales) completa y verificada en este worktree, lista para PR — todavía sin abrir ni mergear.
 - Ramas locales residuales ya mergeadas: `feature/compras`, `feature/dashboard`, `feature/web-redesign`.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
 ### Cobertura de tests
 | Suite | Cantidad | Comando |
 |---|---|---|
-| Backend | 217 tests | `docker compose exec api pytest` |
-| Web | 120 tests | `docker compose exec web pytest` |
-| Móvil | 79 tests + `tsc` limpio | `cd mobile && npm test` |
+| Backend | 226 tests | `docker compose exec api pytest` |
+| Web | 123 tests | `docker compose exec web pytest` |
+| Móvil | 84 tests + `tsc` limpio | `cd mobile && npm test` |
 
 Los tests de backend usan una **BD dedicada** (`<db>_test`, autoprovisionada con `seed_base`) con guardia que impide tocar la BD de dev.
 
@@ -67,7 +68,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 - `schemas/` — Pydantic por dominio.
 - `core/` — `config.py`, `security.py` (JWT + bcrypt), `deps.py` (`get_current_user`, `require_admin`).
 - `db/` — `seed.py` (catálogos + admin + demo, idempotente), `seed_demo.py` (opt-in: ~60 días de ventas/gastos/compras deterministas para poblar reportes).
-- `alembic/versions/a1557e1dd3bf_…` — migración única con las 23 tablas del diccionario.
+- `alembic/versions/` — dos revisiones: `a1557e1dd3bf` (esquema inicial, las 23 tablas del diccionario) y `7f3a9c2b1d84` (inventario a 3 decimales: amplía `insumos.stock_actual/stock_minimo`, `movimientos_inventario.cantidad` y `detalle_compra.cantidad` de `Numeric(10,2)` a `Numeric(10,3)`; recrea `detalle_compra.subtotal` porque es columna generada; el `downgrade` redondea el tercer decimal de forma irreversible).
 
 **Auth:** JWT stateless — access 30 min + refresh 7 días. Roles: Administrador, Mesero, Cajero, Cocinero. El **admin principal está blindado**: no se le puede cambiar el rol por API (400, por `correo == ADMIN_CORREO`) y `seed_admin` es correctivo.
 
@@ -112,6 +113,8 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 | 6 — Dashboard y BI | #17–#19 | Dashboard KPIs + gráficas, rediseño "Cafetería Aroma", analítica avanzada, Reportes BI con export PDF/XLSX, `seed_demo`, aislamiento de tests, hardening admin |
 | Post-6 | #20 | Fix de raíz Decimal string→number en móvil (`coerce.ts` + `money()`) |
 
+**En curso (sin mergear):** rama `feat/inventario-3-decimales` — inventario y kárdex a 3 decimales (migración `7f3a9c2b1d84`, validación 422 en la API, `cantidad()` en móvil, reporte de Inventario del panel sin truncar). Lista para PR, sin número asignado aún.
+
 ---
 
 ## 7. Pendientes y deuda técnica
@@ -121,7 +124,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 - **Pago dividido** en la UI de Caja móvil (la API ya lo soporta; falta también test de pago dividido).
 - **El panel web exige token CSRF** en sus 14 rutas POST (PR #25). Desplegar el panel requiere `docker compose up -d --build web`: las dependencias viven en la imagen, no en el volumen montado.
 - **Estado de mesa `Ocupada` lo gestiona el sistema** (PR #24): la API responde 409 si se intenta cambiar el estado de una mesa con pedido activo (no cancelado y sin venta) y 422 si se asigna `"Ocupada"` a mano, tanto al crear como al editar. Consecuencia confirmada en uso: **un pedido Entregado que nadie paga deja la mesa trabada** — `cancelar` rechaza estados terminales y el guard impide liberarla, así que falta un camino de "cerrar sin cobro".
-- **Recetas** con pantalla en Cocina móvil (PR #23). La cantidad se captura con **2 decimales**: el inventario (`stock_actual`, `MovimientoInventario.cantidad`) es `Numeric(10,2)` aunque `cantidad_requerida` sea `Numeric(10,3)`; ampliarlo a 3 decimales requiere migración Alembic + revisar reportes web.
+- **Recetas** con pantalla en Cocina móvil (PR #23). La cantidad se captura con **3 decimales** en toda la cadena: `cantidad_requerida` de la receta, `stock_actual`/`stock_minimo` del insumo, `MovimientoInventario.cantidad` del kárdex y `detalle_compra.cantidad` son todos `Numeric(10,3)` desde la migración `7f3a9c2b1d84`; la API rechaza con 422 cualquier cantidad de más de 3 decimales.
 - RF-M03 (recuperar contraseña): solo nota, sin implementar.
 - Widgets diferidos: rebanada "Otros" en la dona; capacidad real de almacén en nivel de inventario.
 
@@ -139,6 +142,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 ```bash
 cp .env.example .env                             # ajustar secretos (solo la primera vez)
 docker compose up -d                             # db + api + web + adminer
+docker compose exec api alembic upgrade head     # esquema al día (migraciones, a mano tras cada pull)
 docker compose exec api python -m app.db.seed    # catálogos + admin + demo (idempotente)
 docker compose exec api python -m app.db.seed_demo   # opcional: 60 días de datos demo para reportes
 cd mobile && npx expo start                      # móvil

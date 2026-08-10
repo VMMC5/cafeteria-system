@@ -353,3 +353,40 @@ def test_print_html_grafica_ausente_sin_serie_er(app):
         )
     assert 'class="pdf-chart"' not in html
     assert '<div class="pdf-bar' not in html
+
+
+def test_fmt_cell_cantidad_sin_ceros_de_relleno():
+    """Las cantidades se muestran con hasta 3 decimales y sin relleno; el dinero
+    (float normal) sigue con dos, que es la regla vieja y no debe romperse."""
+    from app.reportes.routes import _cantidad, _fmt_cell
+
+    assert _fmt_cell(_cantidad("500.000")) == "500"
+    assert _fmt_cell(_cantidad("12.500")) == "12.5"
+    assert _fmt_cell(_cantidad("0.125")) == "0.125"
+    assert _fmt_cell(_cantidad("0.000")) == "0"
+    assert _fmt_cell(1234.5) == "1234.50"
+
+
+def test_cantidad_es_float_para_el_xlsx():
+    """openpyxl decide con isinstance: si Cantidad dejara de ser float, el XLSX
+    escribiría las cantidades como texto y se perderían SUM/orden/filtro."""
+    from app.reportes.routes import _cantidad
+
+    assert isinstance(_cantidad("0.125"), float)
+
+
+def test_reportes_preview_inventario_3_decimales(client, monkeypatch):
+    _login(client, monkeypatch)
+    _stub(monkeypatch)
+    monkeypatch.setattr(
+        api_client,
+        "get_inventario_niveles",
+        lambda a, solo_bajo_minimo=False: [
+            {"nombre": "Canela", "unidad": "kg", "stock_actual": "0.125",
+             "stock_minimo": "0.500", "nivel_pct": 12, "bajo_minimo": True}
+        ],
+    )
+    cuerpo = client.get("/reportes?tipo=inventario").get_data(as_text=True)
+    assert "0.125" in cuerpo
+    assert "0.5" in cuerpo
+    assert "0.13" not in cuerpo

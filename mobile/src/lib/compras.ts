@@ -1,3 +1,5 @@
+import { decimalesValidos } from "./decimales";
+
 export function lineaCompraValida(
   idInsumo: number | null,
   cantidadTxt: string,
@@ -5,7 +7,7 @@ export function lineaCompraValida(
 ): boolean {
   return (
     idInsumo !== null &&
-    Number(cantidadTxt) > 0 &&
+    decimalesValidos(cantidadTxt, 3) &&
     costoTxt !== "" &&
     Number(costoTxt) >= 0
   );

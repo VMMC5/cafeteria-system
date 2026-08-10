@@ -1,3 +1,5 @@
+import { decimalesValidos } from "./decimales";
+
 export function stockBajo(insumo: {
   stock_actual: number;
   stock_minimo: number;
@@ -10,5 +12,5 @@ export function movimientoValido(
   motivo: string | null,
   cantidadTxt: string
 ): boolean {
-  return tipo !== null && motivo !== null && Number(cantidadTxt) > 0;
+  return tipo !== null && motivo !== null && decimalesValidos(cantidadTxt, 3);
 }

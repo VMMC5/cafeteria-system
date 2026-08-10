@@ -11,6 +11,20 @@ bp = Blueprint("reportes", __name__)
 TIPOS = ("ventas", "gastos", "inventario", "estado_resultados")
 
 
+class Cantidad(float):
+    """Marca una celda como cantidad de inventario (hasta 3 decimales).
+
+    Es subclase de `float` a propósito: openpyxl decide con `isinstance`, así
+    que el XLSX la sigue escribiendo como celda numérica (SUM/orden/filtro en
+    Excel). `_fmt_cell` la intercepta para las salidas de texto (HTML y PDF) y
+    la formatea sin los ceros de relleno que impone el `.2f` del dinero.
+    """
+
+
+def _cantidad(v) -> Cantidad:
+    return Cantidad(round(float(v), 3))
+
+
 def _reporte(tipo, filas):
     """Normaliza un reporte a (titulo, headers, rows, total_row) con tipos nativos.
 
@@ -33,8 +47,8 @@ def _reporte(tipo, filas):
             [
                 f["nombre"],
                 f["unidad"],
-                float(f["stock_actual"]),
-                float(f["stock_minimo"]),
+                _cantidad(f["stock_actual"]),
+                _cantidad(f["stock_minimo"]),
                 int(f["nivel_pct"]),
                 "Sí" if f["bajo_minimo"] else "No",
             ]
@@ -79,6 +93,8 @@ def _reporte(tipo, filas):
 def _fmt_cell(v):
     if v is None:
         return ""
+    if isinstance(v, Cantidad):
+        return f"{v:.3f}".rstrip("0").rstrip(".")
     if isinstance(v, float):
         return f"{v:.2f}"
     return str(v)

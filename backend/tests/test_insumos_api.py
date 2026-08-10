@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+
 def _unidad_id(db, nombre="Kilogramo"):
     from app.models import UnidadMedida
 
@@ -126,3 +129,57 @@ def test_movimiento_rol_mesero_403(client, db, cocinero_headers, mesero_headers)
     insumo = _crear_insumo(client, db, cocinero_headers, nombre="Miel").json()
     r = _movimiento(client, mesero_headers, insumo["id_insumo"], "Entrada", "Ajuste", 1.0)
     assert r.status_code == 403
+
+
+def test_stock_admite_3_decimales(client, db, cocinero_headers):
+    """El inventario debe representar milésimas: con Numeric(10,2) un stock de
+    0.125 kg se guardaba como 0.13 y el kárdex dejaba de cuadrar con la receta
+    que lo consumió (cantidad_requerida siempre fue Numeric(10,3))."""
+    r = _crear_insumo(
+        client, db, cocinero_headers, nombre="Canela molida",
+        stock="0.125", minimo="0.005",
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert Decimal(body["stock_actual"]) == Decimal("0.125")
+    assert Decimal(body["stock_minimo"]) == Decimal("0.005")
+
+
+def test_movimiento_admite_3_decimales(client, db, cocinero_headers):
+    insumo = _crear_insumo(
+        client, db, cocinero_headers, nombre="Clavo de olor", stock="1.000"
+    ).json()
+    r = _movimiento(
+        client, cocinero_headers, insumo["id_insumo"], "Salida", "Merma", "0.125"
+    )
+    assert r.status_code == 200
+    assert Decimal(r.json()["stock_actual"]) == Decimal("0.875")
+
+
+def test_stock_4_decimales_422(client, db, cocinero_headers):
+    """Redondear en silencio descuadra el kárdex sin que nadie se entere: la API
+    prefiere rechazar y que el cliente corrija."""
+    r = _crear_insumo(
+        client, db, cocinero_headers, nombre="Azafrán", stock="0.1234"
+    )
+    assert r.status_code == 422
+
+
+def test_stock_minimo_4_decimales_patch_422(client, db, cocinero_headers):
+    insumo = _crear_insumo(client, db, cocinero_headers, nombre="Comino").json()
+    r = client.patch(
+        f"/api/v1/insumos/{insumo['id_insumo']}",
+        headers=cocinero_headers,
+        json={"stock_minimo": "1.0005"},
+    )
+    assert r.status_code == 422
+
+
+def test_movimiento_4_decimales_422(client, db, cocinero_headers):
+    insumo = _crear_insumo(
+        client, db, cocinero_headers, nombre="Pimienta", stock="10.000"
+    ).json()
+    r = _movimiento(
+        client, cocinero_headers, insumo["id_insumo"], "Salida", "Merma", "0.1234"
+    )
+    assert r.status_code == 422

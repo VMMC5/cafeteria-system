@@ -53,7 +53,7 @@ class DetalleCompra(Base):
     id_insumo = Column(
         Integer, ForeignKey("insumos.id_insumo"), nullable=False, index=True
     )
-    cantidad = Column(Numeric(10, 2), nullable=False)
+    cantidad = Column(Numeric(10, 3), nullable=False)
     costo_unitario = Column(Numeric(10, 2), nullable=False)
     subtotal = Column(
         Numeric(12, 2), Computed("cantidad * costo_unitario", persisted=True)
