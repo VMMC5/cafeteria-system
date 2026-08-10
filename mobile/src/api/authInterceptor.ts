@@ -30,10 +30,39 @@ async function renovarYReintentar(config: InternalAxiosRequestConfig) {
   return http.request(config);
 }
 
+// Guardia síncrona anti-ráfaga. Con 401 verdaderamente concurrentes (p. ej.
+// Promise.all de dos endpoints con el mismo token ya caducado) varias
+// invocaciones de expulsarAlLogin arrancan en el mismo tick, todas antes de
+// que la primera alcance a poner "noauth" en el store — leer `status` ahí no
+// sirve de guardia porque todas lo ven en "auth" todavía. `expulsando` sí
+// funciona: se marca en la primera línea de la función, antes de cualquier
+// `await`, y una función async corre sin interrupciones hasta su primer
+// `await` (no hay forma de que otra invocación se cuele en medio). Así la
+// primera invocación de la ráfaga gana la bandera de forma atómica y todas
+// las demás la ven ya en `true` y retornan sin avisar ni navegar.
+let expulsando = false;
+
+// Rearme: cuando la sesión vuelve a autenticarse (login nuevo o bootstrap
+// exitoso tras la expulsión) se libera la bandera, para que la siguiente
+// expiración real vuelva a avisar. No se puede rearmar leyendo `status`
+// dentro de expulsarAlLogin (ver guardia arriba): en la misma ráfaga que se
+// protege, `status` sigue en "auth" hasta que la primera invocación termina
+// su propio await, así que leerlo ahí reabriría la carrera que se corrige.
+// Suscribirse al store, en cambio, solo dispara con una transición real de
+// estado, desacoplada en el tiempo de cualquier ráfaga de 401.
+useAuth.subscribe((state, previo) => {
+  if (state.status === "auth" && previo.status !== "auth") {
+    expulsando = false;
+  }
+});
+
 async function expulsarAlLogin() {
-  // Solo avisa la primera vez: tras poner "noauth", los 401 rezagados de
-  // llamadas concurrentes ya no encuentran una sesión que expirar.
+  if (expulsando) return;
+  // Solo avisa si de verdad había sesión: una llamada rezagada con token
+  // viejo tras un logout explícito (no una expiración) no debe alertar.
   const habiaSesion = useAuth.getState().status === "auth";
+  if (!habiaSesion) return;
+  expulsando = true;
   await clearTokens();
   useAuth.setState({
     status: "noauth",
@@ -41,10 +70,8 @@ async function expulsarAlLogin() {
     accessToken: null,
     refreshToken: null,
   });
-  if (habiaSesion) {
-    router.replace("/login" as any);
-    Alert.alert("Sesión expirada", "Tu sesión expiró, inicia sesión de nuevo.");
-  }
+  router.replace("/login" as any);
+  Alert.alert("Sesión expirada", "Tu sesión expiró, inicia sesión de nuevo.");
 }
 
 let instalado = false;
