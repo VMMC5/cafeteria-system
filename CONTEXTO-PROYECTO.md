@@ -23,15 +23,15 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 
 ## 2. Estado actual (agosto 2026)
 
-- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil) + **PR #24** (guard de mesa Ocupada en la API) + **PR #25** (protección CSRF en el panel web).
-- **Trabajo activo:** rama `feat/inventario-3-decimales` (inventario y kárdex a 3 decimales) completa y verificada en este worktree, lista para PR — todavía sin abrir ni mergear.
+- **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil) + **PR #24** (guard de mesa Ocupada en la API) + **PR #25** (protección CSRF en el panel web) + **PR #26** (inventario y kárdex a 3 decimales, squash `84d8161`; incluye el fix de `seed_base` sobre BD vacía).
+- **Sin trabajo activo en curso.** Candidato siguiente: camino de "cerrar sin cobro" para el pedido Entregado que nadie paga (el pendiente con más prioridad operativa).
 - Ramas locales residuales ya mergeadas: `feature/compras`, `feature/dashboard`, `feature/web-redesign`.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
 ### Cobertura de tests
 | Suite | Cantidad | Comando |
 |---|---|---|
-| Backend | 226 tests | `docker compose exec api pytest` |
+| Backend | 227 tests | `docker compose exec api pytest` |
 | Web | 123 tests | `docker compose exec web pytest` |
 | Móvil | 84 tests + `tsc` limpio | `cd mobile && npm test` |
 
@@ -112,8 +112,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 | 5 — Inventario y compras | #14–#16 | Insumos + kárdex, recetas + descuento automático, compras a proveedores |
 | 6 — Dashboard y BI | #17–#19 | Dashboard KPIs + gráficas, rediseño "Cafetería Aroma", analítica avanzada, Reportes BI con export PDF/XLSX, `seed_demo`, aislamiento de tests, hardening admin |
 | Post-6 | #20 | Fix de raíz Decimal string→number en móvil (`coerce.ts` + `money()`) |
-
-**En curso (sin mergear):** rama `feat/inventario-3-decimales` — inventario y kárdex a 3 decimales (migración `7f3a9c2b1d84`, validación 422 en la API, `cantidad()` en móvil, reporte de Inventario del panel sin truncar). Lista para PR, sin número asignado aún.
+| Post-6 | #26 | Inventario y kárdex a 3 decimales: migración `7f3a9c2b1d84`, validación 422 en la API, `decimales.ts` + `cantidad()` en móvil, reporte de Inventario del panel sin truncar, fix de `seed_base` sobre BD vacía |
 
 ---
 
