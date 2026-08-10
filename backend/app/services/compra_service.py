@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -42,6 +42,27 @@ def crear_proveedor(db: Session, data: ProveedorCreate, usuario) -> Proveedor:
     db.commit()
     db.refresh(prov)
     return prov
+
+
+def _costo_promedio(
+    stock_actual: Decimal,
+    costo_actual: Decimal,
+    cantidad: Decimal,
+    costo_compra: Decimal,
+) -> Decimal:
+    """Promedio ponderado del costo tras una compra, a 2 decimales.
+
+    Si el inventario previo no tiene valor (stock <= 0 o costo 0), el costo
+    nuevo es el de la compra: promediar contra valor cero diluiría el costo
+    con unidades que nadie pagó.
+    """
+    if stock_actual <= 0 or costo_actual == 0:
+        return costo_compra
+    total_previo = stock_actual * costo_actual
+    total_compra = cantidad * costo_compra
+    return ((total_previo + total_compra) / (stock_actual + cantidad)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
 
 
 def crear_compra(db: Session, data: CompraCreate, usuario) -> Compra:
