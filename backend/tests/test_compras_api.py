@@ -231,3 +231,50 @@ def test_compra_cantidad_4_decimales_422(client, db, cocinero_headers):
         },
     )
     assert r.status_code == 422
+
+
+def test_compra_promedia_el_costo_del_insumo(client, db, cocinero_headers):
+    """El costo del insumo es el promedio ponderado del inventario, no el
+    último costo pagado: 10 kg @ $95 + 8 kg @ $98.50 → $96.56 (no $98.50).
+    El detalle de la compra sí conserva el costo pagado real."""
+    from app.models import UnidadMedida
+
+    u = (
+        db.query(UnidadMedida)
+        .filter(UnidadMedida.nombre_unidad == "Kilogramo")
+        .one()
+        .id_unidad
+    )
+    ins = client.post(
+        "/api/v1/insumos",
+        headers=cocinero_headers,
+        json={
+            "nombre_insumo": "Café promedio",
+            "id_unidad": u,
+            "stock_actual": "10.000",
+            "stock_minimo": 0,
+            "costo_unitario": "95.00",
+        },
+    ).json()
+    prov = _proveedor_id(client, cocinero_headers, "Tostadores Unidos")
+    r = client.post(
+        "/api/v1/compras",
+        headers=cocinero_headers,
+        json={
+            "id_proveedor": prov,
+            "items": [
+                {
+                    "id_insumo": ins["id_insumo"],
+                    "cantidad": "8.000",
+                    "costo_unitario": "98.50",
+                }
+            ],
+        },
+    )
+    assert r.status_code == 201
+    body = r.json()
+    # El detalle histórico conserva lo pagado, sin promediar.
+    assert float(body["detalle"][0]["costo_unitario"]) == 98.50
+    stock, costo = _stock_costo(client, cocinero_headers, ins["id_insumo"])
+    assert stock == 18.0
+    assert costo == 96.56

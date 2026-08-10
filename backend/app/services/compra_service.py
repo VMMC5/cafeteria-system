@@ -102,8 +102,16 @@ def crear_compra(db: Session, data: CompraCreate, usuario) -> Compra:
             )
         )
         insumo = insumos[item.id_insumo]
+        # El promedio usa el stock PREVIO: calcular el costo antes de sumar.
+        # Si la compra repite un insumo en dos líneas, el dict comparte la
+        # instancia y el promedio compone en cadena, línea a línea.
+        insumo.costo_unitario = _costo_promedio(
+            insumo.stock_actual,
+            insumo.costo_unitario,
+            item.cantidad,
+            item.costo_unitario,
+        )
         insumo.stock_actual = insumo.stock_actual + item.cantidad
-        insumo.costo_unitario = item.costo_unitario
         db.add(
             MovimientoInventario(
                 id_insumo=item.id_insumo,
