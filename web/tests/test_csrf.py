@@ -123,3 +123,14 @@ def test_post_con_token_valido_pasa(csrf_client, monkeypatch):
     r = csrf_client.post("/usuarios/2/desactivar", data={"csrf_token": token})
     assert r.status_code == 302
     assert llamadas == [2]
+
+
+def test_logout_sin_token_es_rechazado(csrf_client, monkeypatch):
+    """El form de logout vive en base.html (todas las páginas), no en una
+    plantilla de módulo: merece su propio caso además del representativo."""
+    _login(csrf_client, monkeypatch)
+    r = csrf_client.post("/logout")
+    assert r.status_code == 400
+    # No cerró la sesión: la página protegida sigue cargando.
+    monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: USUARIOS)
+    assert csrf_client.get("/usuarios").status_code == 200
