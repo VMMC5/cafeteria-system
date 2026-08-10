@@ -57,7 +57,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 
 - **Estados del pedido:** flujo lineal Pendiente → En preparación → Listo → Entregado, con autorización por rol; cancelación con motivo libera la mesa.
 - **Cobro:** venta 1:1 con el pedido, IVA desglosado (tasa en `configuracion.iva_tasa`), pagos con método, cambio, folio/ticket. El pago dividido está soportado por la API pero la UI móvil cobra con un solo método.
-- **Inventario:** compra sube stock (kárdex Compra, costo = último costo), pedido descuenta por receta (kárdex Salida/Venta), ajustes/mermas manuales con bloqueo de stock negativo y alerta de mínimo.
+- **Inventario:** compra sube stock (kárdex Compra, costo por **promedio ponderado** a 2 decimales; si el inventario previo no tiene valor, toma el costo de la compra), pedido descuenta por receta (kárdex Salida/Venta), ajustes/mermas manuales con bloqueo de stock negativo y alerta de mínimo.
 - **Gastos:** registro de egresos por categoría (guard Cajero/Admin).
 
 ---
@@ -133,7 +133,7 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 
 **Deuda menor (triada, no bloquea):**
 - Quitar código muerto `api_client.get_reporte_resumen`; relabel "# Pedidos" → "# Ventas"; paleta de dona (6 colores < límite 10); tests poco específicos; documentar `Pedido.id_usuario` (mesero) vs `Venta.id_usuario` (cajero); leyenda de dona acoplada a `Chart.overrides`; nombre de archivo de export no valida fechas (fechas inválidas → 500, no explotable).
-- Costo de insumo = último costo (no promedio ponderado).
+- El kárdex no registra costo por movimiento: el promedio ponderado del insumo solo vive en su estado actual, sin histórico de valuación.
 - Endpoints de detalle de reportes sin paginación (N+1 leve).
 - Placeholder `modulo/[key].tsx` sin uso por ningún rol.
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
