@@ -33,6 +33,16 @@ import { instalarAuthInterceptor } from "./authInterceptor";
  * vuelva a avisar exactamente una vez.
  */
 describe("authInterceptor: expulsión ante 401 concurrentes", () => {
+  let handler: (error: unknown) => Promise<unknown>;
+
+  beforeAll(() => {
+    // Instalar una sola vez (la guardia `instalado` evita re-instalación).
+    // Capturar el handler al nivel de módulo y compartirlo entre tests.
+    instalarAuthInterceptor();
+    const use = http.interceptors.response.use as jest.Mock;
+    handler = use.mock.calls[0][1];
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     useAuth.setState({
@@ -42,20 +52,13 @@ describe("authInterceptor: expulsión ante 401 concurrentes", () => {
       refreshToken: "rt-caducado",
     });
     (refresh as jest.Mock).mockRejectedValue(new Error("refresh token caducado"));
-    instalarAuthInterceptor();
   });
-
-  function errorHandler(): (error: unknown) => Promise<unknown> {
-    const use = http.interceptors.response.use as jest.Mock;
-    return use.mock.calls[0][1];
-  }
 
   function error401(url: string) {
     return { config: { url, headers: {} }, response: { status: 401 } };
   }
 
   test("ráfaga concurrente -> un solo Alert; login nuevo rearma para la siguiente expiración", async () => {
-    const handler = errorHandler();
 
     // Ráfaga 1: 3 peticiones con el mismo token caducado, todas casi
     // simultáneas (sin await entre invocaciones, como en un Promise.all).
@@ -89,5 +92,34 @@ describe("authInterceptor: expulsión ante 401 concurrentes", () => {
     expect(Alert.alert).toHaveBeenCalledTimes(2);
     expect(router.replace).toHaveBeenCalledTimes(2);
     expect(useAuth.getState().status).toBe("noauth");
+  });
+
+  test("refresh exitoso + reintento falla con 409 -> no expulsa, error del reintento se propaga", async () => {
+    (refresh as jest.Mock).mockResolvedValue({
+      access_token: "nuevo-access",
+      refresh_token: "nuevo-refresh",
+    });
+
+    const error409 = {
+      config: { url: "/caja/cobro", headers: {} },
+      response: { status: 409 },
+    };
+    (http.request as jest.Mock).mockRejectedValue(error409);
+
+    const resultado = (await handler(error401("/caja/cobro")).catch(
+      (e) => e
+    )) as { response?: { status: number } };
+
+    // El error debe ser el del reintento (409), no el 401 original.
+    expect(resultado.response?.status).toBe(409);
+
+    // NO debe expulsar al usuario (sin Alert ni navegación).
+    expect(Alert.alert).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(useAuth.getState().status).toBe("auth");
+
+    // Los tokens SÍ deben haberse renovado (saveTokens fue llamado).
+    const { saveTokens } = require("../lib/session");
+    expect(saveTokens).toHaveBeenCalledWith("nuevo-access", "nuevo-refresh");
   });
 });

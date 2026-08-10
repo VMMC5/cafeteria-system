@@ -21,12 +21,25 @@ const gestor = crearGestorRefresh<Tokens>(() => {
   return refresh(rt);
 });
 
-async function renovarYReintentar(config: InternalAxiosRequestConfig) {
-  const nt = await gestor.obtener();
-  await saveTokens(nt.access_token, nt.refresh_token);
-  useAuth.setState({ accessToken: nt.access_token, refreshToken: nt.refresh_token });
-  (config as { _retry?: boolean })._retry = true;
-  config.headers.Authorization = `Bearer ${nt.access_token}`;
+async function renovarYReintentar(
+  config: InternalAxiosRequestConfig,
+  errorOriginal: AxiosError
+) {
+  try {
+    // Solo este dominio de fallo (refresh) dispara expulsión.
+    const nt = await gestor.obtener();
+    await saveTokens(nt.access_token, nt.refresh_token);
+    useAuth.setState({ accessToken: nt.access_token, refreshToken: nt.refresh_token });
+    (config as { _retry?: boolean })._retry = true;
+    config.headers.Authorization = `Bearer ${nt.access_token}`;
+  } catch {
+    // El refresh falló: expulsa y relanza el 401 original (correcto aquí).
+    await expulsarAlLogin();
+    throw errorOriginal;
+  }
+  // Si el refresh fue exitoso, devolvemos el reintento SIN envolverlo en el
+  // catch de expulsión. Su éxito o fallo se propaga tal cual: un 409 debe
+  // llegar como 409 a la pantalla, no como "sesión expirada".
   return http.request(config);
 }
 
@@ -89,11 +102,9 @@ export function instalarAuthInterceptor(): void {
     ) {
       throw error;
     }
-    try {
-      return await renovarYReintentar(config);
-    } catch {
-      await expulsarAlLogin();
-      throw error;
-    }
+    // renovarYReintentar maneja los dominios de fallo internamente:
+    // - Si el refresh falla: expulsa y relanza el 401 original.
+    // - Si el refresh éxito + reintento falla: el error del reintento se propaga tal cual.
+    return await renovarYReintentar(config, error);
   });
 }
