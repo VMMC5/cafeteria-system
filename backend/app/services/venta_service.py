@@ -85,7 +85,12 @@ def cobrar(db: Session, data: VentaCreate, usuario) -> Venta:
             )
         )
     db.add(Ticket(id_venta=venta.id_venta, folio=f"V-{venta.id_venta:06d}"))
-    pedido.mesa.estado = "Disponible"
+    # La mesa se libera solo si esta era la última ronda activa (la venta de
+    # este pedido puede no estar flusheada aún, por eso se excluye explícito).
+    if not pedido_service.tiene_pedido_activo(
+        db, pedido.id_mesa, excepto_id_pedido=pedido.id_pedido
+    ):
+        pedido.mesa.estado = "Disponible"
     db.commit()
     db.refresh(venta)
     return venta

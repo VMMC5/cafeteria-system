@@ -165,6 +165,34 @@ def test_cancelar_ok_libera_mesa_y_registra(client, db, admin_headers, mesero_he
     assert fila.motivo == "Cliente se fue"
 
 
+def test_cancelar_una_ronda_no_libera_la_mesa_con_otra_activa(
+    client, db, admin_headers, mesero_headers
+):
+    """Con dos rondas activas, cancelar una deja la mesa Ocupada; la otra la libera."""
+    pedido1 = _pedido_pendiente(client, db, admin_headers, numero=911)
+    from app.models import Producto
+
+    prod = db.query(Producto).first()
+    r2 = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={
+            "id_mesa": pedido1["id_mesa"],
+            "items": [{"id_producto": prod.id_producto, "cantidad": 1}],
+        },
+    )
+    assert r2.status_code == 201
+    pedido2 = r2.json()
+
+    assert _cancelar(client, mesero_headers, pedido1["id_pedido"]).status_code == 200
+    m = client.get(f"/api/v1/mesas/{pedido1['id_mesa']}", headers=admin_headers).json()
+    assert m["estado"] == "Ocupada"
+
+    assert _cancelar(client, mesero_headers, pedido2["id_pedido"]).status_code == 200
+    m = client.get(f"/api/v1/mesas/{pedido1['id_mesa']}", headers=admin_headers).json()
+    assert m["estado"] == "Disponible"
+
+
 def test_cancelar_sin_motivo_422(client, db, admin_headers, mesero_headers):
     pedido = _pedido_pendiente(client, db, admin_headers, numero=321)
     r = client.post(
