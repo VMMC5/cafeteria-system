@@ -61,6 +61,21 @@ export function personasConConsumo(a: Asignacion): number[] {
   return indices;
 }
 
+/** Añade una persona (columna en 0) a todas las líneas. */
+export function agregarPersona(a: Asignacion): Asignacion {
+  return a.map((fila) => [...fila, 0]);
+}
+
+/**
+ * Quita a la persona: su columna desaparece y sus unidades regresan a
+ * "sin asignar" (nadie las hereda). Con 2 personas no hace nada — la división
+ * mínima es entre dos.
+ */
+export function quitarPersona(a: Asignacion, persona: number): Asignacion {
+  if ((a[0]?.length ?? 0) <= 2) return a;
+  return a.map((fila) => fila.filter((_, p) => p !== persona));
+}
+
 /**
  * Suma `delta` unidades de la línea a una persona. Nunca deja la celda en
  * negativo y, si el alta rebasa las unidades de la línea (entre todas las

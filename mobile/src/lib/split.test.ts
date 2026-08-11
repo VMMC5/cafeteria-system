@@ -1,9 +1,11 @@
 import {
+  agregarPersona,
   asignar,
   completa,
   crearAsignacion,
   LineaDetalle,
   personasConConsumo,
+  quitarPersona,
   totalPersona,
   unidadesAsignadas,
   unidadesRestantes,
@@ -78,6 +80,34 @@ test("personasConConsumo devuelve los índices con total > 0 en orden", () => {
   a = asignar(a, 1, 2, +1, 1);
   a = asignar(a, 0, 0, +1, 2);
   expect(personasConConsumo(a)).toEqual([0, 2]);
+});
+
+test("agregarPersona añade una columna en 0 sin mutar la original", () => {
+  const a = crearAsignacion(2, 2);
+  const b = agregarPersona(a);
+  expect(b).toEqual([
+    [0, 0, 0],
+    [0, 0, 0],
+  ]);
+  expect(a[0].length).toBe(2);
+});
+
+test("quitarPersona elimina la columna y sus unidades vuelven a sin-asignar", () => {
+  let a = crearAsignacion(2, 3);
+  a = asignar(a, 0, 1, +2, 2); // persona 1 tiene 2 unidades de la línea 0
+  a = asignar(a, 1, 2, +1, 1);
+  const b = quitarPersona(a, 1);
+  expect(b).toEqual([
+    [0, 0],
+    [0, 1], // la ex-persona 2 ahora es la columna 1 y conserva su unidad
+  ]);
+  expect(unidadesAsignadas(b, 0)).toBe(0); // nadie hereda las 2 unidades
+});
+
+test("quitarPersona con solo 2 personas no hace nada (mínimo 2)", () => {
+  let a = crearAsignacion(1, 2);
+  a = asignar(a, 0, 0, +1, 1);
+  expect(quitarPersona(a, 0)).toEqual(a);
 });
 
 test("invariante: con la asignación completa la suma de personas es el total exacto", () => {
