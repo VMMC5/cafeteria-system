@@ -32,11 +32,11 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 ### Cobertura de tests
 | Suite | Cantidad | Comando |
 |---|---|---|
-| Backend | 228 tests | `docker compose exec api pytest` |
+| Backend | 235 tests | `docker compose exec api pytest` |
 | Web | 126 tests | `docker compose exec web pytest` |
 | Móvil | 92 tests + `tsc` limpio | `cd mobile && npm test` |
 
-> Conteos verificados sobre `main` tras el merge del PR #27 (squash `b1f0e80`).
+> Conteo de backend verificado sobre `main` tras el merge del PR #28 (squash `3a6289d`); web y móvil, tras el PR #27 (`b1f0e80`) — el PR #28 no los toca.
 
 Los tests de backend usan una **BD dedicada** (`<db>_test`, autoprovisionada con `seed_base`) con guardia que impide tocar la BD de dev.
 

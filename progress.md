@@ -55,7 +55,7 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 |----|-----|
 | **#14** Insumos | `GET /unidades`, CRUD de insumos, `POST /insumos/{id}/movimientos` (ajuste/merma con kárdex, bloqueo de negativo); móvil Cocina `/cocina/inventario` (alerta de mínimo) + `/cocina/ajuste` |
 | **#15** Recetas + descuento | CRUD `producto_insumo`; descuento automático de stock al confirmar pedido (kárdex Salida/Venta, **bloquea 422** si falta) y **reposición** al cancelar. Backend-only |
-| **#16** Compras | `GET/POST /proveedores` (+ seed demo), `POST/GET /compras` (entrada de stock, kárdex Compra, actualiza costo al último); móvil `/cocina/compras` + `/cocina/compra-nueva` (multi-línea) |
+| **#16** Compras | `GET/POST /proveedores` (+ seed demo), `POST/GET /compras` (entrada de stock, kárdex Compra; costo al último entonces, promedio ponderado desde PR #28); móvil `/cocina/compras` + `/cocina/compra-nueva` (multi-línea) |
 
 **Estado:** inventario cerrado el ciclo: **compra sube stock**, **pedido descuenta** por receta, ajustes/mermas manuales, todo con kárdex. Recetas se gestionan por API.
 
@@ -112,7 +112,7 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 - **Smoke contra la API real** (`docker compose up -d db api`, login cajero, pedido de prueba mesa Disponible + producto del seed, `POST /api/v1/ventas` con `pagos: [Efectivo con excedente, Tarjeta con referencia: "V-123"]`): **201**, `pagos[1].referencia == "V-123"`, `cambio == suma − total` (Decimal-strings) — payload de `aPayload` validado end-to-end.
 
 ### Cobertura de tests
-- **Backend:** 228 tests (`docker compose exec api pytest`).
+- **Backend:** 235 tests (`docker compose exec api pytest`).
 - **Web:** 126 tests (`docker compose exec web pytest`).
 - **Móvil:** 92 tests jest (`cd mobile && npm test`) + `tsc` limpio.
 
@@ -121,7 +121,7 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 ## ⏳ Pendiente
 
 ### Próximo
-- **Rama `feat/costo-promedio-ponderado` lista para PR (sin mergear todavía, sin número de PR asignado).** Cada compra actualiza el costo del insumo con el **promedio ponderado** del inventario (`(stock × costo_actual + cantidad × costo_compra) / (stock + cantidad)`, a 2 decimales con `ROUND_HALF_UP`) en vez de pisarlo con el último costo pagado. Bordes: inventario sin valor (stock 0 o costo 0) toma el costo de la compra tal cual, para no diluir con unidades que nadie pagó. El detalle de la compra conserva el costo pagado real y el PATCH manual de costo se conserva como recalibración. Un solo archivo de producción (`compra_service.py`: helper `_costo_promedio` + orden invertido en el bucle — el promedio usa el stock previo). Suite backend: **235** (228 + 6 unitarios + 1 integración); web y móvil no se tocan.
+- **Costo promedio ponderado mergeado a `main` (PR #28, squash `3a6289d`).** Verificado post-merge: backend **235/235**; smoke manual en dispositivo **ejecutado y OK** (compras a distintos precios y costo resultante correcto). Cada compra actualiza el costo del insumo con el **promedio ponderado** del inventario (`(stock × costo_actual + cantidad × costo_compra) / (stock + cantidad)`, a 2 decimales con `ROUND_HALF_UP`) en vez de pisarlo con el último costo pagado. Bordes: inventario sin valor (stock 0 o costo 0) toma el costo de la compra tal cual, para no diluir con unidades que nadie pagó. El detalle de la compra conserva el costo pagado real y el PATCH manual de costo se conserva como recalibración. Un solo archivo de producción (`compra_service.py`: helper `_costo_promedio` + orden invertido en el bucle — el promedio usa el stock previo). Suite backend: **235** (228 + 6 unitarios + 1 integración); web y móvil no se tocan.
 - **Fixes menores mergeados a `main` (PR #27, squash `b1f0e80`).** Verificado post-merge: backend **228/228**, web **126/126**, móvil **92/92** + `tsc --noEmit` limpio. Smoke manual **ejecutado y OK** (logout del panel, refresh transparente y expiración con Alert único en el móvil). Tres fixes independientes:
   1. **Test de API `test_cobrar_pago_dividido_excedente_y_referencia`**: venta con pagos `[Efectivo 150, Tarjeta 16 con referencia "V-123"]` sobre pedido de 116 → 201, cambio 50, referencia persistida. Cierra el último pendiente del PR #22 (smoke manual del cobro dividido + test de API). La regla de excedente solo-Efectivo sigue viviendo solo en el cliente móvil (`lib/caja.ts`): la API acepta excedente con cualquier método, tal como documenta este test — es deuda ya anotada, no cambió con este slice.
   2. **`/logout` del panel web pasa de GET a POST.** El GET era vulnerable a logout-CSRF (un `<img src=/logout>` en cualquier página cerraba la sesión del admin); quedó fuera del PR #25, que solo protegió las rutas POST. Mini-form con `csrf_token` en el sidebar, botón visualmente idéntico al anterior; GET ahora responde 405. Tests: POST cierra sesión, GET 405 con sesión viva, POST sin token 400 sin cerrar sesión.
@@ -145,7 +145,7 @@ La pantalla de cobro mandaba un solo método de pago aunque la API ya soportaba 
 - **Deuda menor post-merge (triada en la revisión final, no bloquea):** quitar código muerto `api_client.get_reporte_resumen`; relabel "# Pedidos" → "# Ventas"; paleta de dona (6 colores < `limite` 10); un par de tests poco específicos; tests de no-regresión de filtros usan subconjunto en vez de igualdad; documentar `Pedido.id_usuario` (mesero) vs `Venta.id_usuario` (cajero) a nivel de modelo; la leyenda de la dona acopla a `Chart.overrides` (revisar en upgrade de Chart.js); el nombre de archivo del export refleja `desde`/`hasta` sin validar (fechas inválidas → 500, no explotable).
 - Módulos móviles Mesero/Cocina/Caja implementados; el placeholder `modulo/[key].tsx` ya no se usa por ningún rol.
 - Recetas: gestión completa desde el móvil (Cocina → Recetas). La lista de productos no muestra el nº de líneas de receta (`GET /productos` no lo trae); se ve al entrar al detalle.
-- El kárdex no registra costo por movimiento: el promedio ponderado del insumo (introducido en la rama `feat/costo-promedio-ponderado`) solo vive en el estado actual del insumo; un reporte de valuación en el tiempo requeriría añadir costo a `MovimientoInventario`.
+- El kárdex no registra costo por movimiento: el promedio ponderado del insumo (PR #28) solo vive en el estado actual del insumo; un reporte de valuación en el tiempo requeriría añadir costo a `MovimientoInventario`.
 - La deriva de centavos por cuantizar el promedio a 2 decimales en cada compra es aceptada por diseño (se recalibra sola con cada compra).
 - Warning de deprecación `HTTP_422_UNPROCESSABLE_ENTITY` → `_CONTENT` (no rompe).
 - RF-M03 (recuperar contraseña) solo como nota; sin implementar.
