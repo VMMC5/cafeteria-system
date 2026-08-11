@@ -30,6 +30,7 @@ import {
 } from "@/lib/caja";
 import { money } from "@/lib/format";
 import { useAuth } from "@/store/auth";
+import { cardShadow, colors, fonts, radius, sizes, spacing } from "@/theme";
 
 type LineaUI = {
   id_metodo_pago: number | null;
@@ -150,7 +151,7 @@ export default function Cobro() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -281,7 +282,7 @@ export default function Cobro() {
         onPress={confirmar}
       >
         {cobrando ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onAccent} />
         ) : (
           <Text style={styles.btnTxt}>Confirmar cobro</Text>
         )}
@@ -291,85 +292,110 @@ export default function Cobro() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f5f7", padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  container: { flex: 1, backgroundColor: colors.cream, padding: spacing.screen },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    backgroundColor: colors.cream,
+  },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#2d3748",
+    fontFamily: fonts.title,
+    fontSize: 22,
+    color: colors.coffee900,
     marginTop: 24,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
-  linea: { color: "#2d3748", paddingVertical: 2 },
+  linea: { fontFamily: fonts.body, color: colors.coffee700, paddingVertical: 2 },
   total: {
+    fontFamily: fonts.title,
     fontSize: 18,
-    fontWeight: "700",
-    color: "#2d3748",
+    color: colors.coffee900,
     textAlign: "right",
-    marginVertical: 12,
+    marginVertical: spacing.md,
   },
-  label: { fontWeight: "600", color: "#4a5568" },
+  label: { fontFamily: fonts.semibold, fontSize: 13, color: colors.coffee700 },
   lineaPago: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
-    gap: 8,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    padding: spacing.md,
+    marginBottom: spacing.sm + 2,
+    gap: spacing.sm,
+    ...cardShadow,
   },
   lineaHead: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  quitar: { color: "#c53030", fontSize: 16, fontWeight: "700", padding: 4 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  quitar: { color: colors.error, fontSize: 16, fontFamily: fonts.bold, padding: 4 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   chip: {
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: colors.inputBorder,
+    borderRadius: radius.pill,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
   },
-  chipSel: { backgroundColor: "#2b6cb0", borderColor: "#2b6cb0" },
-  chipTxt: { color: "#2d3748" },
-  chipTxtSel: { color: "#fff", fontWeight: "700" },
+  chipSel: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipTxt: { fontFamily: fonts.semibold, fontSize: 13, color: colors.coffee700 },
+  chipTxtSel: { color: colors.onAccent, fontFamily: fonts.bold },
   input: {
-    backgroundColor: "#f7fafc",
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.inputBorder,
+    borderRadius: radius.input,
+    height: sizes.input,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    fontFamily: fonts.body,
+    color: colors.coffee900,
   },
   agregar: {
-    color: "#2b6cb0",
-    fontWeight: "700",
-    paddingVertical: 8,
+    color: colors.accent,
+    fontFamily: fonts.bold,
+    paddingVertical: spacing.sm,
     marginBottom: 4,
   },
   resumen: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    padding: spacing.md,
     gap: 6,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
+    ...cardShadow,
   },
-  aviso: { color: "#c05621", marginBottom: 8, textAlign: "right" },
-  ticket: { backgroundColor: "#fff", borderRadius: 12, padding: 16, gap: 6 },
-  folio: { fontWeight: "700", color: "#2d3748", marginBottom: 6 },
+  aviso: { fontFamily: fonts.medium, color: colors.warnFg, marginBottom: spacing.sm, textAlign: "right" },
+  ticket: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.cardLg,
+    padding: spacing.lg,
+    gap: 6,
+    ...cardShadow,
+  },
+  folio: { fontFamily: fonts.title, color: colors.coffee900, marginBottom: 6 },
   row: { flexDirection: "row", justifyContent: "space-between" },
-  rowL: { color: "#4a5568" },
-  rowV: { color: "#2d3748" },
-  bold: { fontWeight: "700" },
-  sep: { height: 1, backgroundColor: "#e2e8f0", marginVertical: 6 },
+  rowL: { fontFamily: fonts.body, color: colors.coffee700 },
+  rowV: { fontFamily: fonts.body, color: colors.coffee900 },
+  bold: { fontFamily: fonts.bold },
+  sep: { height: 1, backgroundColor: colors.border, marginVertical: 6 },
   btn: {
-    backgroundColor: "#2b6cb0",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: colors.accent,
+    height: sizes.button,
+    borderRadius: radius.button,
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.sm,
   },
-  btnDisabled: { backgroundColor: "#a0aec0" },
-  btnTxt: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  errorTxt: { color: "#c53030", textAlign: "center" },
-  link: { color: "#2b6cb0", fontWeight: "600" },
+  btnDisabled: { backgroundColor: colors.disabled },
+  btnTxt: { color: colors.onAccent, fontFamily: fonts.bold, fontSize: 15.5 },
+  errorTxt: { fontFamily: fonts.medium, color: colors.error, textAlign: "center" },
+  link: { fontFamily: fonts.semibold, color: colors.accent },
 });

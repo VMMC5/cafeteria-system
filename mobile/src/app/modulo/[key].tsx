@@ -1,6 +1,8 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import { colors, fonts, radius } from "@/theme";
+
 const LABELS: Record<string, string> = {
   mesero: "Mesero",
   caja: "Caja",
@@ -30,16 +32,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
-    backgroundColor: "#f4f5f7",
+    backgroundColor: colors.cream,
   },
-  title: { fontSize: 24, fontWeight: "700", color: "#2d3748" },
-  muted: { color: "#718096" },
+  title: { fontFamily: fonts.title, fontSize: 24, color: colors.coffee900 },
+  muted: { fontFamily: fonts.body, color: colors.muted },
   button: {
-    backgroundColor: "#2b6cb0",
+    backgroundColor: colors.accent,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: radius.button,
     marginTop: 12,
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  buttonText: { color: colors.onAccent, fontFamily: fonts.bold },
 });

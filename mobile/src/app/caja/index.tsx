@@ -1,17 +1,13 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { getPedidos, Pedido } from "@/api/client";
 import { money } from "@/lib/format";
 import { useAuth } from "@/store/auth";
+import { cardShadow, colors, fonts, radius, spacing } from "@/theme";
+import { BottomNav } from "@/ui";
+import { NAV_CAJA, onNavPress } from "@/ui/nav";
 
 const POLL_MS = 10000;
 
@@ -46,81 +42,68 @@ export default function Caja() {
     }, [cargar])
   );
 
-  async function salir() {
-    await logout();
-    router.replace("/login" as any);
-  }
-
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Caja — por cobrar</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => router.push("/caja/gastos" as any)}>
-            <Text style={styles.link}>Gastos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={salir}>
-            <Text style={styles.salir}>Salir</Text>
-          </TouchableOpacity>
+    <View style={styles.screen}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Caja</Text>
+          <Text style={styles.subtitle}>Pedidos entregados por cobrar</Text>
         </View>
-      </View>
-      {loading && <ActivityIndicator size="large" color="#2b6cb0" />}
-      {error && (
-        <TouchableOpacity onPress={() => cargar(true)}>
-          <Text style={styles.error}>{error} (tocar para reintentar)</Text>
-        </TouchableOpacity>
-      )}
-      {!loading && !error && pedidos.length === 0 && (
-        <Text style={styles.muted}>No hay pedidos por cobrar.</Text>
-      )}
-      <FlatList
-        data={pedidos}
-        keyExtractor={(p) => String(p.id_pedido)}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() =>
-              router.push(`/caja/cobro?id_pedido=${item.id_pedido}` as any)
-            }
-          >
-            <View>
-              <Text style={styles.mesa}>Mesa {item.mesa.numero_mesa}</Text>
-              <Text style={styles.meta}>#{item.id_pedido}</Text>
-            </View>
-            <Text style={styles.total}>{money(item.total)}</Text>
+        {loading && <ActivityIndicator size="large" color={colors.accent} />}
+        {error && (
+          <TouchableOpacity onPress={() => cargar(true)}>
+            <Text style={styles.error}>{error} (tocar para reintentar)</Text>
           </TouchableOpacity>
         )}
-      />
+        {!loading && !error && pedidos.length === 0 && (
+          <Text style={styles.muted}>No hay pedidos por cobrar.</Text>
+        )}
+        <FlatList
+          data={pedidos}
+          keyExtractor={(p) => String(p.id_pedido)}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() =>
+                router.push(`/caja/cobro?id_pedido=${item.id_pedido}` as any)
+              }
+            >
+              <View>
+                <Text style={styles.mesa}>Mesa {item.mesa.numero_mesa}</Text>
+                <Text style={styles.meta}>#{item.id_pedido}</Text>
+              </View>
+              <Text style={styles.total}>{money(item.total)}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+      <BottomNav items={NAV_CAJA} active="cobrar" onPress={(k) => onNavPress(NAV_CAJA, k, logout)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f5f7", padding: 12 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 8,
-  },
-  title: { fontSize: 22, fontWeight: "700", color: "#2d3748" },
-  salir: { color: "#c53030", fontWeight: "600" },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 16 },
-  link: { color: "#2b6cb0", fontWeight: "600" },
-  list: { gap: 12, paddingBottom: 24 },
+  screen: { flex: 1, backgroundColor: colors.cream },
+  container: { flex: 1, padding: spacing.screen },
+  header: { marginTop: 24, marginBottom: spacing.lg },
+  title: { fontFamily: fonts.title, fontSize: 24, color: colors.coffee900 },
+  subtitle: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
+  list: { gap: spacing.md, paddingBottom: spacing.lg },
   card: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.cardLg,
+    padding: spacing.lg,
+    ...cardShadow,
   },
-  mesa: { fontSize: 18, fontWeight: "700", color: "#2d3748" },
-  meta: { color: "#718096", fontSize: 13 },
-  total: { fontSize: 18, fontWeight: "700", color: "#2b6cb0" },
-  muted: { color: "#718096", textAlign: "center", marginVertical: 16 },
-  error: { color: "#c53030", textAlign: "center", marginVertical: 8 },
+  mesa: { fontFamily: fonts.title, fontSize: 17, color: colors.coffee900 },
+  meta: { fontFamily: fonts.body, color: colors.muted, fontSize: 13, marginTop: 2 },
+  total: { fontFamily: fonts.title, fontSize: 18, color: colors.coffee900 },
+  muted: { fontFamily: fonts.body, color: colors.muted, textAlign: "center", marginVertical: 16 },
+  error: { fontFamily: fonts.medium, color: colors.error, textAlign: "center", marginVertical: 8 },
 });
