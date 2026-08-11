@@ -4,39 +4,43 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Cafetería Aroma · Admin{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>
 <div class="app">
   <aside class="sidebar">
-    <div class="sidebar__brand">☕ Café <b>Admin</b></div>
-    <nav class="sidebar__nav">
-      <a class="sidebar__link {{ 'active' if request.endpoint == 'dashboard.index' }}" href="{{ url_for('dashboard.index') }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 8h6V4h-6z"/></svg>
-        Estadísticas
+    <div class="sidebar__brand">
+      <span class="steam" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span>Cafetería <em>Aroma</em></span>
+    </div>
+    <nav class="sidebar__nav" aria-label="Menú principal">
+      <a class="sidebar__link {{ 'active' if request.endpoint == 'dashboard.index' }}" href="{{ url_for('dashboard.index') }}"
+         {% if request.endpoint == 'dashboard.index' %}aria-current="page"{% endif %}>
+        <span class="dot" aria-hidden="true"></span>Estadísticas
       </a>
-      <a class="sidebar__link {{ 'active' if request.endpoint and request.endpoint.startswith('usuarios.') }}" href="{{ url_for('usuarios.listar') }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2"/></svg>
-        Usuarios y Roles
+      <a class="sidebar__link {{ 'active' if request.endpoint and request.endpoint.startswith('usuarios.') }}" href="{{ url_for('usuarios.listar') }}"
+         {% if request.endpoint and request.endpoint.startswith('usuarios.') %}aria-current="page"{% endif %}>
+        <span class="dot" aria-hidden="true"></span>Usuarios y Roles
       </a>
-      <a class="sidebar__link {{ 'active' if request.endpoint and request.endpoint.startswith('catalogo.') }}" href="{{ url_for('catalogo.productos') }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/><circle cx="17.5" cy="17.5" r="3"/></svg>
-        Catálogo
+      <a class="sidebar__link {{ 'active' if request.endpoint and request.endpoint.startswith('catalogo.') }}" href="{{ url_for('catalogo.productos') }}"
+         {% if request.endpoint and request.endpoint.startswith('catalogo.') %}aria-current="page"{% endif %}>
+        <span class="dot" aria-hidden="true"></span>Catálogo
       </a>
-      <a class="sidebar__link {{ 'active' if request.endpoint and request.endpoint.startswith('reportes.') }}" href="{{ url_for('reportes.index') }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
-        Reportes
+      <a class="sidebar__link {{ 'active' if request.endpoint and request.endpoint.startswith('reportes.') }}" href="{{ url_for('reportes.index') }}"
+         {% if request.endpoint and request.endpoint.startswith('reportes.') %}aria-current="page"{% endif %}>
+        <span class="dot" aria-hidden="true"></span>Reportes
       </a>
     </nav>
     <div class="sidebar__user">
       <span class="avatar">{{ (current_user.nombre[0] if current_user.nombre else 'U')|upper }}</span>
-      <div>{{ current_user.nombre }}<br><small>Administrador</small></div>
+      <span class="sidebar__user-meta">
+        <span class="sidebar__user-name">{{ current_user.nombre }}</span>
+        <small>Administrador</small>
+      </span>
       <form method="post" action="{{ url_for('auth.logout') }}" class="sidebar__logout-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="sidebar__logout" title="Cerrar sesión" aria-label="Salir">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-          Salir
-        </button>
+        <button type="submit" class="sidebar__logout" title="Cerrar sesión" aria-label="Salir">Salir</button>
       </form>
     </div>
   </aside>
