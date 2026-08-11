@@ -142,6 +142,13 @@ Cobra **todas las rondas de una mesa** en un solo folio/ticket/juego de pagos ("
 ### Post-Sprint 6 — Logo en el arranque del móvil
 Logo oficial en splash nativo (`#FEF8EA` muestreado del PNG), pantalla de carga e ícono adaptativo de la app. Assets del template Expo fuera del arranque. Nota: el ícono del launcher (launcher icon) requiere build nativo — Expo Go no lo muestra en preview.
 
+### Post-Sprint 6 — APK instalable vía EAS Build
+Preparación de la rama para generar APK instalable via `eas build --platform android --profile preview` apuntando a la API LAN.
+- **EAS config (`mobile/eas.json`):** perfil `preview` con `distribution: internal` (APK), URL de API LAN horneada (`http://10.134.78.227:8000/api/v1`) en `env.EXPO_PUBLIC_API_BASE_URL`.
+- **Build properties (`mobile/app.json`):** plugin `expo-build-properties` con `usesCleartextTraffic: true` (release Android bloquea HTTP en claro; necesario para API no-TLS en LAN).
+- **App config:** package `com.cafeteriaaroma.app`, nombre visible «Cafetería Aroma» (slug `mobile` intacto); dependencia nueva `expo-build-properties` alineada al SDK vía `npx expo install`.
+- **Notas de despliegue:** los pasos de cuenta EAS, credenciales y keystore son responsabilidad del usuario; el `projectId` que escriba el primer `eas build` se registra en `eas.json` y se commitea como chore. Conteos de tests sin cambios (mobile **113/113**, backend **246/246**, web **127/127** + `tsc` limpio).
+
 ### Cobertura de tests
 - **Backend:** 246 tests (`docker compose exec api pytest`).
 - **Web:** 127 tests (`docker compose exec web pytest`).
