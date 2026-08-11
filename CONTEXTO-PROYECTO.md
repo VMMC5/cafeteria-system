@@ -1,7 +1,7 @@
 # Contexto del Proyecto — Cafeteria-System
 
 > Documento de contexto integral para retomar el proyecto en cualquier sesión (humana o con IA).
-> **Generado:** 2026-08-04 · **Actualizado:** 2026-08-09 · **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
+> **Generado:** 2026-08-04 · **Actualizado:** 2026-08-11 · **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
 
 ---
 
@@ -25,7 +25,8 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 
 - **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil) + **PR #24** (guard de mesa Ocupada en la API) + **PR #25** (protección CSRF en el panel web) + **PR #26** (inventario y kárdex a 3 decimales, squash `84d8161`; incluye el fix de `seed_base` sobre BD vacía).
 - **PR #27 mergeado (squash `b1f0e80`):** tres fixes menores — test de API para venta con pagos múltiples (cierra el último pendiente del PR #22), `/logout` del panel web de GET a POST (cerraba una vulnerabilidad de logout-CSRF que quedó fuera del alcance del PR #25) y refresh-on-401 global en el móvil (interceptor de axios con single-flight, `lib/authRefresh.ts` + `api/authInterceptor.ts`).
-- **Sin trabajo activo en curso.** Candidato siguiente: camino de "cerrar sin cobro" para el pedido Entregado que nadie paga (el pendiente con más prioridad operativa).
+- **PR #29 mergeado (squash `3f479bc`): rediseño "Cafetería Aroma" en web y móvil.** Login web de dos paneles + panel admin restyleado (Lora/Karla vendorizadas, iconos SVG inline en el sidebar); móvil con `src/theme/` + `src/ui/` (BottomNav por rol, Badge, Chip, Stepper…), fuentes Google + `react-native-svg` + `expo-print`. Extras funcionales de la revisión visual: comprobante completo con botón **Imprimir Ticket**, detalle de compra en Cocina, unidades en Nueva compra, confirmación de logout, y temporizador con urgencia en Cocina (⚠️ umbrales en modo demo: 1/2 min — `RETRASO_*` en `lib/cocina.ts`). Las carpetas de mockups se eliminaron tras el merge.
+- **Trabajo siguiente ya decidido:** división de cuenta por artículos en Caja móvil, **Opción A "calculadora de división"** (asignar artículos a personas → montos sugeridos como líneas de pago de la misma venta; un folio, sin cambios de backend). Pendiente: spec → plan. El camino de "cerrar sin cobro" para el pedido Entregado que nadie paga sigue en deuda con prioridad operativa.
 - Ramas locales residuales ya mergeadas: `feature/compras`, `feature/dashboard`, `feature/web-redesign`.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
@@ -33,10 +34,10 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 | Suite | Cantidad | Comando |
 |---|---|---|
 | Backend | 235 tests | `docker compose exec api pytest` |
-| Web | 126 tests | `docker compose exec web pytest` |
-| Móvil | 92 tests + `tsc` limpio | `cd mobile && npm test` |
+| Web | 127 tests | `docker compose exec web pytest` |
+| Móvil | 96 tests + `tsc` limpio | `cd mobile && npm test` |
 
-> Conteo de backend verificado sobre `main` tras el merge del PR #28 (squash `3a6289d`); web y móvil, tras el PR #27 (`b1f0e80`) — el PR #28 no los toca.
+> Las tres suites verificadas sobre `main` tras el merge del PR #29 (squash `3f479bc`).
 
 Los tests de backend usan una **BD dedicada** (`<db>_test`, autoprovisionada con `seed_base`) con guardia que impide tocar la BD de dev.
 
@@ -80,11 +81,12 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 ### Web (`web/app/`)
 - Blueprints: `auth/` (login admin-only, `flask-login`, refresh-on-401), `usuarios/` (CRUD con avatares, badges, filtros, reactivar), `dashboard/` (Estadísticas: 6 KPIs con ▲/▼ %, dona con total al centro, Ventas vs Gastos con bucketing mensual, tendencia, inventario), `reportes/` (BI: 4 tipos — Ventas Detalladas, Gastos Operativos, Inventario, Estado de Resultados agrupado — con preview, gráfica y export).
 - `services/api_client.py` + `api_gateway.py` — todo pasa por la API (el web no toca la BD); `services/export.py` — PDF (WeasyPrint, gráfica estática CSS) y XLSX (openpyxl, BarChart nativo).
-- Tema **"Cafetería Aroma"**: paleta café + sidebar; solo plantillas + CSS. `/` redirige a `/dashboard`.
+- Tema **"Cafetería Aroma"** (rediseño PR #29): Lora (títulos/cifras) + Karla (UI) **vendorizadas** en `static/fonts/` (woff2 variables, sin CDN); paleta café/caramelo/crema en tokens de `app.css`; sidebar `#2B1E16` con logo de vapor e iconos SVG inline; login de dos paneles con imagen (`login.css` propio). Solo plantillas + CSS. `/` redirige a `/dashboard`.
 - ⚠️ Tras registrar un blueprint nuevo hay que `docker compose restart web` (el hot-reload no recarga rutas).
 
 ### Móvil (`mobile/src/`)
-- `app/` (expo-router): `login`, `seleccion-modulo`, `mesero/` (mesas, menú, carrito, mis-pedidos), `cocina/` (pedidos, inventario, ajuste, compras, compra-nueva), `caja/` (pendientes, cobro, gastos). Auto-navegación por rol al iniciar sesión.
+- `app/` (expo-router): `login`, `seleccion-modulo`, `mesero/` (mesas, menú, carrito, mis-pedidos), `cocina/` (pedidos, recetas, receta-detalle, inventario, ajuste, compras, compra-detalle, compra-nueva), `caja/` (pendientes, cobro, gastos). Auto-navegación por rol al iniciar sesión.
+- **Tema "Cafetería Aroma" (PR #29):** tokens en `src/theme/` y componentes base en `src/ui/` (`BottomNav` por rol con iconos SVG propios, `Badge`, `Chip`, `Stepper`, `Card`, `Input`, `PrimaryButton`); fuentes Lora/Karla vía `@expo-google-fonts` cargadas en `_layout.tsx`; `expo-print` para el botón Imprimir Ticket (`lib/ticket.ts` genera el HTML). Cerrar sesión pide confirmación (`confirmarSalir` en `ui/nav.ts`).
 - `api/client.ts` — cliente axios con tipos; `api/coerce.ts` — **coacción Decimal string→number en el borde** (interceptor de respuesta, allowlist: `total, subtotal, iva, cambio, monto, cantidad, precio_venta, costo_unitario, stock_actual, stock_minimo`).
 - `lib/` — lógica pura testeable por módulo + `format.ts` con el helper **`money()`** (`$X.XX` defensivo).
 - `store/` — `auth.ts` (sesión en `expo-secure-store`; en web cae a `localStorage`), `cart.ts`.
@@ -117,6 +119,8 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 | Post-6 | #20 | Fix de raíz Decimal string→number en móvil (`coerce.ts` + `money()`) |
 | Post-6 | #26 | Inventario y kárdex a 3 decimales: migración `7f3a9c2b1d84`, validación 422 en la API, `decimales.ts` + `cantidad()` en móvil, reporte de Inventario del panel sin truncar, fix de `seed_base` sobre BD vacía |
 | Post-6 | #27 | Fixes menores: `/logout` por POST (logout-CSRF), refresh-on-401 global móvil (`authRefresh.ts` + `authInterceptor.ts`, single-flight y Alert único), test de API de pago dividido con excedente y referencia |
+| Post-6 | #28 | Costo de insumo por promedio ponderado en las compras (`compra_service.py`) |
+| Post-6 | #29 | Rediseño "Cafetería Aroma" web + móvil: fuentes Lora/Karla, theme/ui móvil con BottomNav por rol, ticket completo + Imprimir Ticket, detalle de compra, confirmación de logout, temporizador de Cocina |
 
 ---
 
@@ -132,6 +136,8 @@ mesa → menú → carrito → Pendiente → En prep. → Listo → Entregado �
 - Widgets diferidos: rebanada "Otros" en la dona; capacidad real de almacén en nivel de inventario.
 
 **Deuda menor (triada, no bloquea):**
+- Los umbrales del temporizador de Cocina quedaron en **modo demo (1/2 min)**; para operación real subir `RETRASO_ALERTA_MIN`/`RETRASO_CRITICO_MIN` en `mobile/src/lib/cocina.ts` (p. ej. 10/15).
+- La pantalla de detalle de compra busca la compra en `GET /compras` (la API no expone `GET /compras/{id}`); si la lista se pagina algún día, agregar el endpoint.
 - Quitar código muerto `api_client.get_reporte_resumen`; relabel "# Pedidos" → "# Ventas"; paleta de dona (6 colores < límite 10); tests poco específicos; documentar `Pedido.id_usuario` (mesero) vs `Venta.id_usuario` (cajero); leyenda de dona acoplada a `Chart.overrides`; nombre de archivo de export no valida fechas (fechas inválidas → 500, no explotable).
 - El kárdex no registra costo por movimiento: el promedio ponderado del insumo solo vive en su estado actual, sin histórico de valuación.
 - Endpoints de detalle de reportes sin paginación (N+1 leve).
