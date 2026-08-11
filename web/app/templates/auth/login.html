@@ -1,37 +1,130 @@
 {% extends "base_public.html" %}
 {% block title %}Iniciar sesión — Cafetería Aroma{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">{% endblock %}
 {% block fullpage %}
-<div class="login">
-  <div class="login__brand">
-    <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="#c8862f" stroke-width="1.5">
-      <path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z"/>
-      <path d="M17 9h2a2 2 0 0 1 0 4h-2"/>
-      <path d="M8 3c0 1-1 1.5-1 2.5M11 3c0 1-1 1.5-1 2.5M14 3c0 1-1 1.5-1 2.5" stroke-linecap="round"/>
-    </svg>
-    <h1>Cafetería <b>Aroma</b></h1>
-    <p class="sub">Panel de Administración General</p>
-  </div>
-  <div class="login__panel">
-    <div class="login__card">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, msg in messages %}<div class="flash flash--{{ category }}">{{ msg }}</div>{% endfor %}
-      {% endwith %}
-      <h1>Iniciar sesión</h1>
-      <p class="sub">Acceso exclusivo para administradores</p>
-      <form method="post" action="{{ url_for('auth.login') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label>Correo electrónico
-          <input type="email" name="correo" placeholder="admin@cafeteria.com" required autofocus>
-        </label>
-        <label>Contraseña
-          <input type="password" name="password" required>
-        </label>
-        <button type="submit">Ingresar</button>
-      </form>
-      <p class="muted" style="text-align:center;margin-top:1rem;">
-        <a href="{{ support_url }}">¿Problemas para acceder? Contacta a soporte</a>
-      </p>
+<main class="login-layout">
+  <aside class="brand-panel" aria-hidden="true">
+    <img class="brand-bg" src="{{ url_for('static', filename='img/cafeteria.jpg') }}" alt="" aria-hidden="true">
+    <div class="brand-scrim" aria-hidden="true"></div>
+    <div class="brand">
+      <span class="steam" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="brand-name">Cafetería <em>Aroma</em></span>
     </div>
-  </div>
-</div>
+    <div class="brand-copy">
+      <span class="brand-rule" aria-hidden="true"></span>
+      <h2>El aroma de un buen día empieza aquí.</h2>
+      <p>Panel administrativo — gestiona pedidos, inventario y personal de tu cafetería.</p>
+    </div>
+  </aside>
+
+  <section class="form-panel">
+    <form id="login-form" class="login-card" method="POST" action="{{ url_for('auth.login') }}" novalidate aria-labelledby="login-title">
+      <header>
+        <h1 id="login-title">Iniciar sesión</h1>
+        <p class="subtitle">Accede al panel de administración</p>
+      </header>
+
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      {% set errores = get_flashed_messages(category_filter=['error']) %}
+      <div id="form-alert" class="alert alert-error" role="alert" aria-live="assertive" {% if not errores %}hidden{% endif %}>
+        <span class="alert-icon" aria-hidden="true">!</span>
+        <span id="form-alert-text">{% for msg in errores %}{{ msg }}{% endfor %}</span>
+      </div>
+      {% set avisos = get_flashed_messages(category_filter=['info']) %}
+      {% if avisos %}
+      <div class="alert alert-info" role="status">
+        <span class="alert-icon" aria-hidden="true">✓</span>
+        <span>{% for msg in avisos %}{{ msg }}{% endfor %}</span>
+      </div>
+      {% endif %}
+
+      <div class="field">
+        <label for="correo">Correo electrónico</label>
+        <input id="correo" name="correo" type="email" autocomplete="email" required
+               placeholder="admin@cafeteria.com" autofocus
+               {% if request.form.correo %}value="{{ request.form.correo }}"{% endif %}
+               aria-describedby="correo-err" aria-invalid="false">
+        <span class="field-error" id="correo-err" hidden></span>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <label for="password">Contraseña</label>
+          <a class="link-sm" href="{{ support_url }}">¿Problemas para acceder?</a>
+        </div>
+        <div class="password-wrap">
+          <input id="password" name="password" type="password" autocomplete="current-password" required
+                 placeholder="••••••••" aria-describedby="pass-err" aria-invalid="false">
+          <button type="button" class="toggle-pass" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
+        </div>
+        <span class="field-error" id="pass-err" hidden></span>
+      </div>
+
+      <button type="submit" id="submit-btn" class="btn-primary">
+        <span class="spinner" aria-hidden="true" hidden></span>
+        <span id="submit-label">Iniciar sesión</span>
+      </button>
+    </form>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var form = document.getElementById('login-form');
+  var correo = document.getElementById('correo');
+  var pass = document.getElementById('password');
+  var btn = document.getElementById('submit-btn');
+  var label = document.getElementById('submit-label');
+  var spinner = btn.querySelector('.spinner');
+  var toggle = document.querySelector('.toggle-pass');
+
+  toggle.addEventListener('click', function () {
+    var show = pass.type === 'password';
+    pass.type = show ? 'text' : 'password';
+    toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+    toggle.setAttribute('aria-pressed', String(show));
+    toggle.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  });
+
+  function setFieldError(input, errEl, msg) {
+    if (msg) {
+      errEl.textContent = msg;
+      errEl.hidden = false;
+      input.setAttribute('aria-invalid', 'true');
+      input.classList.add('is-invalid');
+    } else {
+      errEl.hidden = true;
+      input.setAttribute('aria-invalid', 'false');
+      input.classList.remove('is-invalid');
+    }
+  }
+
+  function validate() {
+    var ok = true;
+    var correoErr = document.getElementById('correo-err');
+    var passErr = document.getElementById('pass-err');
+    if (!correo.value.trim()) { setFieldError(correo, correoErr, 'Ingresa tu correo electrónico.'); ok = false; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.value)) { setFieldError(correo, correoErr, 'El formato del correo no es válido.'); ok = false; }
+    else setFieldError(correo, correoErr, null);
+    if (!pass.value) { setFieldError(pass, passErr, 'Ingresa tu contraseña.'); ok = false; }
+    else setFieldError(pass, passErr, null);
+    return ok;
+  }
+
+  correo.addEventListener('input', function () { setFieldError(correo, document.getElementById('correo-err'), null); });
+  pass.addEventListener('input', function () { setFieldError(pass, document.getElementById('pass-err'), null); });
+
+  // Envío clásico (POST + redirect/flash del servidor): el JS solo valida
+  // y muestra el estado de carga; si algo no pasa, evita el submit.
+  form.addEventListener('submit', function (e) {
+    if (!validate()) { e.preventDefault(); return; }
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    spinner.hidden = false;
+    label.textContent = 'Verificando…';
+  });
+})();
+</script>
 {% endblock %}
