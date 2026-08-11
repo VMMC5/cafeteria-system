@@ -121,8 +121,10 @@ export default function Menu() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.cream },
-  header: { paddingHorizontal: spacing.screen, paddingTop: 24, paddingBottom: spacing.sm, gap: 4 },
-  back: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent },
+  // paddingTop alto: sin SafeArea, el enlace "‹ Mesas" quedaba pegado a la
+  // barra de estado y era incómodo de alcanzar.
+  header: { paddingHorizontal: spacing.screen, paddingTop: 52, paddingBottom: spacing.sm, gap: 6 },
+  back: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent, paddingVertical: 4 },
   title: { fontFamily: fonts.title, fontSize: 24, color: colors.coffee900 },
   sectionH: {
     fontFamily: fonts.bold,
