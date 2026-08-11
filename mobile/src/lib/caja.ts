@@ -66,7 +66,7 @@ export type CuentaMesa = {
   id_mesa: number;
   numero_mesa: number;
   pedidos: Pedido[]; // rondas ordenadas por id_pedido
-  total: number; // suma acumulada en centavos
+  total: number; // total en pesos (acumulado internamente en centavos)
   cobrable: boolean; // todas las rondas Entregadas
 };
 

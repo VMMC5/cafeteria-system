@@ -222,9 +222,12 @@ export default function Cobro() {
       const v = await cobrarVenta(access, idsPedidos, aPayload(parseadas));
       setVenta(v);
     } catch (e: any) {
+      const detalle = e?.response?.data?.detail;
       const msg =
         e?.response?.status === 409
-          ? "El pedido ya no está disponible para cobro."
+          ? typeof detalle === "string"
+            ? detalle
+            : "El pedido ya no está disponible para cobro."
           : "No se pudo cobrar.";
       Alert.alert("Error", msg, [
         { text: "OK", onPress: () => router.replace("/caja" as any) },
