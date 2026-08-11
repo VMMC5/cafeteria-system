@@ -29,7 +29,7 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 - **PR #30 mergeado (squash `ddbca26`): división de cuenta por artículos en Caja móvil.** Calculadora en la pantalla de cobro: asignar artículos a personas → una línea de pago por persona con monto exacto (acumulación en centavos, sin prorrateo de IVA — los precios del detalle son finales). Solo móvil (`lib/split.ts` puro + UI en Cobro); un folio, N pagos.
 - **PR #31 mergeado (squash `6feed1e`): varios pedidos por mesa (rondas).** Una mesa Ocupada acepta pedidos adicionales y se libera solo al cerrar el último activo (`tiene_pedido_activo(excepto_id_pedido)` en cobrar/cancelar); en el móvil las mesas Ocupadas son tocables (`mesaSeleccionable`). Sin cambios de esquema ni API.
 - **Trabajo siguiente ya decidido: cuenta por mesa — venta multi-pedido (diseño aprobado 2026-08-11).** Cobrar todas las rondas de una mesa en un solo folio: `pedidos.id_venta` (1:N) reemplaza a `ventas.id_pedido`, `POST /ventas` acepta `ids_pedidos` (misma mesa; con varias rondas, todas Entregadas), Caja agrupa por mesa (cuenta completa o ronda suelta) y la calculadora de división opera sobre la unión de líneas. Pendiente: spec → plan → TDD → PR. El camino de "cerrar sin cobro" para el pedido Entregado que nadie paga sigue en deuda con prioridad operativa.
-- Ramas locales residuales ya mergeadas: `feature/compras`, `feature/dashboard`, `feature/web-redesign`.
+- Sin ramas residuales: las locales ya mergeadas se limpiaron el 2026-08-11.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
 ### Cobertura de tests
