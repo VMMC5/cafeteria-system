@@ -1,8 +1,16 @@
 import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { modulesForRole } from "@/lib/modules";
+import { Modulo, modulesForRole } from "@/lib/modules";
 import { useAuth } from "@/store/auth";
+import { cardShadow, colors, fonts, radius, spacing } from "@/theme";
+import { IconName, NavIcon } from "@/ui";
+
+const MODULO_ICON: Record<Modulo["key"], IconName> = {
+  mesero: "mesas",
+  caja: "cobrar",
+  cocina: "pedidos",
+};
 
 export default function SeleccionModulo() {
   const user = useAuth((s) => s.user);
@@ -28,6 +36,9 @@ export default function SeleccionModulo() {
             style={styles.card}
             onPress={() => router.push(m.ruta as any)}
           >
+            <View style={styles.cardIcon}>
+              <NavIcon name={MODULO_ICON[m.key]} color={colors.accent} size={24} />
+            </View>
             <Text style={styles.cardText}>{m.label}</Text>
           </TouchableOpacity>
         ))}
@@ -40,13 +51,31 @@ export default function SeleccionModulo() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: "#f4f5f7" },
-  hello: { fontSize: 22, fontWeight: "700", color: "#2d3748", marginTop: 24 },
-  subtitle: { fontSize: 16, color: "#4a5568", marginBottom: 16 },
-  grid: { gap: 12 },
-  card: { backgroundColor: "#2b6cb0", borderRadius: 12, padding: 28, alignItems: "center" },
-  cardText: { color: "#fff", fontSize: 18, fontWeight: "600" },
-  muted: { color: "#718096" },
-  logout: { padding: 14, alignItems: "center" },
-  logoutText: { color: "#c53030", fontWeight: "600" },
+  container: { flex: 1, padding: spacing.xl, backgroundColor: colors.cream },
+  hello: { fontFamily: fonts.title, fontSize: 24, color: colors.coffee900, marginTop: 24 },
+  subtitle: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginBottom: spacing.lg },
+  grid: { gap: spacing.md },
+  card: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.cardLg,
+    padding: spacing.xl,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+    ...cardShadow,
+  },
+  cardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.busyBg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardText: { fontFamily: fonts.title, fontSize: 17, color: colors.coffee900 },
+  muted: { fontFamily: fonts.body, color: colors.muted },
+  logout: { padding: spacing.lg, alignItems: "center" },
+  logoutText: { fontFamily: fonts.bold, color: colors.error },
 });

@@ -12,6 +12,9 @@ import {
 import { getMesas, Mesa } from "@/api/client";
 import { useAuth } from "@/store/auth";
 import { useCart } from "@/store/cart";
+import { cardShadow, colors, fonts, radius, spacing } from "@/theme";
+import { Badge, BottomNav } from "@/ui";
+import { NAV_MESERO, onNavPress } from "@/ui/nav";
 
 export default function Mesas() {
   const access = useAuth((s) => s.accessToken);
@@ -47,92 +50,70 @@ export default function Mesas() {
     router.push("/mesero/menu" as any);
   }
 
-  async function salir() {
-    await logout();
-    router.replace("/login" as any);
-  }
-
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Mesas</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => router.push("/mesero/mis-pedidos" as any)}>
-            <Text style={styles.link}>Mis pedidos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={salir}>
-            <Text style={styles.salir}>Salir</Text>
-          </TouchableOpacity>
+    <View style={styles.screen}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Mesas</Text>
+          <Text style={styles.subtitle}>Elige una mesa disponible</Text>
         </View>
+        {loading && <ActivityIndicator size="large" color={colors.accent} />}
+        {error && (
+          <TouchableOpacity onPress={cargar}>
+            <Text style={styles.error}>{error} (tocar para reintentar)</Text>
+          </TouchableOpacity>
+        )}
+        <FlatList
+          data={mesas}
+          keyExtractor={(m) => String(m.id_mesa)}
+          numColumns={2}
+          columnWrapperStyle={styles.rowGap}
+          contentContainerStyle={styles.grid}
+          renderItem={({ item }) => {
+            const libre = item.estado === "Disponible";
+            return (
+              <TouchableOpacity
+                style={[styles.card, !libre && styles.cardBusy]}
+                disabled={!libre}
+                onPress={() => elegir(item)}
+              >
+                <Text style={styles.numero}>Mesa {item.numero_mesa}</Text>
+                <Text style={styles.cap}>{item.capacidad} personas</Text>
+                <Badge
+                  label={item.estado}
+                  variant={libre ? "ok" : item.estado === "Ocupada" ? "busy" : "warn"}
+                />
+              </TouchableOpacity>
+            );
+          }}
+        />
       </View>
-      {loading && <ActivityIndicator size="large" color="#2b6cb0" />}
-      {error && (
-        <TouchableOpacity onPress={cargar}>
-          <Text style={styles.error}>{error} (tocar para reintentar)</Text>
-        </TouchableOpacity>
-      )}
-      <FlatList
-        data={mesas}
-        keyExtractor={(m) => String(m.id_mesa)}
-        numColumns={2}
-        columnWrapperStyle={styles.rowGap}
-        contentContainerStyle={styles.grid}
-        renderItem={({ item }) => {
-          const libre = item.estado === "Disponible";
-          return (
-            <TouchableOpacity
-              style={[styles.card, !libre && styles.cardBusy]}
-              disabled={!libre}
-              onPress={() => elegir(item)}
-            >
-              <Text style={styles.numero}>Mesa {item.numero_mesa}</Text>
-              <Text style={styles.cap}>{item.capacidad} personas</Text>
-              <Text style={[styles.badge, libre ? styles.badgeOk : styles.badgeBusy]}>
-                {item.estado}
-              </Text>
-            </TouchableOpacity>
-          );
-        }}
-      />
+      <BottomNav items={NAV_MESERO} active="mesas" onPress={(k) => onNavPress(NAV_MESERO, k, logout)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f5f7", padding: 12 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 8,
-  },
-  title: { fontSize: 24, fontWeight: "700", color: "#2d3748" },
-  salir: { color: "#c53030", fontWeight: "600" },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 16 },
-  link: { color: "#2b6cb0", fontWeight: "600" },
-  grid: { gap: 12 },
-  rowGap: { gap: 12 },
+  screen: { flex: 1, backgroundColor: colors.cream },
+  container: { flex: 1, padding: spacing.screen },
+  header: { marginTop: 24, marginBottom: spacing.lg },
+  title: { fontFamily: fonts.title, fontSize: 24, color: colors.coffee900 },
+  subtitle: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
+  grid: { gap: spacing.md, paddingBottom: spacing.lg },
+  rowGap: { gap: spacing.md },
   card: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.cardLg,
+    padding: spacing.xl,
     alignItems: "center",
-    gap: 4,
+    gap: 6,
+    ...cardShadow,
   },
-  cardBusy: { opacity: 0.5 },
-  numero: { fontSize: 18, fontWeight: "700", color: "#2d3748" },
-  cap: { color: "#718096", fontSize: 13 },
-  badge: {
-    marginTop: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: 999,
-    fontSize: 12,
-    overflow: "hidden",
-  },
-  badgeOk: { backgroundColor: "#c6f6d5", color: "#22543d" },
-  badgeBusy: { backgroundColor: "#fed7d7", color: "#742a2a" },
-  error: { color: "#c53030", textAlign: "center", marginVertical: 8 },
+  cardBusy: { opacity: 0.55 },
+  numero: { fontFamily: fonts.title, fontSize: 17, color: colors.coffee900 },
+  cap: { fontFamily: fonts.body, color: colors.muted, fontSize: 13 },
+  error: { fontFamily: fonts.medium, color: colors.error, textAlign: "center", marginVertical: 8 },
 });

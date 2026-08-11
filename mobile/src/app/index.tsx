@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { homeRoute } from "@/lib/modules";
 import { useAuth } from "@/store/auth";
+import { colors, fonts } from "@/theme";
 
 export default function Index() {
   const status = useAuth((s) => s.status);
@@ -17,8 +18,10 @@ export default function Index() {
   if (status === "loading") {
     return (
       <View style={styles.center}>
-        <Text style={styles.brand}>☕ Cafetería</Text>
-        <ActivityIndicator size="large" color="#2b6cb0" />
+        <Text style={styles.brand}>
+          Cafetería <Text style={styles.brandEm}>Aroma</Text>
+        </Text>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -35,7 +38,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
-    backgroundColor: "#f4f5f7",
+    backgroundColor: colors.cream,
   },
-  brand: { fontSize: 28, fontWeight: "700", color: "#2d3748" },
+  brand: { fontFamily: fonts.title, fontSize: 28, color: colors.coffee900 },
+  brandEm: { fontFamily: fonts.titleItalic, color: colors.accent },
 });
