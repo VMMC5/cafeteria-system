@@ -139,6 +139,9 @@ Cobra **todas las rondas de una mesa** en un solo folio/ticket/juego de pagos ("
 - **Tests:** backend 239 → **246**; móvil 109 → **113** + `tsc --noEmit` limpio.
 - **Nota de despliegue:** el ritual post-merge corre `alembic upgrade head` sobre la BD real — verificar el backfill con `SELECT COUNT(*) FROM ventas v WHERE NOT EXISTS (SELECT 1 FROM pedidos p WHERE p.id_venta = v.id_venta)` → debe dar **0**.
 
+### Post-Sprint 6 — Logo en el arranque del móvil
+Logo oficial en splash nativo (`#FEF8EA` muestreado del PNG), pantalla de carga e ícono adaptativo de la app. Assets del template Expo fuera del arranque. Nota: el ícono del launcher (launcher icon) requiere build nativo — Expo Go no lo muestra en preview.
+
 ### Cobertura de tests
 - **Backend:** 246 tests (`docker compose exec api pytest`).
 - **Web:** 127 tests (`docker compose exec web pytest`).
