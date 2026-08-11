@@ -27,10 +27,12 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       {% set errores = get_flashed_messages(category_filter=['error']) %}
-      <div id="form-alert" class="alert alert-error" role="alert" aria-live="assertive" {% if not errores %}hidden{% endif %}>
+      {% if errores %}
+      <div class="alert alert-error" role="alert">
         <span class="alert-icon" aria-hidden="true">!</span>
-        <span id="form-alert-text">{% for msg in errores %}{{ msg }}{% endfor %}</span>
+        <span>{% for msg in errores %}{{ msg }}{% endfor %}</span>
       </div>
+      {% endif %}
       {% set avisos = get_flashed_messages(category_filter=['info']) %}
       {% if avisos %}
       <div class="alert alert-info" role="status">

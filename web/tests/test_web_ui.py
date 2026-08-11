@@ -40,6 +40,14 @@ def test_login_usa_layout_publico_sin_sidebar(client):
     assert 'class="sidebar"' not in cuerpo              # el login no muestra sidebar
 
 
+def test_login_sin_flash_no_muestra_alerta(client):
+    # La caja de error solo se renderiza cuando hay flash 'error'; si quedara
+    # siempre en el DOM, el display:flex de .alert le gana al atributo hidden
+    # y aparece un rectángulo vacío con "!".
+    cuerpo = client.get("/login").get_data(as_text=True)
+    assert "alert-error" not in cuerpo
+
+
 def test_login_split_marca_y_subtitulo(client):
     cuerpo = client.get("/login").get_data(as_text=True)
     assert "brand-panel" in cuerpo                            # panel de marca del split
