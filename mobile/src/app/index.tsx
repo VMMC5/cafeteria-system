@@ -1,6 +1,6 @@
 import { Redirect } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 
 import { homeRoute } from "@/lib/modules";
 import { useAuth } from "@/store/auth";
@@ -18,6 +18,10 @@ export default function Index() {
   if (status === "loading") {
     return (
       <View style={styles.center}>
+        <Image
+          source={require("../../assets/images/logo-aroma.png")}
+          style={styles.logo}
+        />
         <Text style={styles.brand}>
           Cafetería <Text style={styles.brandEm}>Aroma</Text>
         </Text>
@@ -40,6 +44,7 @@ const styles = StyleSheet.create({
     gap: 16,
     backgroundColor: colors.cream,
   },
+  logo: { width: 160, height: 160 },
   brand: { fontFamily: fonts.title, fontSize: 28, color: colors.coffee900 },
   brandEm: { fontFamily: fonts.titleItalic, color: colors.accent },
 });
