@@ -88,7 +88,9 @@ def crear(db: Session, data: PedidoCreate, id_usuario: int) -> Pedido:
     mesa = db.get(Mesa, data.id_mesa)
     if mesa is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Mesa no encontrada")
-    if mesa.estado != "Disponible":
+    # Una mesa Ocupada acepta rondas adicionales: cada pedido nuevo fluye
+    # completo por cocina y caja; la mesa se libera al cerrar el último.
+    if mesa.estado not in ("Disponible", "Ocupada"):
         raise HTTPException(status.HTTP_409_CONFLICT, "La mesa no está disponible")
 
     lineas = []
@@ -146,7 +148,9 @@ def cancelar(db: Session, id_pedido: int, motivo: str, usuario) -> Pedido:
         )
     )
     pedido.id_estado = _estado_por_nombre(db, "Cancelado").id_estado
-    pedido.mesa.estado = "Disponible"
+    # La mesa se libera solo si esta era la última ronda activa.
+    if not tiene_pedido_activo(db, pedido.id_mesa, excepto_id_pedido=pedido.id_pedido):
+        pedido.mesa.estado = "Disponible"
     receta_service.reponer_pedido(db, pedido, usuario.id_usuario)
     db.commit()
     db.refresh(pedido)
@@ -171,9 +175,17 @@ def condiciones_pedido_activo(db: Session) -> tuple:
     )
 
 
-def tiene_pedido_activo(db: Session, id_mesa: int) -> bool:
-    """True si la mesa tiene al menos un pedido activo (ni cancelado ni cobrado)."""
-    stmt = select(Pedido.id_pedido).where(
-        Pedido.id_mesa == id_mesa, *condiciones_pedido_activo(db)
-    )
+def tiene_pedido_activo(
+    db: Session, id_mesa: int, excepto_id_pedido: int | None = None
+) -> bool:
+    """True si la mesa tiene al menos un pedido activo (ni cancelado ni cobrado).
+
+    `excepto_id_pedido` excluye el pedido que se está cerrando (cobro o
+    cancelación): la consulta no debe depender de si su venta o su cambio de
+    estado ya se reflejaron en la sesión.
+    """
+    condiciones = [Pedido.id_mesa == id_mesa, *condiciones_pedido_activo(db)]
+    if excepto_id_pedido is not None:
+        condiciones.append(Pedido.id_pedido != excepto_id_pedido)
+    stmt = select(Pedido.id_pedido).where(*condiciones)
     return db.execute(stmt).first() is not None

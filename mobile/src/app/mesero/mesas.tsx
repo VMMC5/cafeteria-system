@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { getMesas, Mesa } from "@/api/client";
+import { mesaSeleccionable } from "@/lib/mesero";
 import { useAuth } from "@/store/auth";
 import { useCart } from "@/store/cart";
 import { cardShadow, colors, fonts, radius, spacing } from "@/theme";
@@ -55,7 +56,7 @@ export default function Mesas() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Mesas</Text>
-          <Text style={styles.subtitle}>Elige una mesa disponible</Text>
+          <Text style={styles.subtitle}>Elige una mesa; las ocupadas aceptan otra ronda</Text>
         </View>
         {loading && <ActivityIndicator size="large" color={colors.accent} />}
         {error && (
@@ -71,10 +72,11 @@ export default function Mesas() {
           contentContainerStyle={styles.grid}
           renderItem={({ item }) => {
             const libre = item.estado === "Disponible";
+            const seleccionable = mesaSeleccionable(item.estado);
             return (
               <TouchableOpacity
-                style={[styles.card, !libre && styles.cardBusy]}
-                disabled={!libre}
+                style={[styles.card, !seleccionable && styles.cardBusy]}
+                disabled={!seleccionable}
                 onPress={() => elegir(item)}
               >
                 <Text style={styles.numero}>Mesa {item.numero_mesa}</Text>
@@ -84,6 +86,9 @@ export default function Mesas() {
                   variant={libre ? "ok" : item.estado === "Ocupada" ? "busy" : "warn"}
                   style={{ alignSelf: "center" }}
                 />
+                {item.estado === "Ocupada" && (
+                  <Text style={styles.hint}>Toca para agregar otro pedido</Text>
+                )}
               </TouchableOpacity>
             );
           }}
@@ -116,5 +121,6 @@ const styles = StyleSheet.create({
   cardBusy: { opacity: 0.55 },
   numero: { fontFamily: fonts.title, fontSize: 17, color: colors.coffee900 },
   cap: { fontFamily: fonts.body, color: colors.muted, fontSize: 13 },
+  hint: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, textAlign: "center" },
   error: { fontFamily: fonts.medium, color: colors.error, textAlign: "center", marginVertical: 8 },
 });

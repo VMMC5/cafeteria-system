@@ -246,3 +246,75 @@ def test_cobrar_pago_dividido_excedente_y_referencia(
     assert por_metodo[ef]["referencia"] is None
     m = client.get(f"/api/v1/mesas/{pedido['id_mesa']}", headers=admin_headers).json()
     assert m["estado"] == "Disponible"
+
+
+def _otra_ronda(client, db, admin_headers, id_mesa, precio=58.0):
+    """Segundo pedido sobre la MISMA mesa (ronda adicional)."""
+    from app.models import Categoria
+
+    cat = db.query(Categoria).first()
+    prod = client.post(
+        "/api/v1/productos",
+        headers=admin_headers,
+        json={
+            "id_categoria": cat.id_categoria,
+            "nombre_producto": "Ronda 2",
+            "precio_venta": precio,
+            "disponible": True,
+        },
+    ).json()
+    r = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={
+            "id_mesa": id_mesa,
+            "items": [{"id_producto": prod["id_producto"], "cantidad": 1}],
+        },
+    )
+    assert r.status_code == 201
+    return r.json()
+
+
+def _cobrar_efectivo(client, db, cajero_headers, id_pedido, monto):
+    efectivo = _metodo_id(db, "Efectivo")
+    r = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={
+            "id_pedido": id_pedido,
+            "pagos": [{"id_metodo_pago": efectivo, "monto": monto}],
+        },
+    )
+    assert r.status_code == 201
+    return r.json()
+
+
+def _estado_mesa(client, admin_headers, id_mesa):
+    return client.get(f"/api/v1/mesas/{id_mesa}", headers=admin_headers).json()["estado"]
+
+
+def test_cobrar_una_ronda_no_libera_la_mesa_con_otra_activa(
+    client, db, admin_headers, cajero_headers
+):
+    pedido1 = _pedido(client, db, admin_headers, numero=610, precio=116.0)
+    pedido2 = _otra_ronda(client, db, admin_headers, pedido1["id_mesa"])
+    _cobrar_efectivo(client, db, cajero_headers, pedido1["id_pedido"], 116.0)
+    assert _estado_mesa(client, admin_headers, pedido1["id_mesa"]) == "Ocupada"
+    _cobrar_efectivo(client, db, cajero_headers, pedido2["id_pedido"], 58.0)
+    assert _estado_mesa(client, admin_headers, pedido1["id_mesa"]) == "Disponible"
+
+
+def test_mesa_se_libera_con_ronda_cobrada_y_ronda_cancelada(
+    client, db, admin_headers, cajero_headers
+):
+    pedido1 = _pedido(client, db, admin_headers, numero=611, precio=116.0)
+    pedido2 = _otra_ronda(client, db, admin_headers, pedido1["id_mesa"])
+    r = client.post(
+        f"/api/v1/pedidos/{pedido1['id_pedido']}/cancelar",
+        headers=admin_headers,
+        json={"motivo": "Cliente cambió de opinión"},
+    )
+    assert r.status_code == 200
+    assert _estado_mesa(client, admin_headers, pedido1["id_mesa"]) == "Ocupada"
+    _cobrar_efectivo(client, db, cajero_headers, pedido2["id_pedido"], 58.0)
+    assert _estado_mesa(client, admin_headers, pedido1["id_mesa"]) == "Disponible"
