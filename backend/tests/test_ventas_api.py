@@ -1,3 +1,26 @@
+import threading
+import time
+from decimal import Decimal
+
+from fastapi import HTTPException
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session as OrmSession
+
+from app.models import (
+    DetallePedido,
+    EstadoPedido,
+    Mesa,
+    MetodoPago,
+    Pedido,
+    Producto,
+    Usuario,
+    Venta,
+)
+from app.schemas.venta import PagoIn, VentaCreate
+from app.services import venta_service
+from tests.conftest import engine as _engine
+
+
 def _pedido(client, db, admin_headers, numero, precio=116.0):
     from app.models import Categoria
 
@@ -436,6 +459,44 @@ def test_cobrar_cuenta_con_ronda_ya_cobrada_409(
     assert "ya fue cobrado" in r2.json()["detail"]
 
 
+def test_cobrar_dos_rondas_juntas_con_tercera_pendiente_no_libera_la_mesa(
+    client, db, admin_headers, cajero_headers
+):
+    """Pin de `excepto_ids` haciendo trabajo real en el camino multi-pedido:
+    las rondas 1 y 2 (Entregadas) se cobran juntas en UNA sola venta mientras
+    la ronda 3 sigue Pendiente -> 201 y la mesa debe seguir "Ocupada" (si
+    `excepto_ids` solo excluyera la ronda 1, como en el camino de un solo
+    pedido, `tiene_pedido_activo` ignoraría también la ronda 2 -- que ya no
+    está activa por estar cobrada, así que el resultado sería el mismo; lo
+    que realmente se prueba es que la ronda 3, Pendiente y fuera de esta
+    cuenta, sigue contando como activa y mantiene la mesa ocupada). Tras
+    entregar y cobrar la ronda 3, la mesa sí se libera.
+    """
+    ronda1 = _pedido(client, db, admin_headers, numero=630, precio=116.0)
+    id_mesa = ronda1["id_mesa"]
+    ronda2 = _otra_ronda(client, db, admin_headers, id_mesa, precio=58.0)
+    ronda3 = _otra_ronda(client, db, admin_headers, id_mesa, precio=30.0)
+    _entregar(client, db, admin_headers, ronda1["id_pedido"])
+    _entregar(client, db, admin_headers, ronda2["id_pedido"])
+    # ronda3 se queda Pendiente a propósito.
+
+    efectivo = _metodo_id(db, "Efectivo")
+    r = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={
+            "ids_pedidos": [ronda1["id_pedido"], ronda2["id_pedido"]],
+            "pagos": [{"id_metodo_pago": efectivo, "monto": 200.0}],
+        },
+    )
+    assert r.status_code == 201
+    assert _estado_mesa(client, admin_headers, id_mesa) == "Ocupada"
+
+    _entregar(client, db, admin_headers, ronda3["id_pedido"])
+    _cobrar_efectivo(client, db, cajero_headers, ronda3["id_pedido"], 30.0)
+    assert _estado_mesa(client, admin_headers, id_mesa) == "Disponible"
+
+
 def test_cobrar_ids_repetidos_422(client, db, admin_headers, cajero_headers):
     pedido = _pedido(client, db, admin_headers, numero=625)
     efectivo = _metodo_id(db, "Efectivo")
@@ -448,3 +509,162 @@ def test_cobrar_ids_repetidos_422(client, db, admin_headers, cajero_headers):
         },
     )
     assert r.status_code == 422
+
+
+def test_cobrar_concurrencia_misma_ronda_no_duplica_el_cobro():
+    """Pin de la invariante que protege el `SELECT ... FOR UPDATE` en
+    `venta_service.cobrar`: sin ese lock, dos transacciones que cobran el
+    MISMO pedido concurrentemente pueden ambas leer `id_venta is None` bajo
+    READ COMMITTED y ambas pasarían la validación «El pedido ya fue
+    cobrado», produciendo una venta huérfana (folio y pagos sin pedido
+    real). Este test abre DOS conexiones/transacciones reales e independientes
+    contra la BD de test (los fixtures `db`/`client` comparten una sola
+    conexión cuya transacción externa nunca se commitea de verdad, así que no
+    sirven para probar bloqueo entre transacciones distintas).
+
+    Sesión A simula un cobro en curso: toma el lock de fila con
+    `with_for_update` y asigna `pedido.id_venta`, pero SIN hacer commit
+    todavía (el estado exacto de `cobrar` entre su `flush()` y su `commit()`
+    final). Sesión B llama al `cobrar()` real para el mismo pedido en un
+    hilo aparte y debe quedar bloqueada en su propio `db.get(...,
+    with_for_update=True)` -- se verifica el bloqueo real consultando
+    `pg_stat_activity` (no con un `sleep` fijo, para no ser frágil). Al
+    liberar A (commit), B debe desbloquear, releer `id_venta` ya asignado y
+    responder 409 «El pedido ya fue cobrado» en vez de cobrar por segunda vez.
+    """
+    # --- Setup: fila de pedido real y COMMITEADA (conexión propia, fuera de
+    # la transacción de rollback de los fixtures) para que sea visible desde
+    # las dos conexiones independientes de la carrera.
+    setup_conn = _engine.connect()
+    setup = OrmSession(bind=setup_conn)
+    try:
+        cajero = setup.execute(
+            select(Usuario).where(Usuario.correo == "cajero@cafeteria.com")
+        ).scalar_one()
+        mesa = setup.execute(select(Mesa).where(Mesa.numero_mesa == 1)).scalar_one()
+        producto = setup.execute(select(Producto)).scalars().first()
+        pendiente = setup.execute(
+            select(EstadoPedido).where(EstadoPedido.nombre_estado == "Pendiente")
+        ).scalar_one()
+        efectivo = setup.execute(
+            select(MetodoPago).where(MetodoPago.nombre_metodo == "Efectivo")
+        ).scalar_one()
+
+        pedido = Pedido(
+            id_mesa=mesa.id_mesa,
+            id_usuario=cajero.id_usuario,
+            id_estado=pendiente.id_estado,
+        )
+        setup.add(pedido)
+        setup.flush()
+        setup.add(
+            DetallePedido(
+                id_pedido=pedido.id_pedido,
+                id_producto=producto.id_producto,
+                cantidad=1,
+                precio_unitario=producto.precio_venta,
+            )
+        )
+        setup.commit()
+        id_pedido = pedido.id_pedido
+        id_cajero = cajero.id_usuario
+        id_efectivo = efectivo.id_metodo_pago
+    finally:
+        setup.close()
+        setup_conn.close()
+
+    conn_a = _engine.connect()
+    session_a = OrmSession(bind=conn_a)
+    conn_b = _engine.connect()
+    session_b = OrmSession(bind=conn_b)
+    resultado_b: dict = {}
+    id_venta_a: int | None = None
+
+    def _cobrar_b():
+        try:
+            usuario_b = session_b.get(Usuario, id_cajero)
+            data = VentaCreate(
+                ids_pedidos=[id_pedido],
+                pagos=[PagoIn(id_metodo_pago=id_efectivo, monto=Decimal("500.00"))],
+            )
+            venta_service.cobrar(session_b, data, usuario_b)
+        except HTTPException as exc:
+            resultado_b["exc"] = exc
+        except Exception as exc:  # pragma: no cover - diagnóstico si algo más falla
+            resultado_b["error"] = exc
+
+    try:
+        # Sesión A toma el lock y dobla como "cobro en curso" sin commitear.
+        usuario_a = session_a.get(Usuario, id_cajero)
+        pedido_a = session_a.execute(
+            select(Pedido).where(Pedido.id_pedido == id_pedido).with_for_update(of=Pedido)
+        ).scalar_one()
+        venta_a = Venta(id_usuario=usuario_a.id_usuario, total=pedido_a.total)
+        session_a.add(venta_a)
+        session_a.flush()
+        pedido_a.id_venta = venta_a.id_venta
+        id_venta_a = venta_a.id_venta
+
+        pid_b = session_b.execute(text("SELECT pg_backend_pid()")).scalar()
+
+        hilo_b = threading.Thread(target=_cobrar_b, daemon=True)
+        hilo_b.start()
+
+        # Verificación robusta de bloqueo real (sondeo con tope de tiempo, no
+        # un sleep fijo): B debe aparecer esperando un lock en pg_stat_activity.
+        bloqueada = False
+        limite = time.monotonic() + 5.0
+        with _engine.connect() as monitor_conn:
+            while time.monotonic() < limite:
+                fila = monitor_conn.execute(
+                    text(
+                        "SELECT wait_event_type FROM pg_stat_activity WHERE pid = :pid"
+                    ),
+                    {"pid": pid_b},
+                ).first()
+                if fila and fila[0] == "Lock":
+                    bloqueada = True
+                    break
+                time.sleep(0.02)
+        assert bloqueada, "La sesión B debía quedar bloqueada esperando el lock de fila"
+        assert hilo_b.is_alive()
+
+        # A libera el lock: su cobro queda finalizado de verdad.
+        session_a.commit()
+
+        hilo_b.join(timeout=5)
+        assert not hilo_b.is_alive(), "La sesión B no terminó tras liberarse el lock"
+        exc = resultado_b.get("exc")
+        assert exc is not None, resultado_b.get("error")
+        assert exc.status_code == 409
+        assert "ya fue cobrado" in exc.detail
+    finally:
+        session_b.close()
+        conn_b.close()
+        session_a.close()
+        conn_a.close()
+        # Limpieza: estos datos quedaron commiteados de verdad (conexiones
+        # propias, fuera de la transacción de rollback de los fixtures).
+        cleanup_conn = _engine.connect()
+        try:
+            if id_venta_a is not None:
+                cleanup_conn.execute(
+                    text("DELETE FROM pagos WHERE id_venta = :v"), {"v": id_venta_a}
+                )
+                cleanup_conn.execute(
+                    text("DELETE FROM tickets WHERE id_venta = :v"), {"v": id_venta_a}
+                )
+            cleanup_conn.execute(
+                text("DELETE FROM detalle_pedido WHERE id_pedido = :p"),
+                {"p": id_pedido},
+            )
+            cleanup_conn.execute(
+                text("DELETE FROM pedidos WHERE id_pedido = :p"), {"p": id_pedido}
+            )
+            if id_venta_a is not None:
+                cleanup_conn.execute(
+                    text("DELETE FROM ventas WHERE id_venta = :v"), {"v": id_venta_a}
+                )
+            cleanup_conn.commit()
+        finally:
+            cleanup_conn.close()

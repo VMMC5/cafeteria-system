@@ -52,8 +52,24 @@ def cobrar(db: Session, data: VentaCreate, usuario) -> Venta:
         )
 
     pedidos: list[Pedido] = []
+    # SELECT ... FOR UPDATE: sin este lock, dos cobros concurrentes del mismo
+    # pedido (dos cajeros cobrando rondas superpuestas de la misma mesa) leen
+    # ambos `id_venta is None` bajo READ COMMITTED y ambos pasan la validación
+    # de abajo, produciendo una venta huérfana (folio y pagos sin pedido real).
+    # Con el lock, la segunda transacción bloquea hasta que la primera hace
+    # commit y entonces relee `id_venta` ya asignado, cayendo en el 409
+    # «El pedido ya fue cobrado» en vez de duplicar el cobro.
     for id_pedido in ids:
-        pedido = db.get(Pedido, id_pedido)
+        # `of=Pedido` limita el FOR UPDATE a la tabla pedidos: `Pedido.mesa` y
+        # `Pedido.estado` son relaciones lazy="joined" (LEFT OUTER JOIN) y
+        # Postgres rechaza un FOR UPDATE liso sobre el lado nullable de un
+        # outer join (aunque las FK sean NOT NULL, SQLAlchemy sigue emitiendo
+        # LEFT JOIN salvo innerjoin=True).
+        pedido = db.execute(
+            select(Pedido)
+            .where(Pedido.id_pedido == id_pedido)
+            .with_for_update(of=Pedido)
+        ).scalar_one_or_none()
         if pedido is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Pedido no encontrado")
         pedidos.append(pedido)
