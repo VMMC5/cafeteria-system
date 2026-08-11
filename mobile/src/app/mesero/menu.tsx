@@ -13,10 +13,13 @@ import { Categoria, getCategorias, getProductos, Producto } from "@/api/client";
 import { money } from "@/lib/format";
 import { useAuth } from "@/store/auth";
 import { cartCount, cartTotal, useCart } from "@/store/cart";
+import { colors, fonts, radius, sizes, spacing } from "@/theme";
+import { Stepper } from "@/ui";
 
 export default function Menu() {
   const access = useAuth((s) => s.accessToken);
   const items = useCart((s) => s.items);
+  const mesaNumero = useCart((s) => s.mesa_numero);
   const addItem = useCart((s) => s.addItem);
   const decItem = useCart((s) => s.decItem);
   const [secciones, setSecciones] = useState<{ title: string; data: Producto[] }[]>([]);
@@ -58,17 +61,24 @@ export default function Menu() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
+          <Text style={styles.back}>‹ Mesas</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Menú{mesaNumero != null ? ` · Mesa ${mesaNumero}` : ""}</Text>
+      </View>
       {error && <Text style={styles.error}>{error}</Text>}
       <SectionList
         sections={secciones}
         keyExtractor={(p) => String(p.id_producto)}
+        stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => (
           <Text style={styles.sectionH}>{section.title}</Text>
         )}
@@ -80,27 +90,17 @@ export default function Menu() {
                 <Text style={styles.nombre}>{item.nombre_producto}</Text>
                 <Text style={styles.precio}>{money(item.precio_venta)}</Text>
               </View>
-              <View style={styles.stepper}>
-                <TouchableOpacity
-                  style={styles.step}
-                  onPress={() => decItem(item.id_producto)}
-                >
-                  <Text style={styles.stepTxt}>−</Text>
-                </TouchableOpacity>
-                <Text style={styles.qty}>{n}</Text>
-                <TouchableOpacity
-                  style={styles.step}
-                  onPress={() =>
-                    addItem({
-                      id_producto: item.id_producto,
-                      nombre_producto: item.nombre_producto,
-                      precio_venta: Number(item.precio_venta),
-                    })
-                  }
-                >
-                  <Text style={styles.stepTxt}>+</Text>
-                </TouchableOpacity>
-              </View>
+              <Stepper
+                value={n}
+                onRemove={() => decItem(item.id_producto)}
+                onAdd={() =>
+                  addItem({
+                    id_producto: item.id_producto,
+                    nombre_producto: item.nombre_producto,
+                    precio_venta: Number(item.precio_venta),
+                  })
+                }
+              />
             </View>
           );
         }}
@@ -111,7 +111,7 @@ export default function Menu() {
         onPress={() => router.push("/mesero/carrito" as any)}
       >
         <Text style={styles.barTxt}>
-          Ver pedido ({count}) — ${total.toFixed(2)}
+          Ver pedido ({count}) — {money(total)}
         </Text>
       </TouchableOpacity>
     </View>
@@ -119,39 +119,41 @@ export default function Menu() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f5f7" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  container: { flex: 1, backgroundColor: colors.cream },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.cream },
+  header: { paddingHorizontal: spacing.screen, paddingTop: 24, paddingBottom: spacing.sm, gap: 4 },
+  back: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent },
+  title: { fontFamily: fonts.title, fontSize: 24, color: colors.coffee900 },
   sectionH: {
-    backgroundColor: "#edf2f7",
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    fontWeight: "700",
-    color: "#2d3748",
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: colors.muted,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.lg,
+    paddingBottom: 6,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.screen,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: colors.border,
   },
-  nombre: { fontSize: 15, color: "#2d3748" },
-  precio: { color: "#718096", fontSize: 13 },
-  stepper: { flexDirection: "row", alignItems: "center", gap: 10 },
-  step: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#2b6cb0",
+  nombre: { fontFamily: fonts.semibold, fontSize: 15, color: colors.coffee900 },
+  precio: { fontFamily: fonts.title, color: colors.coffee700, fontSize: 14, marginTop: 2 },
+  bar: {
+    backgroundColor: colors.accent,
+    height: sizes.button,
+    margin: spacing.screen,
+    borderRadius: radius.button,
     alignItems: "center",
     justifyContent: "center",
   },
-  stepTxt: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  qty: { minWidth: 20, textAlign: "center", fontSize: 16 },
-  bar: { backgroundColor: "#2b6cb0", padding: 16, alignItems: "center" },
-  barDisabled: { backgroundColor: "#a0aec0" },
-  barTxt: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  error: { color: "#c53030", textAlign: "center", padding: 8 },
+  barDisabled: { backgroundColor: colors.disabled },
+  barTxt: { color: colors.onAccent, fontFamily: fonts.bold, fontSize: 15.5 },
+  error: { fontFamily: fonts.medium, color: colors.error, textAlign: "center", padding: 8 },
 });

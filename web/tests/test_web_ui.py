@@ -21,7 +21,7 @@ def test_shell_tiene_sidebar_con_marca_y_enlaces(client, monkeypatch):
     monkeypatch.setattr(api_client, "list_usuarios", lambda a, q=None: [])
     cuerpo = client.get("/usuarios").get_data(as_text=True)
     assert "sidebar" in cuerpo
-    assert "Café" in cuerpo and "Admin" in cuerpo      # marca
+    assert "Cafetería" in cuerpo and "Aroma" in cuerpo  # marca
     assert "Estadísticas" in cuerpo                     # enlace nav
     assert "Usuarios y Roles" in cuerpo                 # enlace nav
 
@@ -40,12 +40,20 @@ def test_login_usa_layout_publico_sin_sidebar(client):
     assert 'class="sidebar"' not in cuerpo              # el login no muestra sidebar
 
 
+def test_login_sin_flash_no_muestra_alerta(client):
+    # La caja de error solo se renderiza cuando hay flash 'error'; si quedara
+    # siempre en el DOM, el display:flex de .alert le gana al atributo hidden
+    # y aparece un rectángulo vacío con "!".
+    cuerpo = client.get("/login").get_data(as_text=True)
+    assert "alert-error" not in cuerpo
+
+
 def test_login_split_marca_y_subtitulo(client):
     cuerpo = client.get("/login").get_data(as_text=True)
-    assert "login__brand" in cuerpo
+    assert "brand-panel" in cuerpo                            # panel de marca del split
     assert "Aroma" in cuerpo                                  # marca completa
-    assert "Acceso exclusivo para administradores" in cuerpo  # subtítulo del card
-    assert "Ingresar" in cuerpo                               # botón
+    assert "Accede al panel de administración" in cuerpo      # subtítulo del card
+    assert "Iniciar sesión" in cuerpo                         # título/botón
 
 
 def _users():

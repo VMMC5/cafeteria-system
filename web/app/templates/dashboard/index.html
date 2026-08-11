@@ -70,15 +70,17 @@
   // no-configurable) y lanza "Identifier 'top' has already been declared",
   // abortando TODO el script y dejando las gráficas en blanco.
   const topData = JSON.parse(document.getElementById("top-data").textContent);
-  const cafe = ["#3a2a20", "#c8862f", "#8a5a12", "#6b4423", "#d9c9bb", "#a96f1f"];
+  Chart.defaults.font.family = "'Karla', system-ui, sans-serif";
+  Chart.defaults.color = "#5A4636";
+  const cafe = ["#33241B", "#C89B6D", "#8A5A3B", "#E0B487", "#6F4630", "#5A4636"];
   new Chart(document.getElementById("chart-ventas"), {
     type: "bar",
     data: { labels: vg.map(p => p.fecha),
       datasets: [
         { label: "Ventas", data: vg.map(p => Number(p.ventas)),
-          backgroundColor: "#3a2a20", categoryPercentage: 0.6, barPercentage: 0.9 },
+          backgroundColor: "#33241B", categoryPercentage: 0.6, barPercentage: 0.9 },
         { label: "Gastos", data: vg.map(p => Number(p.gastos)),
-          backgroundColor: "#c8862f", categoryPercentage: 0.6, barPercentage: 0.9 },
+          backgroundColor: "#C89B6D", categoryPercentage: 0.6, barPercentage: 0.9 },
       ] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: "top" } } },
   });
@@ -97,11 +99,11 @@
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = "bold 24px sans-serif";
-      ctx.fillStyle = "#3a2a20";
+      ctx.font = "600 24px 'Lora', serif";
+      ctx.fillStyle = "#33241B";
       ctx.fillText(totalTop ? totalTop.toLocaleString("es-MX") : "0", x, y - 10);
-      ctx.font = "12px sans-serif";
-      ctx.fillStyle = "#8a8a8a";
+      ctx.font = "12px 'Karla', sans-serif";
+      ctx.fillStyle = "#8A7A68";
       ctx.fillText("pedidos", x, y + 12);
       ctx.restore();
     },
@@ -126,13 +128,13 @@
     type: "line",
     data: { labels: serie.map(p => p.fecha),
       datasets: [{ label: "# Pedidos", data: serie.map(p => Number(p.num_ventas)),
-        borderColor: "#3a2a20",
+        borderColor: "#33241B",
         backgroundColor(context) {
           const { ctx, chartArea } = context.chart;
-          if (!chartArea) return "rgba(217,201,187,0.25)";
+          if (!chartArea) return "rgba(200,155,109,0.18)";
           const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          g.addColorStop(0, "rgba(217,201,187,0.55)");
-          g.addColorStop(1, "rgba(217,201,187,0)");
+          g.addColorStop(0, "rgba(200,155,109,0.45)");
+          g.addColorStop(1, "rgba(200,155,109,0)");
           return g;
         },
         fill: true, tension: 0.38 }] },

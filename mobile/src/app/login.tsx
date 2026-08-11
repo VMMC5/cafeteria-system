@@ -1,16 +1,11 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { homeRoute } from "@/lib/modules";
 import { useAuth } from "@/store/auth";
+import { cardShadow, colors, fonts, radius, spacing } from "@/theme";
+import { Input, PrimaryButton } from "@/ui";
 
 export default function Login() {
   const login = useAuth((s) => s.login);
@@ -37,34 +32,57 @@ export default function Login() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.brand}>☕ Cafetería</Text>
-      <Text style={styles.title}>Iniciar sesión</Text>
-      {error && <Text style={styles.error}>{error}</Text>}
-      <TextInput
-        style={styles.input}
-        placeholder="Correo"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={correo}
-        onChangeText={setCorreo}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <TouchableOpacity style={styles.button} onPress={onSubmit} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Entrar</Text>
+      <View style={styles.brand}>
+        <View style={styles.steam}>
+          <View style={[styles.steamBar, { height: 10 }]} />
+          <View style={[styles.steamBar, { height: 16 }]} />
+          <View style={[styles.steamBar, { height: 12 }]} />
+        </View>
+        <Text style={styles.brandName}>
+          Cafetería <Text style={styles.brandEm}>Aroma</Text>
+        </Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.title}>Iniciar sesión</Text>
+        <Text style={styles.subtitle}>Accede con tu cuenta del equipo</Text>
+        {error && (
+          <View style={styles.alert}>
+            <Text style={styles.alertText}>{error}</Text>
+          </View>
         )}
-      </TouchableOpacity>
-      <Text style={styles.muted}>
-        ¿Olvidaste tu contraseña? Contacta al administrador.
-      </Text>
+        <View style={styles.field}>
+          <Text style={styles.label}>Correo electrónico</Text>
+          <Input
+            placeholder="tu@cafeteria.com"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+            value={correo}
+            onChangeText={setCorreo}
+          />
+        </View>
+        <View style={styles.field}>
+          <Text style={styles.label}>Contraseña</Text>
+          <Input
+            placeholder="••••••••"
+            secureTextEntry
+            autoComplete="password"
+            value={password}
+            onChangeText={setPassword}
+          />
+        </View>
+        {loading ? (
+          <View style={styles.loadingBtn}>
+            <ActivityIndicator color={colors.onAccent} />
+            <Text style={styles.loadingText}>Verificando…</Text>
+          </View>
+        ) : (
+          <PrimaryButton title="Iniciar sesión" onPress={onSubmit} />
+        )}
+      </View>
+
+      <Text style={styles.muted}>¿Olvidaste tu contraseña? Contacta al administrador.</Text>
     </View>
   );
 }
@@ -73,28 +91,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    padding: 24,
-    gap: 12,
-    backgroundColor: "#f4f5f7",
+    padding: spacing.xl,
+    gap: spacing.lg,
+    backgroundColor: colors.cream,
   },
-  brand: { fontSize: 26, fontWeight: "700", color: "#2d3748", textAlign: "center" },
-  title: { fontSize: 18, textAlign: "center", marginBottom: 8, color: "#4a5568" },
-  input: {
-    backgroundColor: "#fff",
+  brand: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  steam: { flexDirection: "row", alignItems: "flex-end", gap: 3, height: 18 },
+  steamBar: { width: 3, borderRadius: 2, backgroundColor: colors.caramel },
+  brandName: { fontFamily: fonts.title, fontSize: 24, color: colors.coffee900, letterSpacing: 0.5 },
+  brandEm: { fontFamily: fonts.titleItalic, color: colors.accent },
+  card: {
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderColor: colors.border,
+    borderRadius: radius.cardLg,
+    padding: spacing.xl,
+    gap: spacing.md,
+    ...cardShadow,
   },
-  button: {
-    backgroundColor: "#2b6cb0",
-    padding: 14,
-    borderRadius: 8,
+  title: { fontFamily: fonts.title, fontSize: 22, color: colors.coffee900 },
+  subtitle: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: -6 },
+  field: { gap: 6 },
+  label: { fontFamily: fonts.semibold, fontSize: 13, color: colors.coffee700 },
+  alert: {
+    backgroundColor: colors.errorBg,
+    borderWidth: 1,
+    borderColor: colors.errorBorder,
+    borderRadius: radius.input,
+    padding: spacing.md,
+  },
+  alertText: { fontFamily: fonts.medium, fontSize: 13.5, color: colors.error },
+  loadingBtn: {
+    height: 50,
+    borderRadius: radius.button,
+    backgroundColor: colors.disabled,
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    justifyContent: "center",
+    gap: 8,
   },
-  buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  error: { color: "#c53030", textAlign: "center" },
-  muted: { color: "#718096", textAlign: "center", fontSize: 13, marginTop: 8 },
+  loadingText: { color: colors.onAccent, fontFamily: fonts.bold, fontSize: 15.5 },
+  muted: { fontFamily: fonts.body, color: colors.muted, textAlign: "center", fontSize: 13 },
 });

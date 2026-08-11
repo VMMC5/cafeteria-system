@@ -106,11 +106,11 @@ def test_dashboard_ventas_vs_gastos(client, monkeypatch):
     assert "Ventas vs Gastos" in cuerpo
     assert '"Ventas"' in cuerpo
     assert '"Gastos"' in cuerpo
-    # el color debe ir atado a su dataset: Ventas = café oscuro, Gastos = mostaza
+    # el color debe ir atado a su dataset: Ventas = café oscuro, Gastos = caramelo
     # (si se intercambiaran los colores, estas dos aserciones fallarían).
     import re
-    assert re.search(r'label:\s*"Ventas"[^}]*?backgroundColor:\s*"#3a2a20"', cuerpo)
-    assert re.search(r'label:\s*"Gastos"[^}]*?backgroundColor:\s*"#c8862f"', cuerpo)
+    assert re.search(r'label:\s*"Ventas"[^}]*?backgroundColor:\s*"#33241B"', cuerpo)
+    assert re.search(r'label:\s*"Gastos"[^}]*?backgroundColor:\s*"#C89B6D"', cuerpo)
     # alineación por fecha: 2026-07-06 solo tiene gasto, debe aparecer en serie_vg
     assert "2026-07-06" in cuerpo
 
@@ -188,12 +188,12 @@ def test_dashboard_tendencia_gradiente(client, monkeypatch):
     _stub_reportes(monkeypatch)
     cuerpo = client.get("/dashboard").get_data(as_text=True)
     assert "createLinearGradient(" in cuerpo
-    # guard obligatorio anclado a la tendencia: devuelve el tono crema base
+    # guard obligatorio anclado a la tendencia: devuelve el tono caramelo base
     # (distinto del guard "return;" a secas del plugin de la dona).
-    assert 'if (!chartArea) return "rgba(217,201,187,0.25)"' in cuerpo
-    # el relleno crema se difumina de opaco a transparente
-    assert 'rgba(217,201,187,0.55)' in cuerpo
-    assert 'rgba(217,201,187,0)' in cuerpo
+    assert 'if (!chartArea) return "rgba(200,155,109,0.18)"' in cuerpo
+    # el relleno caramelo se difumina de opaco a transparente
+    assert 'rgba(200,155,109,0.45)' in cuerpo
+    assert 'rgba(200,155,109,0)' in cuerpo
 
 
 def test_dashboard_graficas_tienen_contenedor_con_altura(client, monkeypatch):

@@ -1,0 +1,24 @@
+/* Cafetería Aroma — fuentes vendorizadas (subset latin, variables).
+   Lora: títulos y cifras · Karla: UI y cuerpo. Sin CDN, mismo criterio
+   que el Chart.js vendorizado. */
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../fonts/lora-latin-var.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../fonts/lora-latin-italic-var.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Karla';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('../fonts/karla-latin-var.woff2') format('woff2');
+}

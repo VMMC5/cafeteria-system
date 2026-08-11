@@ -1,0 +1,167 @@
+/* Cafetería Aroma — Login
+   Paleta: café #33241B · acento #8A5A3B · caramelo #C89B6D · crema #F4EDE2 · error #B3402E */
+:root {
+  --coffee-900: #33241B;
+  --coffee-700: #5A4636;
+  --accent: #8A5A3B;
+  --accent-dark: #6F4630;
+  --caramel: #C89B6D;
+  --cream: #F4EDE2;
+  --card: #FFFDF9;
+  --border: #D8CBBA;
+  --muted: #8A7A68;
+  --error: #B3402E;
+  --error-bg: #FBEFEC;
+  --error-border: #E5B8AD;
+  --info-bg: #EAEFE3;
+  --info-border: #C9D6B8;
+  --info-fg: #5E7247;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Karla', system-ui, sans-serif;
+  color: var(--coffee-900);
+  background: var(--cream);
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-dark); text-decoration: underline; }
+
+.login-layout { min-height: 100vh; display: flex; }
+
+/* Panel de marca */
+.brand-panel {
+  flex: 1.05;
+  position: relative;
+  overflow: hidden;
+  background: var(--coffee-900);
+  color: var(--cream);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 56px 60px;
+}
+.brand-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover;
+  animation: slowZoom 24s ease-in-out infinite alternate;
+}
+.brand-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(200deg, rgba(38,26,19,0.68) 0%, rgba(51,36,27,0.72) 55%, rgba(38,26,19,0.92) 100%);
+}
+@keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.07); } }
+.brand {
+  position: relative;
+  display: flex; align-items: center; gap: 10px;
+  animation: fadeUp 0.6s ease both;
+}
+.steam { display: flex; align-items: flex-end; gap: 3px; height: 18px; }
+.steam i {
+  width: 3px; border-radius: 2px; background: var(--caramel);
+  animation: steam 1.6s ease-in-out infinite;
+}
+.steam i:nth-child(1) { height: 10px; }
+.steam i:nth-child(2) { height: 16px; animation-delay: 0.25s; }
+.steam i:nth-child(3) { height: 12px; animation-delay: 0.5s; }
+@keyframes steam { 0%, 100% { transform: scaleY(0.6); opacity: 0.5; } 50% { transform: scaleY(1); opacity: 1; } }
+.brand-name {
+  font-family: 'Lora', serif; font-size: 22px; letter-spacing: 0.02em;
+  text-shadow: 0 1px 12px rgba(20,13,9,0.85), 0 0 24px rgba(20,13,9,0.6);
+}
+.brand-name em { font-style: italic; color: #E0B487; }
+.brand-copy {
+  position: relative;
+  max-width: 440px; display: flex; flex-direction: column; gap: 18px;
+  animation: fadeUp 0.7s ease 0.15s both;
+}
+.brand-rule { width: 44px; height: 3px; border-radius: 2px; background: var(--caramel); }
+.brand-copy h2 {
+  margin: 0; font-family: 'Lora', serif; font-size: 40px; line-height: 1.22; font-weight: 500;
+  text-shadow: 0 2px 18px rgba(38,26,19,0.5);
+}
+.brand-copy p { margin: 0; font-size: 15px; line-height: 1.6; color: rgba(244,237,226,0.85); text-shadow: 0 1px 10px rgba(38,26,19,0.5); }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* Panel del formulario */
+.form-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 32px; }
+.login-card {
+  animation: fadeUp 0.55s ease 0.1s both;
+  width: 100%; max-width: 400px;
+  background: var(--card);
+  border: 1px solid #E6DBCB; border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(59, 42, 32, 0.08);
+  padding: 40px 36px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.login-card h1 { margin: 0; font-family: 'Lora', serif; font-size: 26px; font-weight: 600; }
+.subtitle { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+
+/* Alertas */
+.alert {
+  display: flex; gap: 10px; align-items: flex-start;
+  border-radius: 10px; padding: 12px 14px;
+  font-size: 13.5px; line-height: 1.45;
+  animation: slideDown 0.25s ease;
+}
+.alert-error { background: var(--error-bg); border: 1px solid var(--error-border); color: #8C3323; }
+.alert-info { background: var(--info-bg); border: 1px solid var(--info-border); color: var(--info-fg); }
+.alert-icon { font-weight: 700; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* Campos */
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field-row { display: flex; justify-content: space-between; align-items: baseline; }
+.field label { font-size: 13px; font-weight: 600; color: var(--coffee-700); }
+.link-sm { font-size: 12.5px; }
+.field input[type="email"],
+.field input[type="password"],
+.field input[type="text"] {
+  height: 46px; padding: 0 14px; width: 100%;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  background: #fff; font-family: inherit; font-size: 15px; color: var(--coffee-900);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input::placeholder { color: #B9A794; }
+.field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200, 155, 109, 0.28);
+}
+.field input.is-invalid { border-color: var(--error); }
+.field-error { font-size: 12.5px; color: var(--error); }
+
+.password-wrap { position: relative; display: flex; }
+.password-wrap input { padding-right: 84px; }
+.toggle-pass {
+  position: absolute; right: 6px; top: 6px; height: 34px;
+  padding: 0 10px; border: none; border-radius: 8px;
+  background: transparent; font: 600 12px 'Karla', sans-serif;
+  color: var(--accent); cursor: pointer;
+}
+.toggle-pass:hover { background: var(--cream); }
+
+/* Botón principal */
+.btn-primary {
+  height: 48px; border: none; border-radius: 10px;
+  background: var(--accent); color: #FFF8EF;
+  font: 700 15.5px 'Karla', sans-serif; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  cursor: pointer; transition: background 0.15s;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
+.btn-primary:active:not(:disabled) { transform: translateY(1px); }
+.btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(200, 155, 109, 0.4); }
+.btn-primary:disabled { background: #A98B6F; cursor: not-allowed; }
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255, 248, 239, 0.35);
+  border-top-color: #FFF8EF;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Responsive */
+@media (max-width: 860px) {
+  .brand-panel { display: none; }
+}
