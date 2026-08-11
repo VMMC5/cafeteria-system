@@ -60,8 +60,9 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; }
 }
 .sidebar__link:hover { background: rgba(200,155,109,0.14); color: var(--cream); text-decoration: none; }
 .sidebar__link.active { background: rgba(200,155,109,0.22); color: var(--cream); font-weight: 700; }
-.sidebar__link .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(200,155,109,0.35); flex-shrink: 0; }
-.sidebar__link.active .dot { background: var(--caramel); }
+.sidebar__link svg { width: 18px; height: 18px; flex-shrink: 0; color: rgba(200,155,109,0.6); }
+.sidebar__link:hover svg { color: var(--caramel); }
+.sidebar__link.active svg { color: var(--caramel-light); }
 .sidebar__user {
   display: flex; align-items: center; gap: 10px;
   padding: 14px 12px 0; border-top: 1px solid rgba(200,155,109,0.2);
