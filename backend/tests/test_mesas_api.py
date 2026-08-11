@@ -209,7 +209,7 @@ def test_mesa_editable_tras_cobrar(client, db, admin_headers, cajero_headers):
             "/api/v1/ventas",
             headers=cajero_headers,
             json={
-                "id_pedido": pedido["id_pedido"],
+                "ids_pedidos": [pedido["id_pedido"]],
                 "pagos": [{"id_metodo_pago": efectivo, "monto": 200.0}],
             },
         ).status_code

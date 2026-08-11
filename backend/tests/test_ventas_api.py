@@ -45,7 +45,7 @@ def test_cobrar_ok(client, db, admin_headers, cajero_headers):
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": pedido["id_pedido"],
+            "ids_pedidos": [pedido["id_pedido"]],
             "pagos": [{"id_metodo_pago": efectivo, "monto": 200.0}],
         },
     )
@@ -70,7 +70,7 @@ def test_cobrar_pago_dividido_exacto(client, db, admin_headers, cajero_headers):
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": pedido["id_pedido"],
+            "ids_pedidos": [pedido["id_pedido"]],
             "pagos": [
                 {"id_metodo_pago": ef, "monto": 100.0},
                 {"id_metodo_pago": ta, "monto": 16.0},
@@ -90,7 +90,7 @@ def test_cobrar_pago_insuficiente_422(client, db, admin_headers, cajero_headers)
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": pedido["id_pedido"],
+            "ids_pedidos": [pedido["id_pedido"]],
             "pagos": [{"id_metodo_pago": ef, "monto": 50.0}],
         },
     )
@@ -103,7 +103,7 @@ def test_cobrar_metodo_inexistente_422(client, db, admin_headers, cajero_headers
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": pedido["id_pedido"],
+            "ids_pedidos": [pedido["id_pedido"]],
             "pagos": [{"id_metodo_pago": 99999, "monto": 200.0}],
         },
     )
@@ -115,7 +115,7 @@ def test_cobrar_pagos_vacios_422(client, db, admin_headers, cajero_headers):
     r = client.post(
         "/api/v1/ventas",
         headers=cajero_headers,
-        json={"id_pedido": pedido["id_pedido"], "pagos": []},
+        json={"ids_pedidos": [pedido["id_pedido"]], "pagos": []},
     )
     assert r.status_code == 422
 
@@ -132,7 +132,7 @@ def test_cobrar_pedido_cancelado_409(client, db, admin_headers, cajero_headers):
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": pedido["id_pedido"],
+            "ids_pedidos": [pedido["id_pedido"]],
             "pagos": [{"id_metodo_pago": ef, "monto": 200.0}],
         },
     )
@@ -143,7 +143,7 @@ def test_cobrar_dos_veces_409(client, db, admin_headers, cajero_headers):
     pedido = _pedido(client, db, admin_headers, numero=607, precio=116.0)
     ef = _metodo_id(db, "Efectivo")
     payload = {
-        "id_pedido": pedido["id_pedido"],
+        "ids_pedidos": [pedido["id_pedido"]],
         "pagos": [{"id_metodo_pago": ef, "monto": 200.0}],
     }
     assert (
@@ -162,7 +162,7 @@ def test_cobrar_rol_mesero_403(client, db, admin_headers, mesero_headers):
         "/api/v1/ventas",
         headers=mesero_headers,
         json={
-            "id_pedido": pedido["id_pedido"],
+            "ids_pedidos": [pedido["id_pedido"]],
             "pagos": [{"id_metodo_pago": 1, "monto": 200.0}],
         },
     )
@@ -176,7 +176,7 @@ def test_get_venta_detalle_y_404(client, db, admin_headers, cajero_headers):
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": pedido["id_pedido"],
+            "ids_pedidos": [pedido["id_pedido"]],
             "pagos": [{"id_metodo_pago": ef, "monto": 116.0}],
         },
     ).json()
@@ -196,7 +196,7 @@ def test_pedidos_por_cobrar(client, db, admin_headers, cajero_headers):
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": p_cobrado["id_pedido"],
+            "ids_pedidos": [p_cobrado["id_pedido"]],
             "pagos": [{"id_metodo_pago": ef, "monto": 200.0}],
         },
     )
@@ -229,7 +229,7 @@ def test_cobrar_pago_dividido_excedente_y_referencia(
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": pedido["id_pedido"],
+            "ids_pedidos": [pedido["id_pedido"]],
             "pagos": [
                 {"id_metodo_pago": ef, "monto": 150.0},
                 {"id_metodo_pago": ta, "monto": 16.0, "referencia": "V-123"},
@@ -281,7 +281,7 @@ def _cobrar_efectivo(client, db, cajero_headers, id_pedido, monto):
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": id_pedido,
+            "ids_pedidos": [id_pedido],
             "pagos": [{"id_metodo_pago": efectivo, "monto": monto}],
         },
     )
@@ -318,3 +318,133 @@ def test_mesa_se_libera_con_ronda_cobrada_y_ronda_cancelada(
     assert _estado_mesa(client, admin_headers, pedido1["id_mesa"]) == "Ocupada"
     _cobrar_efectivo(client, db, cajero_headers, pedido2["id_pedido"], 58.0)
     assert _estado_mesa(client, admin_headers, pedido1["id_mesa"]) == "Disponible"
+
+
+def _entregar(client, db, admin_headers, id_pedido):
+    """Avanza un pedido Pendiente hasta Entregado por la API de transiciones."""
+    from app.models import EstadoPedido
+
+    for nombre in ("En preparación", "Listo", "Entregado"):
+        est = (
+            db.query(EstadoPedido)
+            .filter(EstadoPedido.nombre_estado == nombre)
+            .one()
+        )
+        r = client.patch(
+            f"/api/v1/pedidos/{id_pedido}/estado",
+            headers=admin_headers,
+            json={"id_estado": est.id_estado},
+        )
+        assert r.status_code == 200
+
+
+def test_cobrar_cuenta_de_dos_rondas_201(client, db, admin_headers, cajero_headers):
+    pedido = _pedido(client, db, admin_headers, numero=620, precio=116.0)
+    ronda2 = _otra_ronda(client, db, admin_headers, pedido["id_mesa"], precio=58.0)
+    _entregar(client, db, admin_headers, pedido["id_pedido"])
+    _entregar(client, db, admin_headers, ronda2["id_pedido"])
+    efectivo = _metodo_id(db, "Efectivo")
+    r = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={
+            "ids_pedidos": [pedido["id_pedido"], ronda2["id_pedido"]],
+            "pagos": [{"id_metodo_pago": efectivo, "monto": 200.0}],
+        },
+    )
+    assert r.status_code == 201
+    body = r.json()
+    assert float(body["total"]) == 174.0
+    assert float(body["cambio"]) == 26.0
+    assert sorted(body["ids_pedidos"]) == sorted(
+        [pedido["id_pedido"], ronda2["id_pedido"]]
+    )
+    assert body["folio"].startswith("V-")
+    assert _estado_mesa(client, admin_headers, pedido["id_mesa"]) == "Disponible"
+
+
+def test_cobrar_cuenta_mesas_distintas_409(client, db, admin_headers, cajero_headers):
+    p1 = _pedido(client, db, admin_headers, numero=621)
+    p2 = _pedido(client, db, admin_headers, numero=622)
+    _entregar(client, db, admin_headers, p1["id_pedido"])
+    _entregar(client, db, admin_headers, p2["id_pedido"])
+    efectivo = _metodo_id(db, "Efectivo")
+    r = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={
+            "ids_pedidos": [p1["id_pedido"], p2["id_pedido"]],
+            "pagos": [{"id_metodo_pago": efectivo, "monto": 500.0}],
+        },
+    )
+    assert r.status_code == 409
+    assert "misma mesa" in r.json()["detail"]
+
+
+def test_cobrar_cuenta_con_ronda_sin_entregar_409(
+    client, db, admin_headers, cajero_headers
+):
+    pedido = _pedido(client, db, admin_headers, numero=623)
+    ronda2 = _otra_ronda(client, db, admin_headers, pedido["id_mesa"])
+    _entregar(client, db, admin_headers, pedido["id_pedido"])  # ronda2 queda Pendiente
+    efectivo = _metodo_id(db, "Efectivo")
+    ids = [pedido["id_pedido"], ronda2["id_pedido"]]
+    r = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={"ids_pedidos": ids, "pagos": [{"id_metodo_pago": efectivo, "monto": 500.0}]},
+    )
+    assert r.status_code == 409
+    assert "sin entregar" in r.json()["detail"]
+    assert _estado_mesa(client, admin_headers, pedido["id_mesa"]) == "Ocupada"
+    # Tras entregar la ronda pendiente, la misma cuenta sí se cobra.
+    _entregar(client, db, admin_headers, ronda2["id_pedido"])
+    r2 = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={"ids_pedidos": ids, "pagos": [{"id_metodo_pago": efectivo, "monto": 500.0}]},
+    )
+    assert r2.status_code == 201
+
+
+def test_cobrar_cuenta_con_ronda_ya_cobrada_409(
+    client, db, admin_headers, cajero_headers
+):
+    pedido = _pedido(client, db, admin_headers, numero=624, precio=116.0)
+    ronda2 = _otra_ronda(client, db, admin_headers, pedido["id_mesa"])
+    _entregar(client, db, admin_headers, pedido["id_pedido"])
+    _entregar(client, db, admin_headers, ronda2["id_pedido"])
+    efectivo = _metodo_id(db, "Efectivo")
+    r1 = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={
+            "ids_pedidos": [pedido["id_pedido"]],
+            "pagos": [{"id_metodo_pago": efectivo, "monto": 116.0}],
+        },
+    )
+    assert r1.status_code == 201
+    r2 = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={
+            "ids_pedidos": [pedido["id_pedido"], ronda2["id_pedido"]],
+            "pagos": [{"id_metodo_pago": efectivo, "monto": 500.0}],
+        },
+    )
+    assert r2.status_code == 409
+    assert "ya fue cobrado" in r2.json()["detail"]
+
+
+def test_cobrar_ids_repetidos_422(client, db, admin_headers, cajero_headers):
+    pedido = _pedido(client, db, admin_headers, numero=625)
+    efectivo = _metodo_id(db, "Efectivo")
+    r = client.post(
+        "/api/v1/ventas",
+        headers=cajero_headers,
+        json={
+            "ids_pedidos": [pedido["id_pedido"], pedido["id_pedido"]],
+            "pagos": [{"id_metodo_pago": efectivo, "monto": 500.0}],
+        },
+    )
+    assert r.status_code == 422

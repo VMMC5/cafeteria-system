@@ -128,7 +128,7 @@ def top_productos(
             func.sum(DetallePedido.subtotal).label("importe"),
         )
         .select_from(Venta)
-        .join(Pedido, Pedido.id_pedido == Venta.id_pedido)
+        .join(Pedido, Pedido.id_venta == Venta.id_venta)
         .join(DetallePedido, DetallePedido.id_pedido == Pedido.id_pedido)
         .join(Producto, Producto.id_producto == DetallePedido.id_producto)
         .filter(
@@ -165,11 +165,8 @@ def detalle_ventas(
         Venta.estado_venta == "Completada",
     )
     if id_usuario is not None:
-        # id_usuario = mesero que tomó el pedido (Pedido.id_usuario), no el
-        # cajero que cobró (Venta.id_usuario).
-        query = query.join(Pedido, Pedido.id_pedido == Venta.id_pedido).filter(
-            Pedido.id_usuario == id_usuario
-        )
+        # id_usuario = mesero que tomó alguna ronda de la cuenta, no el cajero.
+        query = query.filter(Venta.pedidos.any(Pedido.id_usuario == id_usuario))
     if id_metodo is not None:
         # `.any(...)` evita duplicar filas: una venta con pago dividido que
         # incluya el método buscado aparece una sola vez.
@@ -177,7 +174,7 @@ def detalle_ventas(
     ventas = query.order_by(Venta.fecha_venta).all()
     out = []
     for v in ventas:
-        pedido = db.get(Pedido, v.id_pedido)
+        pedido = v.pedidos[0] if v.pedidos else None
         metodos = ", ".join(sorted({p.metodo.nombre_metodo for p in v.pagos}))
         out.append(
             {

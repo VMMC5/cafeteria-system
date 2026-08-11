@@ -9,7 +9,6 @@ from app.models import (
     Mesa,
     Pedido,
     Producto,
-    Venta,
 )
 from app.schemas.pedido import PedidoCreate
 from app.services import receta_service
@@ -149,7 +148,7 @@ def cancelar(db: Session, id_pedido: int, motivo: str, usuario) -> Pedido:
     )
     pedido.id_estado = _estado_por_nombre(db, "Cancelado").id_estado
     # La mesa se libera solo si esta era la última ronda activa.
-    if not tiene_pedido_activo(db, pedido.id_mesa, excepto_id_pedido=pedido.id_pedido):
+    if not tiene_pedido_activo(db, pedido.id_mesa, excepto_ids=[pedido.id_pedido]):
         pedido.mesa.estado = "Disponible"
     receta_service.reponer_pedido(db, pedido, usuario.id_usuario)
     db.commit()
@@ -171,21 +170,21 @@ def condiciones_pedido_activo(db: Session) -> tuple:
     ).scalar_one()
     return (
         Pedido.id_estado != cancelado,
-        Pedido.id_pedido.not_in(select(Venta.id_pedido)),
+        Pedido.id_venta.is_(None),
     )
 
 
 def tiene_pedido_activo(
-    db: Session, id_mesa: int, excepto_id_pedido: int | None = None
+    db: Session, id_mesa: int, excepto_ids: list[int] | None = None
 ) -> bool:
     """True si la mesa tiene al menos un pedido activo (ni cancelado ni cobrado).
 
-    `excepto_id_pedido` excluye el pedido que se está cerrando (cobro o
+    `excepto_ids` excluye los pedidos que se están cerrando (cobro o
     cancelación): la consulta no debe depender de si su venta o su cambio de
     estado ya se reflejaron en la sesión.
     """
     condiciones = [Pedido.id_mesa == id_mesa, *condiciones_pedido_activo(db)]
-    if excepto_id_pedido is not None:
-        condiciones.append(Pedido.id_pedido != excepto_id_pedido)
+    if excepto_ids:
+        condiciones.append(Pedido.id_pedido.not_in(excepto_ids))
     stmt = select(Pedido.id_pedido).where(*condiciones)
     return db.execute(stmt).first() is not None
