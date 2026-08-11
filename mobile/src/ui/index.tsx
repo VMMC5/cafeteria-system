@@ -123,7 +123,15 @@ export function Input(props: TextInputProps) {
 export type BadgeVariant = "ok" | "warn" | "busy" | "error";
 
 // Badge de estado: 'ok' (Disponible) | 'warn' (Pendiente) | 'busy' (Ocupada) | 'error' (Stock bajo)
-export function Badge({ label, variant = "ok" }: { label: string; variant?: BadgeVariant }) {
+export function Badge({
+  label,
+  variant = "ok",
+  style,
+}: {
+  label: string;
+  variant?: BadgeVariant;
+  style?: ViewStyle;
+}) {
   const map: Record<BadgeVariant, [string, string]> = {
     ok: [colors.okBg, colors.okFg],
     warn: [colors.warnBg, colors.warnFg],
@@ -132,7 +140,7 @@ export function Badge({ label, variant = "ok" }: { label: string; variant?: Badg
   };
   const [bg, fg] = map[variant];
   return (
-    <View style={[s.badge, { backgroundColor: bg }]}>
+    <View style={[s.badge, { backgroundColor: bg }, style]}>
       <Text style={[s.badgeText, { color: fg }]}>{label.toUpperCase()}</Text>
     </View>
   );

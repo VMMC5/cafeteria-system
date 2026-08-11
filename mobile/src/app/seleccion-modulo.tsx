@@ -5,6 +5,7 @@ import { Modulo, modulesForRole } from "@/lib/modules";
 import { useAuth } from "@/store/auth";
 import { cardShadow, colors, fonts, radius, spacing } from "@/theme";
 import { IconName, NavIcon } from "@/ui";
+import { confirmarSalir } from "@/ui/nav";
 
 const MODULO_ICON: Record<Modulo["key"], IconName> = {
   mesero: "mesas",
@@ -17,9 +18,8 @@ export default function SeleccionModulo() {
   const logout = useAuth((s) => s.logout);
   const modulos = user ? modulesForRole(user.rol.nombre_rol) : [];
 
-  async function salir() {
-    await logout();
-    router.replace("/login" as any);
+  function salir() {
+    confirmarSalir(logout);
   }
 
   return (

@@ -1,5 +1,6 @@
 // Barra inferior por rol (mockups "Cafetería Aroma móvil"): ítems y navegación.
 import { router } from "expo-router";
+import { Alert } from "react-native";
 
 import { NavItem } from "@/ui";
 
@@ -25,15 +26,29 @@ export const NAV_CAJA: RoleNavItem[] = [
   { key: "salir", label: "Salir", icon: "salir" },
 ];
 
+/** Pide confirmación y, si el usuario acepta, cierra sesión y vuelve al login. */
+export function confirmarSalir(logout: () => Promise<void>) {
+  Alert.alert("Cerrar sesión", "¿Seguro que deseas cerrar sesión?", [
+    { text: "Cancelar", style: "cancel" },
+    {
+      text: "Cerrar sesión",
+      style: "destructive",
+      onPress: async () => {
+        await logout();
+        router.replace("/login" as any);
+      },
+    },
+  ]);
+}
+
 /** Maneja el tap en la barra: navega a la ruta del ítem o cierra sesión. */
-export async function onNavPress(
+export function onNavPress(
   items: RoleNavItem[],
   key: string,
   logout: () => Promise<void>
 ) {
   if (key === "salir") {
-    await logout();
-    router.replace("/login" as any);
+    confirmarSalir(logout);
     return;
   }
   const item = items.find((i) => i.key === key);

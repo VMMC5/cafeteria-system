@@ -27,6 +27,7 @@ import { Chip, Input } from "@/ui";
 type LineaLocal = {
   id_insumo: number;
   nombre: string;
+  unidad: string; // abreviatura ("kg", "L", "pza") para leer "5 kg × Café en grano"
   cantidad: number;
   costo_unitario: number;
 };
@@ -69,6 +70,7 @@ export default function CompraNueva() {
   const puedeAgregar = lineaCompraValida(insumoSel, cantidadTxt, costoTxt);
   const puedeRegistrar = compraValida(provSel, lineas);
   const total = compraTotal(lineas);
+  const unidadSel = insumos.find((i) => i.id_insumo === insumoSel)?.unidad.abreviatura;
 
   function agregarLinea() {
     if (!puedeAgregar || insumoSel === null) return;
@@ -78,6 +80,7 @@ export default function CompraNueva() {
       {
         id_insumo: insumoSel,
         nombre: insumo ? insumo.nombre_insumo : String(insumoSel),
+        unidad: insumo?.unidad.abreviatura ?? "",
         cantidad: aCantidad(cantidadTxt),
         costo_unitario: Number(costoTxt),
       },
@@ -165,7 +168,7 @@ export default function CompraNueva() {
             keyboardType="numeric"
             value={cantidadTxt}
             onChangeText={setCantidadTxt}
-            placeholder="Cantidad"
+            placeholder={unidadSel ? `Cantidad (${unidadSel})` : "Cantidad"}
           />
           <Input
             style={{ flex: 1 }}
@@ -186,7 +189,8 @@ export default function CompraNueva() {
         {lineas.map((l, i) => (
           <View key={i} style={styles.row}>
             <Text style={styles.rowL}>
-              {cantidad(l.cantidad)} × {l.nombre}
+              {cantidad(l.cantidad)}
+              {l.unidad ? ` ${l.unidad}` : ""} × {l.nombre}
             </Text>
             <Text style={styles.rowV}>{money(l.cantidad * l.costo_unitario)}</Text>
           </View>

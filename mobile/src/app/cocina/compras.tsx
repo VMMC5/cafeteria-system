@@ -64,7 +64,12 @@ export default function Compras() {
             !loading ? <Text style={styles.muted}>No hay compras.</Text> : null
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() =>
+                router.push(`/cocina/compra-detalle?id_compra=${item.id_compra}` as any)
+              }
+            >
               <View style={{ flex: 1 }}>
                 <Text style={styles.prov}>{item.proveedor.nombre_proveedor}</Text>
                 <Text style={styles.meta}>
@@ -72,7 +77,8 @@ export default function Compras() {
                 </Text>
               </View>
               <Text style={styles.total}>{money(item.total)}</Text>
-            </View>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
           )}
         />
       </View>
@@ -117,6 +123,7 @@ const styles = StyleSheet.create({
   prov: { fontFamily: fonts.title, fontSize: 15.5, color: colors.coffee900 },
   meta: { fontFamily: fonts.body, color: colors.muted, fontSize: 13, marginTop: 2 },
   total: { fontFamily: fonts.title, fontSize: 16, color: colors.coffee900 },
+  chevron: { fontSize: 22, color: colors.caramel, marginLeft: spacing.sm },
   muted: { fontFamily: fonts.body, color: colors.muted, textAlign: "center", marginVertical: 16 },
   error: { fontFamily: fonts.medium, color: colors.error, textAlign: "center", marginVertical: 8 },
 });

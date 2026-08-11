@@ -82,6 +82,7 @@ export default function Mesas() {
                 <Badge
                   label={item.estado}
                   variant={libre ? "ok" : item.estado === "Ocupada" ? "busy" : "warn"}
+                  style={{ alignSelf: "center" }}
                 />
               </TouchableOpacity>
             );

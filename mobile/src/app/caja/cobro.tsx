@@ -168,27 +168,57 @@ export default function Cobro() {
   }
 
   if (venta) {
+    const fecha = new Date(venta.fecha_venta).toLocaleString("es-MX", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Comprobante</Text>
-        <View style={styles.ticket}>
-          <Text style={styles.folio}>Folio {venta.folio}</Text>
-          <Row label="Subtotal" value={venta.subtotal} />
-          <Row label="IVA" value={venta.iva} />
-          <Row label="Total" value={venta.total} bold />
-          <View style={styles.sep} />
-          {venta.pagos.map((pg) => (
-            <Row
-              key={pg.id_pago}
-              label={
-                pg.metodo.nombre_metodo +
-                (pg.referencia ? ` (${pg.referencia})` : "")
-              }
-              value={pg.monto}
-            />
-          ))}
-          <Row label="Cambio" value={venta.cambio} bold />
-        </View>
+        <ScrollView>
+          <View style={styles.ticket}>
+            <View style={styles.ticketHead}>
+              <Text style={styles.ticketBrand}>
+                Cafetería <Text style={styles.ticketBrandEm}>Aroma</Text>
+              </Text>
+              <Text style={styles.ticketMeta}>Folio {venta.folio}</Text>
+              <Text style={styles.ticketMeta}>{fecha}</Text>
+              {pedido && <Text style={styles.ticketMeta}>Mesa {pedido.mesa.numero_mesa}</Text>}
+            </View>
+            <View style={styles.sep} />
+            {pedido?.detalle.map((d, i) => (
+              <View key={i} style={styles.itemRow}>
+                <Text style={styles.itemName} numberOfLines={1}>
+                  {d.producto.nombre_producto}
+                </Text>
+                <Text style={styles.itemQty}>
+                  {d.cantidad} × {money(d.precio_unitario)}
+                </Text>
+                <Text style={styles.itemTotal}>{money(d.subtotal)}</Text>
+              </View>
+            ))}
+            <View style={styles.sep} />
+            <Row label="Subtotal" value={venta.subtotal} />
+            <Row label="IVA" value={venta.iva} />
+            <Row label="Total" value={venta.total} bold />
+            <View style={styles.sep} />
+            {venta.pagos.map((pg) => (
+              <Row
+                key={pg.id_pago}
+                label={
+                  pg.metodo.nombre_metodo +
+                  (pg.referencia ? ` (${pg.referencia})` : "")
+                }
+                value={pg.monto}
+              />
+            ))}
+            <Row label="Cambio" value={venta.cambio} bold />
+            <Text style={styles.ticketGracias}>¡Gracias por su visita!</Text>
+          </View>
+        </ScrollView>
         <TouchableOpacity
           style={styles.btn}
           onPress={() => router.replace("/caja" as any)}
@@ -380,7 +410,27 @@ const styles = StyleSheet.create({
     gap: 6,
     ...cardShadow,
   },
-  folio: { fontFamily: fonts.title, color: colors.coffee900, marginBottom: 6 },
+  ticketHead: { alignItems: "center", gap: 2, marginBottom: 4 },
+  ticketBrand: { fontFamily: fonts.title, fontSize: 19, color: colors.coffee900 },
+  ticketBrandEm: { fontFamily: fonts.titleItalic, color: colors.accent },
+  ticketMeta: { fontFamily: fonts.body, fontSize: 12.5, color: colors.muted },
+  itemRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  itemName: { flex: 1, fontFamily: fonts.semibold, fontSize: 13.5, color: colors.coffee900 },
+  itemQty: { fontFamily: fonts.body, fontSize: 12.5, color: colors.muted },
+  itemTotal: {
+    minWidth: 64,
+    textAlign: "right",
+    fontFamily: fonts.body,
+    fontSize: 13.5,
+    color: colors.coffee900,
+  },
+  ticketGracias: {
+    fontFamily: fonts.titleItalic,
+    fontSize: 13,
+    color: colors.muted,
+    textAlign: "center",
+    marginTop: spacing.sm,
+  },
   row: { flexDirection: "row", justifyContent: "space-between" },
   rowL: { fontFamily: fonts.body, color: colors.coffee700 },
   rowV: { fontFamily: fonts.body, color: colors.coffee900 },

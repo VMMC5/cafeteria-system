@@ -33,6 +33,16 @@ test("deja intactos numbers, null y valores no numéricos", () => {
   expect(out.precio_venta).toBe("abc"); // no corrompe si no es numérico
 });
 
+test("coacciona precio_unitario del detalle del pedido (ticket de caja)", () => {
+  const pedido = {
+    total: "103.00",
+    detalle: [{ cantidad: 2, precio_unitario: "44.40", subtotal: "88.80" }],
+  };
+  const out = coerceDecimals(pedido);
+  expect(out.detalle[0].precio_unitario).toBe(44.4);
+  expect(out.detalle[0].subtotal).toBe(88.8);
+});
+
 test("coacciona cantidad_requerida de las líneas de receta", () => {
   const receta = [
     {

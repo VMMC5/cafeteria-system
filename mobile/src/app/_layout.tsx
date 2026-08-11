@@ -47,6 +47,7 @@ export default function RootLayout() {
       <Stack.Screen name="cocina/ajuste" />
       <Stack.Screen name="cocina/compras" />
       <Stack.Screen name="cocina/compra-nueva" />
+      <Stack.Screen name="cocina/compra-detalle" />
     </Stack>
   );
 }

@@ -95,6 +95,8 @@ export type PedidoLinea = {
   cantidad: number;
   observaciones: string | null;
   producto: { nombre_producto: string };
+  precio_unitario: number;
+  subtotal: number;
 };
 
 export type Pedido = {
