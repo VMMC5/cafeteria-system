@@ -26,18 +26,20 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 - **Sprints 0–6 completos y mergeados a `main`** (PRs #1–#19) + **PR #20** (fix de importes en móvil) + **PR #21** (módulo Catálogo en el panel web) + **PR #22** (pago dividido en Caja móvil) + **PR #23** (recetas en Cocina móvil) + **PR #24** (guard de mesa Ocupada en la API) + **PR #25** (protección CSRF en el panel web) + **PR #26** (inventario y kárdex a 3 decimales, squash `84d8161`; incluye el fix de `seed_base` sobre BD vacía).
 - **PR #27 mergeado (squash `b1f0e80`):** tres fixes menores — test de API para venta con pagos múltiples (cierra el último pendiente del PR #22), `/logout` del panel web de GET a POST (cerraba una vulnerabilidad de logout-CSRF que quedó fuera del alcance del PR #25) y refresh-on-401 global en el móvil (interceptor de axios con single-flight, `lib/authRefresh.ts` + `api/authInterceptor.ts`).
 - **PR #29 mergeado (squash `3f479bc`): rediseño "Cafetería Aroma" en web y móvil.** Login web de dos paneles + panel admin restyleado (Lora/Karla vendorizadas, iconos SVG inline en el sidebar); móvil con `src/theme/` + `src/ui/` (BottomNav por rol, Badge, Chip, Stepper…), fuentes Google + `react-native-svg` + `expo-print`. Extras funcionales de la revisión visual: comprobante completo con botón **Imprimir Ticket**, detalle de compra en Cocina, unidades en Nueva compra, confirmación de logout, y temporizador con urgencia en Cocina (⚠️ umbrales en modo demo: 1/2 min — `RETRASO_*` en `lib/cocina.ts`). Las carpetas de mockups se eliminaron tras el merge.
-- **Trabajo siguiente ya decidido:** división de cuenta por artículos en Caja móvil, **Opción A "calculadora de división"** (asignar artículos a personas → montos sugeridos como líneas de pago de la misma venta; un folio, sin cambios de backend). Pendiente: spec → plan. El camino de "cerrar sin cobro" para el pedido Entregado que nadie paga sigue en deuda con prioridad operativa.
+- **PR #30 mergeado (squash `ddbca26`): división de cuenta por artículos en Caja móvil.** Calculadora en la pantalla de cobro: asignar artículos a personas → una línea de pago por persona con monto exacto (acumulación en centavos, sin prorrateo de IVA — los precios del detalle son finales). Solo móvil (`lib/split.ts` puro + UI en Cobro); un folio, N pagos.
+- **PR #31 mergeado (squash `6feed1e`): varios pedidos por mesa (rondas).** Una mesa Ocupada acepta pedidos adicionales y se libera solo al cerrar el último activo (`tiene_pedido_activo(excepto_id_pedido)` en cobrar/cancelar); en el móvil las mesas Ocupadas son tocables (`mesaSeleccionable`). Sin cambios de esquema ni API.
+- **Trabajo siguiente ya decidido: cuenta por mesa — venta multi-pedido (diseño aprobado 2026-08-11).** Cobrar todas las rondas de una mesa en un solo folio: `pedidos.id_venta` (1:N) reemplaza a `ventas.id_pedido`, `POST /ventas` acepta `ids_pedidos` (misma mesa; con varias rondas, todas Entregadas), Caja agrupa por mesa (cuenta completa o ronda suelta) y la calculadora de división opera sobre la unión de líneas. Pendiente: spec → plan → TDD → PR. El camino de "cerrar sin cobro" para el pedido Entregado que nadie paga sigue en deuda con prioridad operativa.
 - Ramas locales residuales ya mergeadas: `feature/compras`, `feature/dashboard`, `feature/web-redesign`.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
 ### Cobertura de tests
 | Suite | Cantidad | Comando |
 |---|---|---|
-| Backend | 235 tests | `docker compose exec api pytest` |
+| Backend | 239 tests | `docker compose exec api pytest` |
 | Web | 127 tests | `docker compose exec web pytest` |
-| Móvil | 96 tests + `tsc` limpio | `cd mobile && npm test` |
+| Móvil | 109 tests + `tsc` limpio | `cd mobile && npm test` |
 
-> Las tres suites verificadas sobre `main` tras el merge del PR #29 (squash `3f479bc`).
+> Las tres suites verificadas sobre `main` tras el merge del PR #31 (squash `6feed1e`).
 
 Los tests de backend usan una **BD dedicada** (`<db>_test`, autoprovisionada con `seed_base`) con guardia que impide tocar la BD de dev.
 
