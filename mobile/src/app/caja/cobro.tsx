@@ -30,14 +30,27 @@ import {
   sumaPagos,
 } from "@/lib/caja";
 import { money } from "@/lib/format";
+import {
+  agregarPersona,
+  Asignacion,
+  asignar,
+  completa,
+  crearAsignacion,
+  personasConConsumo,
+  quitarPersona,
+  totalPersona,
+  unidadesRestantes,
+} from "@/lib/split";
 import { ticketHtml } from "@/lib/ticket";
 import { useAuth } from "@/store/auth";
 import { cardShadow, colors, fonts, radius, sizes, spacing } from "@/theme";
+import { Stepper } from "@/ui";
 
 type LineaUI = {
   id_metodo_pago: number | null;
   montoTxt: string;
   referencia: string;
+  etiqueta?: string; // "Persona N" cuando la línea viene de la división
 };
 
 function Row({
@@ -68,6 +81,11 @@ export default function Cobro() {
   const [error, setError] = useState<string | null>(null);
   const [cobrando, setCobrando] = useState(false);
   const [venta, setVenta] = useState<Venta | null>(null);
+  // Modo "Dividir cuenta": la asignación sobrevive al cerrar la sección para
+  // poder retocarla; solo se pierde al salir de la pantalla.
+  const [dividiendo, setDividiendo] = useState(false);
+  const [asignacion, setAsignacion] = useState<Asignacion | null>(null);
+  const [personaActiva, setPersonaActiva] = useState(0);
 
   useEffect(() => {
     if (!access) return;
@@ -129,6 +147,56 @@ export default function Cobro() {
 
   function quitarLinea(i: number) {
     setLineas((ls) => ls.filter((_, j) => j !== i));
+  }
+
+  const detalle = pedido?.detalle ?? [];
+  const numPersonas = asignacion?.[0]?.length ?? 0;
+  const divisionCompleta = asignacion !== null && completa(asignacion, detalle);
+  const sinAsignarUnidades = asignacion
+    ? detalle.reduce((s, d, l) => s + unidadesRestantes(asignacion, l, d.cantidad), 0)
+    : 0;
+  const sumaAsignada = asignacion
+    ? Array.from({ length: numPersonas }, (_, p) => totalPersona(asignacion, p, detalle)).reduce(
+        (s, t) => s + t,
+        0
+      )
+    : 0;
+
+  function toggleDividir() {
+    if (!dividiendo && asignacion === null) {
+      setAsignacion(crearAsignacion(detalle.length, 2));
+      setPersonaActiva(0);
+    }
+    setDividiendo((d) => !d);
+  }
+
+  function nuevaPersona() {
+    if (!asignacion) return;
+    setAsignacion(agregarPersona(asignacion));
+    setPersonaActiva(numPersonas); // la recién creada queda activa
+  }
+
+  function quitarPersonaActiva() {
+    if (!asignacion || numPersonas <= 2) return;
+    setAsignacion(quitarPersona(asignacion, personaActiva));
+    setPersonaActiva((p) => Math.max(0, p >= numPersonas - 1 ? p - 1 : p));
+  }
+
+  function asignarUnidad(linea: number, delta: number) {
+    if (!asignacion) return;
+    setAsignacion(asignar(asignacion, linea, personaActiva, delta, detalle[linea].cantidad));
+  }
+
+  function aplicarDivision() {
+    if (!asignacion || !divisionCompleta) return;
+    const nuevas = personasConConsumo(asignacion).map((p) => ({
+      id_metodo_pago: metodos[0]?.id_metodo_pago ?? null,
+      montoTxt: totalPersona(asignacion, p, detalle).toFixed(2),
+      referencia: "",
+      etiqueta: `Persona ${p + 1}`,
+    }));
+    if (nuevas.length > 0) setLineas(nuevas);
+    setDividiendo(false);
   }
 
   async function imprimir(v: Venta) {
@@ -253,10 +321,89 @@ export default function Cobro() {
         ))}
         <Text style={styles.total}>Total: {money(total)}</Text>
 
+        <TouchableOpacity style={styles.divBtn} onPress={toggleDividir}>
+          <Text style={styles.divBtnTxt}>
+            {dividiendo ? "Ocultar división" : "Dividir cuenta"}
+          </Text>
+        </TouchableOpacity>
+
+        {dividiendo && asignacion && (
+          <View style={styles.divCard}>
+            <View style={styles.divHead}>
+              <Text style={styles.label}>¿Quién paga qué?</Text>
+              {numPersonas > 2 && (
+                <TouchableOpacity onPress={quitarPersonaActiva}>
+                  <Text style={styles.quitar}>✕ Quitar Persona {personaActiva + 1}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <View style={styles.chips}>
+              {Array.from({ length: numPersonas }, (_, p) => (
+                <TouchableOpacity
+                  key={p}
+                  style={[styles.chip, personaActiva === p && styles.chipSel]}
+                  onPress={() => setPersonaActiva(p)}
+                >
+                  <Text style={[styles.chipTxt, personaActiva === p && styles.chipTxtSel]}>
+                    Persona {p + 1}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.chip} onPress={nuevaPersona}>
+                <Text style={styles.chipTxt}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {detalle.map((d, l) => {
+              const restantes = unidadesRestantes(asignacion, l, d.cantidad);
+              return (
+                <View key={l} style={styles.divLinea}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.divProducto}>{d.producto.nombre_producto}</Text>
+                    <Text style={styles.divMeta}>
+                      {money(d.precio_unitario)} c/u
+                      {restantes > 0 ? ` · quedan ${restantes} por asignar` : ""}
+                    </Text>
+                  </View>
+                  <Stepper
+                    value={asignacion[l]?.[personaActiva] ?? 0}
+                    onRemove={() => asignarUnidad(l, -1)}
+                    onAdd={() => asignarUnidad(l, +1)}
+                  />
+                </View>
+              );
+            })}
+
+            <View style={styles.divResumen}>
+              {Array.from({ length: numPersonas }, (_, p) => (
+                <Row key={p} label={`Persona ${p + 1}`} value={totalPersona(asignacion, p, detalle)} />
+              ))}
+              {!divisionCompleta && (
+                <Text style={styles.aviso}>
+                  Sin asignar: {sinAsignarUnidades}{" "}
+                  {sinAsignarUnidades === 1 ? "unidad" : "unidades"} ·{" "}
+                  {money(total - sumaAsignada)}
+                </Text>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.divAplicar, !divisionCompleta && styles.btnDisabled]}
+              disabled={!divisionCompleta}
+              onPress={aplicarDivision}
+            >
+              <Text style={styles.btnTxt}>Aplicar división</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {lineas.map((l, i) => (
           <View key={i} style={styles.lineaPago}>
             <View style={styles.lineaHead}>
-              <Text style={styles.label}>Pago {i + 1}</Text>
+              <Text style={styles.label}>
+                Pago {i + 1}
+                {l.etiqueta ? ` · ${l.etiqueta}` : ""}
+              </Text>
               {lineas.length > 1 && (
                 <TouchableOpacity
                   onPress={() => quitarLinea(i)}
@@ -402,6 +549,45 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     paddingVertical: spacing.sm,
     marginBottom: 4,
+  },
+  divBtn: {
+    height: 44,
+    borderRadius: radius.button,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.sm + 2,
+  },
+  divBtnTxt: { color: colors.accent, fontFamily: fonts.bold, fontSize: 14 },
+  divCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.caramel,
+    borderRadius: radius.cardLg,
+    padding: spacing.md,
+    marginBottom: spacing.sm + 2,
+    gap: spacing.sm,
+    ...cardShadow,
+  },
+  divHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  divLinea: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  divProducto: { fontFamily: fonts.semibold, fontSize: 14, color: colors.coffee900 },
+  divMeta: { fontFamily: fonts.body, fontSize: 12.5, color: colors.muted, marginTop: 1 },
+  divResumen: { gap: 4, paddingTop: 2 },
+  divAplicar: {
+    height: sizes.chip,
+    borderRadius: radius.button,
+    backgroundColor: colors.accent,
+    alignItems: "center",
+    justifyContent: "center",
   },
   resumen: {
     backgroundColor: colors.card,
