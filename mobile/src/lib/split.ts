@@ -30,6 +30,38 @@ export function unidadesRestantes(
 }
 
 /**
+ * Total de una persona: suma de sus unidades × precio_unitario. Se acumula en
+ * centavos para que la suma de todas las personas cuadre exacta con el total
+ * del pedido (los precios traen 2 decimales; los floats no asocian parejo).
+ */
+export function totalPersona(
+  a: Asignacion,
+  persona: number,
+  detalle: LineaDetalle[]
+): number {
+  const centavos = detalle.reduce(
+    (s, d, linea) => s + Math.round(d.precio_unitario * 100) * (a[linea]?.[persona] ?? 0),
+    0
+  );
+  return centavos / 100;
+}
+
+/** true cuando cada línea tiene todas sus unidades repartidas. */
+export function completa(a: Asignacion, detalle: LineaDetalle[]): boolean {
+  return detalle.every((d, linea) => unidadesAsignadas(a, linea) === d.cantidad);
+}
+
+/** Índices (ascendentes) de las personas con al menos una unidad asignada. */
+export function personasConConsumo(a: Asignacion): number[] {
+  const numPersonas = a[0]?.length ?? 0;
+  const indices: number[] = [];
+  for (let p = 0; p < numPersonas; p++) {
+    if (a.some((fila) => (fila[p] ?? 0) > 0)) indices.push(p);
+  }
+  return indices;
+}
+
+/**
  * Suma `delta` unidades de la línea a una persona. Nunca deja la celda en
  * negativo y, si el alta rebasa las unidades de la línea (entre todas las
  * personas), devuelve la matriz sin cambios.
