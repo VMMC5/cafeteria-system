@@ -3,7 +3,7 @@ import { ticketHtml } from "./ticket";
 
 const VENTA: Venta = {
   id_venta: 1,
-  id_pedido: 633,
+  ids_pedidos: [633],
   folio: "V-000631",
   estado_venta: "Pagada",
   fecha_venta: "2026-08-10T22:00:00Z",

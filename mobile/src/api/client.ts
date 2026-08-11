@@ -122,7 +122,7 @@ export type PagoOut = {
 
 export type Venta = {
   id_venta: number;
-  id_pedido: number;
+  ids_pedidos: number[];
   folio: string;
   estado_venta: string;
   fecha_venta: string;
@@ -262,10 +262,14 @@ export async function getPedido(access: string, id: number): Promise<Pedido> {
 
 export async function cobrarVenta(
   access: string,
-  id_pedido: number,
+  ids_pedidos: number[],
   pagos: { id_metodo_pago: number; monto: number; referencia?: string }[]
 ): Promise<Venta> {
-  const { data } = await http.post("/ventas", { id_pedido, pagos }, authCfg(access));
+  const { data } = await http.post(
+    "/ventas",
+    { ids_pedidos, pagos },
+    authCfg(access)
+  );
   return data;
 }
 
