@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Cafetería Aroma",
-    "slug": "mobile",
+    "slug": "cafeteria-system",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo-aroma.png",
@@ -42,6 +42,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "29a6dcb5-c293-4d34-9b4a-01803f04b2f1"
+      }
+    },
+    "owner": "vmmcs-team"
   }
 }
