@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-11 (**logo oficial en el arranque del móvil — PR #33**, squash `4b022bc`; antes cuenta por mesa — PR #32 `35b01e2`; antes varios pedidos por mesa — PR #31 `6feed1e`; antes división de cuenta — PR #30 `ddbca26`)
+**Última actualización:** 2026-08-11 (**configuración de EAS Build para el APK — PR #34**, squash `e3b2594`; antes logo en el arranque — PR #33 `4b022bc`; antes cuenta por mesa — PR #32 `35b01e2`; antes rondas por mesa — PR #31 `6feed1e`)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -159,6 +159,7 @@ Preparación de la rama para generar APK instalable via `eas build --platform an
 ## ⏳ Pendiente
 
 ### Próximo
+- **Configuración de EAS Build mergeada a `main` (PR #34, squash `e3b2594`).** Verificado post-merge: backend **246/246**, web **127/127**, móvil **113/113** + `tsc` limpio + `npx expo config` válida. Pendiente del usuario: `npx eas login` + `npx eas build --platform android --profile preview` desde `mobile/` en main (primer build crea proyecto EAS y keystore); el `extra.eas.projectId` que escriba en `app.json` se commitea como chore. Recordatorio: la URL de API va horneada (recompilar si cambia la IP LAN).
 - **Logo oficial en el arranque del móvil mergeado a `main` (PR #33, squash `4b022bc`).** Verificado post-merge: móvil **113/113** + `tsc` limpio + `npx expo config` válida (backend 246 y web 127 sin cambios). Splash nativo (`#FEF8EA` muestreado del PNG), pantalla de carga e ícono adaptativo con el logo; verificación visual en dispositivo ejecutada y OK. Recordatorio vigente: el **ícono del launcher** solo se refleja en un **build nativo** (Expo Go no lo muestra).
 - **Cuenta por mesa (venta multi-pedido) mergeado a `main` (PR #32, squash `35b01e2`).** Verificado post-merge: backend **246/246**, web **127/127**, móvil **113/113** + `tsc --noEmit` limpio. La **migración `c3d5e7f9a1b2` se aplicó a la BD real** (`alembic upgrade head`) y el backfill quedó verificado: 646 ventas, **0** sin pedidos asociados (query de la nota de despliegue). Smoke en dispositivo **ejecutado y OK** (cuenta de 2 rondas con badge «ronda en cocina» → entrega → cobro con división → un folio y mesa liberada; ronda suelta cobrable por separado). Proceso: primera ejecución con subagentes (implementador + revisor por tarea + review final de rama); el review final cazó la pérdida del `UNIQUE` anti doble-cobro y se cerró con `FOR UPDATE OF pedidos` + test de carrera de dos conexiones. Se evaluaron y descartaron: cobro por lote en el móvil (N folios para un pago real) y entidad `Cuenta` formal (YAGNI).
 - **Candidato siguiente:** camino de "cerrar sin cobro" para el pedido entregado que nadie paga (ver Deuda técnica) — sigue siendo el pendiente con más prioridad operativa.
