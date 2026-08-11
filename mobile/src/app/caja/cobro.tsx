@@ -72,9 +72,12 @@ function Row({
 
 export default function Cobro() {
   const access = useAuth((s) => s.accessToken);
-  const { id_pedido } = useLocalSearchParams<{ id_pedido: string }>();
-  const pid = Number(id_pedido);
-  const [pedido, setPedido] = useState<Pedido | null>(null);
+  const { ids } = useLocalSearchParams<{ ids: string }>();
+  const idsPedidos = (ids ?? "")
+    .split(",")
+    .map(Number)
+    .filter((n) => Number.isFinite(n) && n > 0);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [metodos, setMetodos] = useState<MetodoPago[]>([]);
   const [lineas, setLineas] = useState<LineaUI[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,11 +96,11 @@ export default function Cobro() {
       setLoading(true);
       setError(null);
       try {
-        const [p, ms] = await Promise.all([
-          getPedido(access, pid),
+        const [ps, ms] = await Promise.all([
+          Promise.all(idsPedidos.map((i) => getPedido(access, i))),
           getMetodosPago(access),
         ]);
-        setPedido(p);
+        setPedidos(ps);
         setMetodos(ms);
         setLineas([
           {
@@ -112,9 +115,11 @@ export default function Cobro() {
         setLoading(false);
       }
     })();
-  }, [access, pid]);
+  }, [access, ids]);
 
-  const total = Number(pedido?.total ?? 0);
+  const total =
+    pedidos.reduce((s, p) => s + Math.round(Number(p.total) * 100), 0) / 100;
+  const varias = pedidos.length > 1;
   const idEfectivo =
     metodos.find((m) => m.nombre_metodo === "Efectivo")?.id_metodo_pago ?? null;
 
@@ -149,7 +154,10 @@ export default function Cobro() {
     setLineas((ls) => ls.filter((_, j) => j !== i));
   }
 
-  const detalle = pedido?.detalle ?? [];
+  type LineaRonda = Pedido["detalle"][number] & { ronda: number };
+  const detalle: LineaRonda[] = pedidos.flatMap((p, r) =>
+    p.detalle.map((d) => ({ ...d, ronda: r + 1 }))
+  );
   const numPersonas = asignacion?.[0]?.length ?? 0;
   const divisionCompleta = asignacion !== null && completa(asignacion, detalle);
   const sinAsignarUnidades = asignacion
@@ -201,7 +209,7 @@ export default function Cobro() {
 
   async function imprimir(v: Venta) {
     try {
-      await Print.printAsync({ html: ticketHtml(v, pedido) });
+      await Print.printAsync({ html: ticketHtml(v, pedidos) });
     } catch {
       // Cancelar el diálogo de impresión también rechaza: no es un error real.
     }
@@ -211,12 +219,15 @@ export default function Cobro() {
     if (!access || !habilitado) return;
     setCobrando(true);
     try {
-      const v = await cobrarVenta(access, pid, aPayload(parseadas));
+      const v = await cobrarVenta(access, idsPedidos, aPayload(parseadas));
       setVenta(v);
     } catch (e: any) {
+      const detalle = e?.response?.data?.detail;
       const msg =
         e?.response?.status === 409
-          ? "El pedido ya no está disponible para cobro."
+          ? typeof detalle === "string"
+            ? detalle
+            : "El pedido ya no está disponible para cobro."
           : "No se pudo cobrar.";
       Alert.alert("Error", msg, [
         { text: "OK", onPress: () => router.replace("/caja" as any) },
@@ -264,10 +275,12 @@ export default function Cobro() {
               </Text>
               <Text style={styles.ticketMeta}>Folio {venta.folio}</Text>
               <Text style={styles.ticketMeta}>{fecha}</Text>
-              {pedido && <Text style={styles.ticketMeta}>Mesa {pedido.mesa.numero_mesa}</Text>}
+              {pedidos[0] && (
+                <Text style={styles.ticketMeta}>Mesa {pedidos[0].mesa.numero_mesa}</Text>
+              )}
             </View>
             <View style={styles.sep} />
-            {pedido?.detalle.map((d, i) => (
+            {pedidos.flatMap((p) => p.detalle).map((d, i) => (
               <View key={i} style={styles.itemRow}>
                 <Text style={styles.itemName} numberOfLines={1}>
                   {d.producto.nombre_producto}
@@ -312,11 +325,15 @@ export default function Cobro() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Cobro — Mesa {pedido?.mesa.numero_mesa}</Text>
+      <Text style={styles.title}>
+        Cobro — Mesa {pedidos[0]?.mesa.numero_mesa}
+        {varias ? ` · ${pedidos.length} rondas` : ""}
+      </Text>
       <ScrollView>
-        {pedido?.detalle.map((d, i) => (
+        {detalle.map((d, i) => (
           <Text key={i} style={styles.linea}>
             {d.cantidad} × {d.producto.nombre_producto}
+            {varias ? `  · R${d.ronda}` : ""}
           </Text>
         ))}
         <Text style={styles.total}>Total: {money(total)}</Text>
@@ -361,7 +378,7 @@ export default function Cobro() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.divProducto}>{d.producto.nombre_producto}</Text>
                     <Text style={styles.divMeta}>
-                      {money(d.precio_unitario)} c/u
+                      {money(d.precio_unitario)} c/u{varias ? ` · R${d.ronda}` : ""}
                       {restantes > 0 ? ` · quedan ${restantes} por asignar` : ""}
                     </Text>
                   </View>

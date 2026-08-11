@@ -3,7 +3,7 @@ import { ticketHtml } from "./ticket";
 
 const VENTA: Venta = {
   id_venta: 1,
-  id_pedido: 633,
+  ids_pedidos: [633],
   folio: "V-000631",
   estado_venta: "Pagada",
   fecha_venta: "2026-08-10T22:00:00Z",
@@ -37,7 +37,7 @@ const PEDIDO: Pedido = {
 };
 
 test("ticketHtml incluye marca, folio, mesa, productos, totales y pagos", () => {
-  const html = ticketHtml(VENTA, PEDIDO);
+  const html = ticketHtml(VENTA, [PEDIDO]);
   expect(html).toContain("Cafetería");
   expect(html).toContain("Aroma");
   expect(html).toContain("V-000631");
@@ -66,9 +66,23 @@ test("ticketHtml funciona sin pedido y escapa HTML en textos", () => {
       },
     ],
   };
-  const html = ticketHtml(venta, null);
+  const html = ticketHtml(venta, []);
   expect(html).toContain("V-000631");
   expect(html).not.toContain("Mesa"); // sin pedido no hay mesa ni líneas
   expect(html).not.toContain("<script>");
   expect(html).toContain("&lt;script&gt;");
+});
+
+test("ticketHtml: cuenta de dos rondas lista las líneas de ambas", () => {
+  const linea = (nombre: string) => ({
+    producto: { nombre_producto: nombre },
+    cantidad: 1,
+    precio_unitario: "58.00",
+    subtotal: "58.00",
+  });
+  const p1 = { mesa: { numero_mesa: 4 }, detalle: [linea("Latte")] } as any;
+  const p2 = { mesa: { numero_mesa: 4 }, detalle: [linea("Croissant")] } as any;
+  const html = ticketHtml(VENTA, [p1, p2]);
+  expect(html).toContain("Latte");
+  expect(html).toContain("Croissant");
 });

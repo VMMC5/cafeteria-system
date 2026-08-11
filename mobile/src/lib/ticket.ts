@@ -8,10 +8,10 @@ function esc(texto: string): string {
 
 /**
  * HTML imprimible del comprobante (expo-print). Formato angosto tipo ticket
- * de impresora térmica; el pedido aporta mesa y líneas de producto — si no
- * está disponible, el ticket sale solo con los totales de la venta.
+ * de impresora térmica; los pedidos aportan mesa y líneas — con lista vacía
+ * el ticket sale solo con los totales de la venta.
  */
-export function ticketHtml(venta: Venta, pedido: Pedido | null): string {
+export function ticketHtml(venta: Venta, pedidos: Pedido[]): string {
   const fecha = new Date(venta.fecha_venta).toLocaleString("es-MX", {
     day: "2-digit",
     month: "2-digit",
@@ -20,7 +20,10 @@ export function ticketHtml(venta: Venta, pedido: Pedido | null): string {
     minute: "2-digit",
   });
 
-  const lineas = (pedido?.detalle ?? [])
+  const mesa = pedidos[0]?.mesa.numero_mesa;
+
+  const lineas = pedidos
+    .flatMap((p) => p.detalle)
     .map(
       (d) => `
       <tr>
@@ -64,7 +67,7 @@ export function ticketHtml(venta: Venta, pedido: Pedido | null): string {
   <h1>Cafetería <em>Aroma</em></h1>
   <div class="head">
     Folio ${esc(venta.folio)}<br>
-    ${esc(fecha)}${pedido ? `<br>Mesa ${pedido.mesa.numero_mesa}` : ""}
+    ${esc(fecha)}${mesa ? `<br>Mesa ${mesa}` : ""}
   </div>
   <hr>
   ${lineas ? `<table>${lineas}</table><hr>` : ""}

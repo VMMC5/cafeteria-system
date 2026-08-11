@@ -11,7 +11,7 @@ class PagoIn(BaseModel):
 
 
 class VentaCreate(BaseModel):
-    id_pedido: int
+    ids_pedidos: list[int] = Field(min_length=1)
     pagos: list[PagoIn] = Field(min_length=1)
 
 
@@ -36,7 +36,7 @@ class VentaOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id_venta: int
-    id_pedido: int
+    ids_pedidos: list[int]
     fecha_venta: datetime
     estado_venta: str
     folio: str

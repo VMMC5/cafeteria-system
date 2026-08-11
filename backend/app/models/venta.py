@@ -22,14 +22,11 @@ class MetodoPago(Base):
 
 
 class Venta(Base):
-    """Registro financiero del cobro de un pedido (1:1, inmutable)."""
+    """Registro financiero del cobro de una cuenta (uno o más pedidos de la misma mesa)."""
 
     __tablename__ = "ventas"
 
     id_venta = Column(Integer, primary_key=True)
-    id_pedido = Column(
-        Integer, ForeignKey("pedidos.id_pedido"), nullable=False, unique=True
-    )
     id_usuario = Column(
         Integer, ForeignKey("usuarios.id_usuario"), nullable=False, index=True
     )
@@ -43,6 +40,12 @@ class Venta(Base):
 
     pagos = relationship("Pago", lazy="selectin")
     ticket = relationship("Ticket", uselist=False, lazy="joined")
+    pedidos = relationship(
+        "Pedido",
+        back_populates="venta",
+        lazy="selectin",
+        order_by="Pedido.id_pedido",
+    )
 
 
 class Ticket(Base):

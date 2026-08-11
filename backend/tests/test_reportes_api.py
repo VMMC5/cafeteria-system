@@ -39,7 +39,7 @@ def _cobrar(
         pagos = [{"id_metodo_pago": efectivo, "monto": float(precio) * 2 + 100}]
     venta = client.post(
         "/api/v1/ventas", headers=cajero_headers,
-        json={"id_pedido": pedido["id_pedido"], "pagos": pagos},
+        json={"ids_pedidos": [pedido["id_pedido"]], "pagos": pagos},
     ).json()
     return venta
 

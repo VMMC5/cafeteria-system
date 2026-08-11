@@ -59,7 +59,7 @@ def test_tiene_pedido_activo_falso_tras_cobrar(client, db, admin_headers, cajero
         "/api/v1/ventas",
         headers=cajero_headers,
         json={
-            "id_pedido": pedido["id_pedido"],
+            "ids_pedidos": [pedido["id_pedido"]],
             "pagos": [{"id_metodo_pago": efectivo, "monto": 200.0}],
         },
     )

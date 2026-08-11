@@ -34,6 +34,9 @@ class Pedido(Base):
     id_estado = Column(
         Integer, ForeignKey("estados_pedido.id_estado"), nullable=False, index=True
     )
+    id_venta = Column(
+        Integer, ForeignKey("ventas.id_venta"), nullable=True, index=True
+    )
     fecha_pedido = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -41,6 +44,7 @@ class Pedido(Base):
 
     mesa = relationship("Mesa", lazy="joined")
     estado = relationship("EstadoPedido", lazy="joined")
+    venta = relationship("Venta", back_populates="pedidos")
     detalle = relationship(
         "DetallePedido", lazy="selectin", cascade="all, delete-orphan"
     )

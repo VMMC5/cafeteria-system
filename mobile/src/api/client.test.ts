@@ -114,14 +114,14 @@ test("getPedidos con por_cobrar manda el flag", async () => {
   expect(config.headers.Authorization).toBe("Bearer tok");
 });
 
-test("cobrarVenta postea a /ventas con id_pedido y pagos", async () => {
+test("cobrarVenta postea a /ventas con ids_pedidos y pagos", async () => {
   const spy = jest
     .spyOn(client.http, "post")
     .mockResolvedValue({ data: { id_venta: 3 } } as any);
-  await client.cobrarVenta("tok", 7, [{ id_metodo_pago: 1, monto: 200 }]);
+  await client.cobrarVenta("tok", [7], [{ id_metodo_pago: 1, monto: 200 }]);
   const [url, body, config] = spy.mock.calls[0] as any[];
   expect(url).toBe("/ventas");
-  expect(body).toEqual({ id_pedido: 7, pagos: [{ id_metodo_pago: 1, monto: 200 }] });
+  expect(body).toEqual({ ids_pedidos: [7], pagos: [{ id_metodo_pago: 1, monto: 200 }] });
   expect(config.headers.Authorization).toBe("Bearer tok");
 });
 

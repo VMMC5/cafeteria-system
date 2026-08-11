@@ -129,7 +129,6 @@ def _generar_venta(
 
     fecha_venta = fecha_pedido + timedelta(minutes=random.randint(5, 30))
     venta = Venta(
-        id_pedido=pedido.id_pedido,
         id_usuario=cajero.id_usuario,
         fecha_venta=fecha_venta,
         total=total_venta,
@@ -137,6 +136,7 @@ def _generar_venta(
     )
     db.add(venta)
     db.flush()
+    pedido.id_venta = venta.id_venta
 
     folio = f"D-{consecutivo:06d}"
     db.add(Ticket(id_venta=venta.id_venta, folio=folio, fecha_emision=fecha_venta))
