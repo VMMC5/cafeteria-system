@@ -1,0 +1,51 @@
+/**
+ * División de cuenta por artículos ("calculadora de división").
+ *
+ * La asignación es una matriz `asignacion[linea][persona] = unidades` sobre el
+ * detalle del pedido. Los precios del detalle ya incluyen IVA (el total del
+ * pedido es la suma de sus líneas y la venta solo lo desglosa), así que el
+ * monto de cada persona es exacto: suma de sus unidades × precio_unitario.
+ * Todas las operaciones son inmutables: devuelven una matriz nueva.
+ */
+
+export type Asignacion = number[][];
+
+/** Lo mínimo que la aritmética necesita de una línea del pedido. */
+export type LineaDetalle = { cantidad: number; precio_unitario: number };
+
+export function crearAsignacion(numLineas: number, numPersonas: number): Asignacion {
+  return Array.from({ length: numLineas }, () => Array(numPersonas).fill(0));
+}
+
+export function unidadesAsignadas(a: Asignacion, linea: number): number {
+  return (a[linea] ?? []).reduce((s, u) => s + u, 0);
+}
+
+export function unidadesRestantes(
+  a: Asignacion,
+  linea: number,
+  unidadesLinea: number
+): number {
+  return Math.max(0, unidadesLinea - unidadesAsignadas(a, linea));
+}
+
+/**
+ * Suma `delta` unidades de la línea a una persona. Nunca deja la celda en
+ * negativo y, si el alta rebasa las unidades de la línea (entre todas las
+ * personas), devuelve la matriz sin cambios.
+ */
+export function asignar(
+  a: Asignacion,
+  linea: number,
+  persona: number,
+  delta: number,
+  unidadesLinea: number
+): Asignacion {
+  const actual = a[linea]?.[persona] ?? 0;
+  const nuevo = Math.max(0, actual + delta);
+  const totalLinea = unidadesAsignadas(a, linea) - actual + nuevo;
+  if (totalLinea > unidadesLinea) return a;
+  return a.map((fila, i) =>
+    i === linea ? fila.map((u, p) => (p === persona ? nuevo : u)) : fila
+  );
+}
