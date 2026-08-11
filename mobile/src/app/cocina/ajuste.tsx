@@ -1,20 +1,14 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 
 import { getInsumo, Insumo, registrarMovimiento } from "@/api/client";
 import { aCantidad } from "@/lib/decimales";
 import { cantidad } from "@/lib/format";
 import { movimientoValido } from "@/lib/inventario";
 import { useAuth } from "@/store/auth";
+import { colors, fonts, radius, spacing } from "@/theme";
+import { Chip, Input } from "@/ui";
 
 const TIPOS = ["Entrada", "Salida"];
 const MOTIVOS = ["Ajuste", "Merma"];
@@ -77,7 +71,7 @@ export default function Ajuste() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -110,32 +104,19 @@ export default function Ajuste() {
       <Text style={styles.label}>Tipo</Text>
       <View style={styles.chips}>
         {TIPOS.map((t) => (
-          <TouchableOpacity
-            key={t}
-            style={[styles.chip, tipo === t && styles.chipSel]}
-            onPress={() => setTipo(t)}
-          >
-            <Text style={[styles.chipTxt, tipo === t && styles.chipTxtSel]}>{t}</Text>
-          </TouchableOpacity>
+          <Chip key={t} label={t} active={tipo === t} onPress={() => setTipo(t)} />
         ))}
       </View>
 
       <Text style={styles.label}>Motivo</Text>
       <View style={styles.chips}>
         {MOTIVOS.map((m) => (
-          <TouchableOpacity
-            key={m}
-            style={[styles.chip, motivo === m && styles.chipSel]}
-            onPress={() => setMotivo(m)}
-          >
-            <Text style={[styles.chipTxt, motivo === m && styles.chipTxtSel]}>{m}</Text>
-          </TouchableOpacity>
+          <Chip key={m} label={m} active={motivo === m} onPress={() => setMotivo(m)} />
         ))}
       </View>
 
       <Text style={styles.label}>Cantidad</Text>
-      <TextInput
-        style={styles.input}
+      <Input
         keyboardType="numeric"
         value={cantidadTxt}
         onChangeText={setCantidadTxt}
@@ -148,7 +129,7 @@ export default function Ajuste() {
         onPress={registrar}
       >
         {guardando ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onAccent} />
         ) : (
           <Text style={styles.btnTxt}>Registrar</Text>
         )}
@@ -158,47 +139,42 @@ export default function Ajuste() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f5f7", padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  container: { flex: 1, backgroundColor: colors.cream, padding: spacing.screen },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    backgroundColor: colors.cream,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 24,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
-  title: { fontSize: 20, fontWeight: "700", color: "#2d3748" },
-  link: { color: "#2b6cb0", fontWeight: "600" },
-  nombre: { fontSize: 18, fontWeight: "700", color: "#2d3748", marginTop: 8 },
-  stock: { color: "#4a5568", marginBottom: 8 },
-  label: { fontWeight: "600", color: "#4a5568", marginTop: 12, marginBottom: 6 },
-  chips: { flexDirection: "row", gap: 8 },
-  chip: {
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  title: { fontFamily: fonts.title, fontSize: 20, color: colors.coffee900 },
+  link: { fontFamily: fonts.semibold, color: colors.accent },
+  nombre: { fontFamily: fonts.title, fontSize: 18, color: colors.coffee900, marginTop: spacing.sm },
+  stock: { fontFamily: fonts.body, color: colors.coffee700, marginBottom: spacing.sm },
+  label: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.coffee700,
+    marginTop: spacing.md,
+    marginBottom: 6,
   },
-  chipSel: { backgroundColor: "#2b6cb0", borderColor: "#2b6cb0" },
-  chipTxt: { color: "#2d3748" },
-  chipTxtSel: { color: "#fff", fontWeight: "700" },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
+  chips: { flexDirection: "row", gap: spacing.sm },
   btn: {
-    backgroundColor: "#2b6cb0",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: colors.accent,
+    height: 50,
+    borderRadius: radius.button,
     alignItems: "center",
-    marginTop: 20,
+    justifyContent: "center",
+    marginTop: spacing.xl,
   },
-  btnDisabled: { backgroundColor: "#a0aec0" },
-  btnTxt: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  errorTxt: { color: "#c53030", textAlign: "center" },
+  btnDisabled: { backgroundColor: colors.disabled },
+  btnTxt: { color: colors.onAccent, fontFamily: fonts.bold, fontSize: 15.5 },
+  errorTxt: { fontFamily: fonts.medium, color: colors.error, textAlign: "center" },
 });

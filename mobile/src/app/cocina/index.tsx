@@ -1,18 +1,13 @@
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { cambiarEstadoPedido, getEstados, getPedidos, Pedido } from "@/api/client";
 import { accionCocina, minutosDesde } from "@/lib/cocina";
 import { useAuth } from "@/store/auth";
+import { cardShadow, colors, fonts, radius, spacing } from "@/theme";
+import { Badge, BottomNav, PrimaryButton } from "@/ui";
+import { NAV_COCINA, onNavPress } from "@/ui/nav";
 
 const POLL_MS = 10000;
 
@@ -77,122 +72,82 @@ export default function Cocina() {
     }
   }
 
-  async function salir() {
-    await logout();
-    router.replace("/login" as any);
-  }
-
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Cocina</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => router.push("/cocina/recetas" as any)}>
-            <Text style={styles.link}>Recetas</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/cocina/compras" as any)}>
-            <Text style={styles.link}>Compras</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("/cocina/inventario" as any)}>
-            <Text style={styles.link}>Inventario</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={salir}>
-            <Text style={styles.salir}>Salir</Text>
-          </TouchableOpacity>
+    <View style={styles.screen}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Cocina</Text>
+          <Text style={styles.subtitle}>Pedidos por preparar</Text>
         </View>
-      </View>
-      {loading && <ActivityIndicator size="large" color="#2b6cb0" />}
-      {error && (
-        <TouchableOpacity onPress={() => cargar(true)}>
-          <Text style={styles.error}>{error} (tocar para reintentar)</Text>
-        </TouchableOpacity>
-      )}
-      {!loading && !error && pedidos.length === 0 && (
-        <Text style={styles.muted}>No hay pedidos activos.</Text>
-      )}
-      <FlatList
-        data={pedidos}
-        keyExtractor={(p) => String(p.id_pedido)}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => {
-          const accion = accionCocina(item.estado.nombre_estado);
-          const pend = item.estado.nombre_estado === "Pendiente";
-          return (
-            <View style={styles.card}>
-              <View style={styles.cardHead}>
-                <Text style={styles.mesa}>Mesa {item.mesa.numero_mesa}</Text>
-                <Text style={styles.meta}>
-                  #{item.id_pedido} · hace {minutosDesde(item.fecha_pedido)} min
-                </Text>
+        {loading && <ActivityIndicator size="large" color={colors.accent} />}
+        {error && (
+          <TouchableOpacity onPress={() => cargar(true)}>
+            <Text style={styles.error}>{error} (tocar para reintentar)</Text>
+          </TouchableOpacity>
+        )}
+        {!loading && !error && pedidos.length === 0 && (
+          <Text style={styles.muted}>No hay pedidos activos.</Text>
+        )}
+        <FlatList
+          data={pedidos}
+          keyExtractor={(p) => String(p.id_pedido)}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => {
+            const accion = accionCocina(item.estado.nombre_estado);
+            const pend = item.estado.nombre_estado === "Pendiente";
+            return (
+              <View style={styles.card}>
+                <View style={styles.cardHead}>
+                  <Text style={styles.mesa}>Mesa {item.mesa.numero_mesa}</Text>
+                  <Text style={styles.meta}>
+                    #{item.id_pedido} · hace {minutosDesde(item.fecha_pedido)} min
+                  </Text>
+                </View>
+                <Badge label={item.estado.nombre_estado} variant={pend ? "warn" : "busy"} />
+                <View style={styles.lineas}>
+                  {item.detalle.map((d, i) => (
+                    <Text key={i} style={styles.linea}>
+                      {d.cantidad} × {d.producto.nombre_producto}
+                      {d.observaciones ? `  (${d.observaciones})` : ""}
+                    </Text>
+                  ))}
+                </View>
+                {item.observaciones ? (
+                  <Text style={styles.obs}>Nota: {item.observaciones}</Text>
+                ) : null}
+                {accion && <PrimaryButton title={accion.label} onPress={() => avanzar(item)} />}
               </View>
-              <Text style={[styles.badge, pend ? styles.badgePend : styles.badgePrep]}>
-                {item.estado.nombre_estado}
-              </Text>
-              {item.detalle.map((d, i) => (
-                <Text key={i} style={styles.linea}>
-                  {d.cantidad} × {d.producto.nombre_producto}
-                  {d.observaciones ? `  (${d.observaciones})` : ""}
-                </Text>
-              ))}
-              {item.observaciones ? (
-                <Text style={styles.obs}>Nota: {item.observaciones}</Text>
-              ) : null}
-              {accion && (
-                <TouchableOpacity style={styles.btn} onPress={() => avanzar(item)}>
-                  <Text style={styles.btnTxt}>{accion.label}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          );
-        }}
-      />
+            );
+          }}
+        />
+      </View>
+      <BottomNav items={NAV_COCINA} active="pedidos" onPress={(k) => onNavPress(NAV_COCINA, k, logout)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f5f7", padding: 12 },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 8,
+  screen: { flex: 1, backgroundColor: colors.cream },
+  container: { flex: 1, padding: spacing.screen },
+  header: { marginTop: 24, marginBottom: spacing.lg },
+  title: { fontFamily: fonts.title, fontSize: 24, color: colors.coffee900 },
+  subtitle: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
+  list: { gap: spacing.md, paddingBottom: spacing.lg },
+  card: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.cardLg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    ...cardShadow,
   },
-  title: { fontSize: 24, fontWeight: "700", color: "#2d3748" },
-  salir: { color: "#c53030", fontWeight: "600" },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 16 },
-  link: { color: "#2b6cb0", fontWeight: "600" },
-  list: { gap: 12, paddingBottom: 24 },
-  card: { backgroundColor: "#fff", borderRadius: 12, padding: 16, gap: 4 },
-  cardHead: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  mesa: { fontSize: 18, fontWeight: "700", color: "#2d3748" },
-  meta: { color: "#718096", fontSize: 13 },
-  badge: {
-    alignSelf: "flex-start",
-    marginVertical: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: 999,
-    fontSize: 12,
-    overflow: "hidden",
-  },
-  badgePend: { backgroundColor: "#feebc8", color: "#7b341e" },
-  badgePrep: { backgroundColor: "#bee3f8", color: "#2a4365" },
-  linea: { color: "#2d3748" },
-  obs: { color: "#718096", fontStyle: "italic" },
-  btn: {
-    backgroundColor: "#2b6cb0",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  btnTxt: { color: "#fff", fontWeight: "700" },
-  muted: { color: "#718096", textAlign: "center", marginVertical: 16 },
-  error: { color: "#c53030", textAlign: "center", marginVertical: 8 },
+  cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  mesa: { fontFamily: fonts.title, fontSize: 17, color: colors.coffee900 },
+  meta: { fontFamily: fonts.body, color: colors.muted, fontSize: 12.5 },
+  lineas: { gap: 2 },
+  linea: { fontFamily: fonts.body, fontSize: 14, color: colors.coffee700 },
+  obs: { fontFamily: fonts.body, color: colors.muted, fontStyle: "italic" },
+  muted: { fontFamily: fonts.body, color: colors.muted, textAlign: "center", marginVertical: 16 },
+  error: { fontFamily: fonts.medium, color: colors.error, textAlign: "center", marginVertical: 8 },
 });

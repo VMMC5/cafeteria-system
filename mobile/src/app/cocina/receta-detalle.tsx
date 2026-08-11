@@ -23,6 +23,7 @@ import {
 import { cantidad } from "@/lib/format";
 import { aCantidad, cantidadValida, insumosDisponibles } from "@/lib/recetas";
 import { useAuth } from "@/store/auth";
+import { cardShadow, colors, fonts, radius, sizes, spacing } from "@/theme";
 
 export default function RecetaDetalle() {
   const access = useAuth((s) => s.accessToken);
@@ -134,7 +135,7 @@ export default function RecetaDetalle() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -275,7 +276,7 @@ export default function RecetaDetalle() {
                 onPress={agregar}
               >
                 {ocupado ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.onAccent} />
                 ) : (
                   <Text style={styles.btnTxt}>Agregar</Text>
                 )}
@@ -289,8 +290,14 @@ export default function RecetaDetalle() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f5f7", padding: 12 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  container: { flex: 1, backgroundColor: colors.cream, padding: spacing.screen },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    backgroundColor: colors.cream,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -298,74 +305,89 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 4,
   },
-  title: { fontSize: 20, fontWeight: "700", color: "#2d3748", flex: 1, textAlign: "center" },
-  link: { color: "#2b6cb0", fontWeight: "600" },
-  badge: { color: "#718096", marginBottom: 8 },
-  list: { gap: 10, paddingBottom: 12 },
+  title: {
+    fontFamily: fonts.title,
+    fontSize: 20,
+    color: colors.coffee900,
+    flex: 1,
+    textAlign: "center",
+  },
+  link: { fontFamily: fonts.semibold, color: colors.accent },
+  badge: { fontFamily: fonts.body, color: colors.muted, marginBottom: spacing.sm },
+  list: { gap: spacing.sm + 2, paddingBottom: spacing.md },
   card: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-  },
-  nombre: { fontSize: 16, fontWeight: "700", color: "#2d3748", flex: 1 },
-  editRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  cantidad: { fontSize: 16, color: "#2b6cb0", fontWeight: "600" },
-  quitar: { fontSize: 18, color: "#c53030", fontWeight: "700" },
-  accion: { fontSize: 18, color: "#2f855a", fontWeight: "700" },
-  accionOff: { color: "#a0aec0" },
-  accionCancel: { fontSize: 18, color: "#718096", fontWeight: "700" },
-  inputMini: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 8,
+    borderColor: colors.border,
+    borderRadius: radius.cardLg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    ...cardShadow,
+  },
+  nombre: { fontFamily: fonts.title, fontSize: 15.5, color: colors.coffee900, flex: 1 },
+  editRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  cantidad: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accent },
+  quitar: { fontSize: 18, color: colors.error, fontFamily: fonts.bold },
+  accion: { fontSize: 18, color: colors.okFg, fontFamily: fonts.bold },
+  accionOff: { color: colors.disabled },
+  accionCancel: { fontSize: 18, color: colors.muted, fontFamily: fonts.bold },
+  inputMini: {
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.inputBorder,
+    borderRadius: radius.input,
     paddingHorizontal: 10,
     paddingVertical: 6,
     minWidth: 80,
     textAlign: "right",
+    fontFamily: fonts.body,
+    color: colors.coffee900,
   },
   pie: {
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
-    paddingTop: 12,
-    gap: 8,
+    borderTopColor: colors.border,
+    paddingTop: spacing.md,
+    gap: spacing.sm,
   },
-  label: { fontWeight: "600", color: "#4a5568" },
-  chips: { gap: 8, paddingVertical: 4 },
+  label: { fontFamily: fonts.semibold, fontSize: 13, color: colors.coffee700 },
+  chips: { gap: spacing.sm, paddingVertical: 4 },
   chip: {
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 999,
-    paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: colors.inputBorder,
+    borderRadius: radius.pill,
+    paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
   },
-  chipSel: { backgroundColor: "#2b6cb0", borderColor: "#2b6cb0" },
-  chipTxt: { color: "#2d3748" },
-  chipTxtSel: { color: "#fff", fontWeight: "700" },
+  chipSel: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipTxt: { fontFamily: fonts.semibold, fontSize: 13, color: colors.coffee700 },
+  chipTxtSel: { color: colors.onAccent, fontFamily: fonts.bold },
   input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.inputBorder,
+    borderRadius: radius.input,
+    height: sizes.input,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    fontFamily: fonts.body,
+    color: colors.coffee900,
     flex: 1,
   },
   btn: {
-    backgroundColor: "#2b6cb0",
+    backgroundColor: colors.accent,
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 8,
+    height: sizes.input,
+    borderRadius: radius.button,
     alignItems: "center",
+    justifyContent: "center",
     minWidth: 110,
   },
-  btnDisabled: { backgroundColor: "#a0aec0" },
-  btnTxt: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  muted: { color: "#718096", textAlign: "center", marginVertical: 8 },
-  errorTxt: { color: "#c53030", textAlign: "center" },
+  btnDisabled: { backgroundColor: colors.disabled },
+  btnTxt: { color: colors.onAccent, fontFamily: fonts.bold, fontSize: 15.5 },
+  muted: { fontFamily: fonts.body, color: colors.muted, textAlign: "center", marginVertical: 8 },
+  errorTxt: { fontFamily: fonts.medium, color: colors.error, textAlign: "center" },
 });

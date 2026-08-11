@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -20,8 +19,10 @@ import {
 } from "@/api/client";
 import { compraTotal, compraValida, lineaCompraValida } from "@/lib/compras";
 import { aCantidad } from "@/lib/decimales";
-import { cantidad } from "@/lib/format";
+import { cantidad, money } from "@/lib/format";
 import { useAuth } from "@/store/auth";
+import { colors, fonts, radius, spacing } from "@/theme";
+import { Chip, Input } from "@/ui";
 
 type LineaLocal = {
   id_insumo: number;
@@ -109,7 +110,7 @@ export default function CompraNueva() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -137,49 +138,37 @@ export default function CompraNueva() {
       <ScrollView>
         <Text style={styles.label}>Proveedor</Text>
         <View style={styles.chips}>
-          {proveedores.map((p) => {
-            const sel = provSel === p.id_proveedor;
-            return (
-              <TouchableOpacity
-                key={p.id_proveedor}
-                style={[styles.chip, sel && styles.chipSel]}
-                onPress={() => setProvSel(p.id_proveedor)}
-              >
-                <Text style={[styles.chipTxt, sel && styles.chipTxtSel]}>
-                  {p.nombre_proveedor}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          {proveedores.map((p) => (
+            <Chip
+              key={p.id_proveedor}
+              label={p.nombre_proveedor}
+              active={provSel === p.id_proveedor}
+              onPress={() => setProvSel(p.id_proveedor)}
+            />
+          ))}
         </View>
 
         <Text style={styles.label}>Insumo</Text>
         <View style={styles.chips}>
-          {insumos.map((i) => {
-            const sel = insumoSel === i.id_insumo;
-            return (
-              <TouchableOpacity
-                key={i.id_insumo}
-                style={[styles.chip, sel && styles.chipSel]}
-                onPress={() => setInsumoSel(i.id_insumo)}
-              >
-                <Text style={[styles.chipTxt, sel && styles.chipTxtSel]}>
-                  {i.nombre_insumo}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          {insumos.map((i) => (
+            <Chip
+              key={i.id_insumo}
+              label={i.nombre_insumo}
+              active={insumoSel === i.id_insumo}
+              onPress={() => setInsumoSel(i.id_insumo)}
+            />
+          ))}
         </View>
         <View style={styles.linea}>
-          <TextInput
-            style={[styles.input, { flex: 1 }]}
+          <Input
+            style={{ flex: 1 }}
             keyboardType="numeric"
             value={cantidadTxt}
             onChangeText={setCantidadTxt}
             placeholder="Cantidad"
           />
-          <TextInput
-            style={[styles.input, { flex: 1 }]}
+          <Input
+            style={{ flex: 1 }}
             keyboardType="numeric"
             value={costoTxt}
             onChangeText={setCostoTxt}
@@ -199,20 +188,13 @@ export default function CompraNueva() {
             <Text style={styles.rowL}>
               {cantidad(l.cantidad)} × {l.nombre}
             </Text>
-            <Text style={styles.rowV}>
-              ${(l.cantidad * l.costo_unitario).toFixed(2)}
-            </Text>
+            <Text style={styles.rowV}>{money(l.cantidad * l.costo_unitario)}</Text>
           </View>
         ))}
-        <Text style={styles.total}>Total: ${total.toFixed(2)}</Text>
+        <Text style={styles.total}>Total: {money(total)}</Text>
 
         <Text style={styles.label}>Folio de factura (opcional)</Text>
-        <TextInput
-          style={styles.input}
-          value={folio}
-          onChangeText={setFolio}
-          placeholder="F-000"
-        />
+        <Input value={folio} onChangeText={setFolio} placeholder="F-000" />
       </ScrollView>
       <TouchableOpacity
         style={[styles.btn, (!puedeRegistrar || guardando) && styles.btnDisabled]}
@@ -220,7 +202,7 @@ export default function CompraNueva() {
         onPress={registrar}
       >
         {guardando ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onAccent} />
         ) : (
           <Text style={styles.btnTxt}>Registrar compra</Text>
         )}
@@ -230,72 +212,70 @@ export default function CompraNueva() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f5f7", padding: 16 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  container: { flex: 1, backgroundColor: colors.cream, padding: spacing.screen },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    backgroundColor: colors.cream,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 24,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
-  title: { fontSize: 20, fontWeight: "700", color: "#2d3748" },
-  link: { color: "#2b6cb0", fontWeight: "600" },
-  label: { fontWeight: "600", color: "#4a5568", marginTop: 12, marginBottom: 6 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  title: { fontFamily: fonts.title, fontSize: 20, color: colors.coffee900 },
+  link: { fontFamily: fonts.semibold, color: colors.accent },
+  label: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.coffee700,
+    marginTop: spacing.md,
+    marginBottom: 6,
   },
-  chipSel: { backgroundColor: "#2b6cb0", borderColor: "#2b6cb0" },
-  chipTxt: { color: "#2d3748" },
-  chipTxtSel: { color: "#fff", fontWeight: "700" },
-  linea: { flexDirection: "row", gap: 8, alignItems: "center", marginTop: 8 },
-  input: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#cbd5e0",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  linea: { flexDirection: "row", gap: spacing.sm, alignItems: "center", marginTop: spacing.sm },
   add: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: "#2b6cb0",
+    width: 48,
+    height: 48,
+    borderRadius: radius.input,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
-  addDisabled: { backgroundColor: "#a0aec0" },
-  addTxt: { color: "#fff", fontSize: 22, fontWeight: "700" },
+  addDisabled: { backgroundColor: colors.disabled },
+  addTxt: { color: colors.onAccent, fontSize: 22, fontFamily: fonts.bold },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 10,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.input,
+    padding: spacing.md,
     marginTop: 6,
   },
-  rowL: { color: "#2d3748" },
-  rowV: { color: "#2d3748", fontWeight: "600" },
+  rowL: { fontFamily: fonts.body, color: colors.coffee900 },
+  rowV: { fontFamily: fonts.title, color: colors.coffee900 },
   total: {
+    fontFamily: fonts.title,
     fontSize: 18,
-    fontWeight: "700",
-    color: "#2d3748",
+    color: colors.coffee900,
     textAlign: "right",
-    marginTop: 12,
+    marginTop: spacing.md,
   },
   btn: {
-    backgroundColor: "#2b6cb0",
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: colors.accent,
+    height: 50,
+    borderRadius: radius.button,
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.sm,
   },
-  btnDisabled: { backgroundColor: "#a0aec0" },
-  btnTxt: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  errorTxt: { color: "#c53030", textAlign: "center" },
+  btnDisabled: { backgroundColor: colors.disabled },
+  btnTxt: { color: colors.onAccent, fontFamily: fonts.bold, fontSize: 15.5 },
+  errorTxt: { fontFamily: fonts.medium, color: colors.error, textAlign: "center" },
 });
