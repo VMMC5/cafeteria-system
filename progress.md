@@ -135,11 +135,12 @@ Una mesa Ocupada ahora acepta pedidos adicionales sin cerrar la cuenta, y se lib
 Cobra **todas las rondas de una mesa** en un solo folio/ticket/juego de pagos ("Opción A" del diseño aprobado); la ronda suelta se conserva (mismo endpoint, lista de un pedido).
 - **Backend:** la FK se invierte — `pedidos.id_venta` (nullable) reemplaza a `ventas.id_pedido`, migración `c3d5e7f9a1b2` con **backfill** (cada venta 1:1 existente marca a su pedido) y **downgrade parcial documentado** (una venta multi-pedido conserva solo su primera ronda al bajar, mismo criterio de irreversibilidad aceptado en la migración anterior). `POST /ventas` cambia a `ids_pedidos: [...]` con sus validaciones: repetidos → **422**, deben ser de la **misma mesa** → 409, con **más de un pedido** todos deben estar **Entregado** (la ronda suelta conserva la regla histórica: cobrable en cualquier estado no cancelado). La liberación de mesa se generaliza de "un id" a "**`excepto_ids`**" (lista) en `pedido_service.tiene_pedido_activo`. Reportes re-apuntados a la nueva FK. Fue necesario un **fix en `seed_demo.py`** (ya no setea `id_pedido` al crear la `Venta`; ahora asigna `pedido.id_venta = venta.id_venta` después del flush).
 - **Móvil:** Caja agrupa las rondas en **cuentas por mesa** con badge "ronda en cocina" mientras alguna no esté Entregada (botón deshabilitado); cobro multi-pedido con etiqueta de ronda por línea; la división de cuenta del PR #30 opera intacta sobre la **unión** de líneas de todas las rondas; `ticketHtml(venta, pedidos[])` genera un ticket único con todas las líneas.
-- **Tests:** backend 239 → **244**; móvil 109 → **113** + `tsc --noEmit` limpio.
+- **Del review final de la rama:** los pedidos se bloquean con `SELECT ... FOR UPDATE OF pedidos` dentro de `cobrar` — al perder el `UNIQUE` de `ventas.id_pedido`, dos cobros concurrentes del mismo pedido podían ambos pasar la validación y dejar una venta huérfana con folio y pagos; el candado lo cierra (test de carrera real con dos conexiones). El 409 del móvil ahora muestra el `detail` accionable del backend.
+- **Tests:** backend 239 → **246**; móvil 109 → **113** + `tsc --noEmit` limpio.
 - **Nota de despliegue:** el ritual post-merge corre `alembic upgrade head` sobre la BD real — verificar el backfill con `SELECT COUNT(*) FROM ventas v WHERE NOT EXISTS (SELECT 1 FROM pedidos p WHERE p.id_venta = v.id_venta)` → debe dar **0**.
 
 ### Cobertura de tests
-- **Backend:** 244 tests (`docker compose exec api pytest`).
+- **Backend:** 246 tests (`docker compose exec api pytest`).
 - **Web:** 127 tests (`docker compose exec web pytest`).
 - **Móvil:** 113 tests jest (`cd mobile && npm test`) + `tsc` limpio.
 
