@@ -14,7 +14,7 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 | `backend/` | **Python + FastAPI** + SQLAlchemy + Alembic | API REST (fuente única de verdad, JWT) |
 | `web/` | **Flask** + Jinja2 + Chart.js (vendorizado) | Panel de administración (admin-only): usuarios, dashboard, estadísticas, reportes BI con export PDF/XLSX |
 | `mobile/` | **React Native + Expo** (expo-router, TypeScript) | App operativa por rol: Mesero, Cocina, Caja |
-| BD | **PostgreSQL 16** | 23 tablas (2 migraciones Alembic + seeds) |
+| BD | **PostgreSQL 16** | 23 tablas (3 migraciones Alembic + seeds) |
 | Infra | **Docker Compose** | Servicios: `db`, `api` (:8000), `web` (:5000), `adminer` (:8080). El móvil corre fuera de Docker con Expo. |
 
 **Metodología:** cada slice pasa por brainstorming → spec → plan → implementación TDD → PR. Los specs y planes viven en `docs/superpowers/specs/` y `docs/superpowers/plans/` (21 planes, 20 specs).
@@ -28,18 +28,18 @@ Sistema integral de gestión para una cafetería ("Cafetería Aroma"): automatiz
 - **PR #29 mergeado (squash `3f479bc`): rediseño "Cafetería Aroma" en web y móvil.** Login web de dos paneles + panel admin restyleado (Lora/Karla vendorizadas, iconos SVG inline en el sidebar); móvil con `src/theme/` + `src/ui/` (BottomNav por rol, Badge, Chip, Stepper…), fuentes Google + `react-native-svg` + `expo-print`. Extras funcionales de la revisión visual: comprobante completo con botón **Imprimir Ticket**, detalle de compra en Cocina, unidades en Nueva compra, confirmación de logout, y temporizador con urgencia en Cocina (⚠️ umbrales en modo demo: 1/2 min — `RETRASO_*` en `lib/cocina.ts`). Las carpetas de mockups se eliminaron tras el merge.
 - **PR #30 mergeado (squash `ddbca26`): división de cuenta por artículos en Caja móvil.** Calculadora en la pantalla de cobro: asignar artículos a personas → una línea de pago por persona con monto exacto (acumulación en centavos, sin prorrateo de IVA — los precios del detalle son finales). Solo móvil (`lib/split.ts` puro + UI en Cobro); un folio, N pagos.
 - **PR #31 mergeado (squash `6feed1e`): varios pedidos por mesa (rondas).** Una mesa Ocupada acepta pedidos adicionales y se libera solo al cerrar el último activo (`tiene_pedido_activo(excepto_id_pedido)` en cobrar/cancelar); en el móvil las mesas Ocupadas son tocables (`mesaSeleccionable`). Sin cambios de esquema ni API.
-- **Trabajo siguiente ya decidido: cuenta por mesa — venta multi-pedido (diseño aprobado 2026-08-11).** Cobrar todas las rondas de una mesa en un solo folio: `pedidos.id_venta` (1:N) reemplaza a `ventas.id_pedido`, `POST /ventas` acepta `ids_pedidos` (misma mesa; con varias rondas, todas Entregadas), Caja agrupa por mesa (cuenta completa o ronda suelta) y la calculadora de división opera sobre la unión de líneas. Pendiente: spec → plan → TDD → PR. El camino de "cerrar sin cobro" para el pedido Entregado que nadie paga sigue en deuda con prioridad operativa.
+- **PR #32 mergeado (squash `35b01e2`): cuenta por mesa — venta multi-pedido.** La FK se invirtió (`pedidos.id_venta` nullable reemplaza a `ventas.id_pedido`, migración `c3d5e7f9a1b2` con backfill — **ya aplicada a la BD real, 0 huérfanas**); `POST /ventas` acepta `ids_pedidos` (misma mesa; con varias rondas, todas Entregadas; repetidos 422) y `cobrar` bloquea los pedidos con `FOR UPDATE OF pedidos` contra el doble cobro concurrente. Caja móvil agrupa en cuentas por mesa (cuenta completa o ronda suelta) y la división del PR #30 opera sobre la unión de líneas con ticket/folio únicos. **Trabajo siguiente candidato:** camino de "cerrar sin cobro" para el pedido Entregado que nadie paga (deuda con prioridad operativa).
 - Sin ramas residuales: las locales ya mergeadas se limpiaron el 2026-08-11.
 - La colección **Postman fue eliminada** (agosto 2026); las pruebas manuales de API se hacen vía Swagger (`/docs`).
 
 ### Cobertura de tests
 | Suite | Cantidad | Comando |
 |---|---|---|
-| Backend | 239 tests | `docker compose exec api pytest` |
+| Backend | 246 tests | `docker compose exec api pytest` |
 | Web | 127 tests | `docker compose exec web pytest` |
-| Móvil | 109 tests + `tsc` limpio | `cd mobile && npm test` |
+| Móvil | 113 tests + `tsc` limpio | `cd mobile && npm test` |
 
-> Las tres suites verificadas sobre `main` tras el merge del PR #31 (squash `6feed1e`).
+> Las tres suites verificadas sobre `main` tras el merge del PR #32 (squash `35b01e2`).
 
 Los tests de backend usan una **BD dedicada** (`<db>_test`, autoprovisionada con `seed_base`) con guardia que impide tocar la BD de dev.
 
