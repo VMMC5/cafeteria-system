@@ -5,13 +5,17 @@ export function minutosDesde(fechaISO: string, ahora: Date = new Date()): number
 
 /**
  * Urgencia de un pedido según sus minutos de espera, para colorear el
- * contador en Cocina: "alerta" a los 10 min, "critico" a los 15.
+ * contador en Cocina. Umbrales acortados (1 y 2 min) para demo en vivo;
+ * en operación real subirlos (p. ej. 10 y 15).
  */
 export type NivelRetraso = "ok" | "alerta" | "critico";
 
+export const RETRASO_ALERTA_MIN = 1;
+export const RETRASO_CRITICO_MIN = 2;
+
 export function nivelRetraso(minutos: number): NivelRetraso {
-  if (minutos >= 15) return "critico";
-  if (minutos >= 10) return "alerta";
+  if (minutos >= RETRASO_CRITICO_MIN) return "critico";
+  if (minutos >= RETRASO_ALERTA_MIN) return "alerta";
   return "ok";
 }
 

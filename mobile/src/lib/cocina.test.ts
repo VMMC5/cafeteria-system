@@ -1,12 +1,17 @@
-import { accionCocina, minutosDesde, nivelRetraso } from "./cocina";
+import {
+  accionCocina,
+  minutosDesde,
+  nivelRetraso,
+  RETRASO_ALERTA_MIN,
+  RETRASO_CRITICO_MIN,
+} from "./cocina";
 
-test("nivelRetraso escala ok → alerta (10 min) → critico (15 min)", () => {
-  expect(nivelRetraso(0)).toBe("ok");
-  expect(nivelRetraso(9)).toBe("ok");
-  expect(nivelRetraso(10)).toBe("alerta");
-  expect(nivelRetraso(14)).toBe("alerta");
-  expect(nivelRetraso(15)).toBe("critico");
-  expect(nivelRetraso(40)).toBe("critico");
+test("nivelRetraso escala ok → alerta → critico según los umbrales", () => {
+  expect(nivelRetraso(RETRASO_ALERTA_MIN - 1)).toBe("ok");
+  expect(nivelRetraso(RETRASO_ALERTA_MIN)).toBe("alerta");
+  expect(nivelRetraso(RETRASO_CRITICO_MIN - 1)).toBe("alerta");
+  expect(nivelRetraso(RETRASO_CRITICO_MIN)).toBe("critico");
+  expect(nivelRetraso(RETRASO_CRITICO_MIN + 25)).toBe("critico");
 });
 
 test("minutosDesde calcula minutos enteros", () => {
