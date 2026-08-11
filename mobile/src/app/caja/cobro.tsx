@@ -1,3 +1,4 @@
+import * as Print from "expo-print";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -29,6 +30,7 @@ import {
   sumaPagos,
 } from "@/lib/caja";
 import { money } from "@/lib/format";
+import { ticketHtml } from "@/lib/ticket";
 import { useAuth } from "@/store/auth";
 import { cardShadow, colors, fonts, radius, sizes, spacing } from "@/theme";
 
@@ -129,6 +131,14 @@ export default function Cobro() {
     setLineas((ls) => ls.filter((_, j) => j !== i));
   }
 
+  async function imprimir(v: Venta) {
+    try {
+      await Print.printAsync({ html: ticketHtml(v, pedido) });
+    } catch {
+      // Cancelar el diálogo de impresión también rechaza: no es un error real.
+    }
+  }
+
   async function confirmar() {
     if (!access || !habilitado) return;
     setCobrando(true);
@@ -219,6 +229,9 @@ export default function Cobro() {
             <Text style={styles.ticketGracias}>¡Gracias por su visita!</Text>
           </View>
         </ScrollView>
+        <TouchableOpacity style={styles.btnOutline} onPress={() => imprimir(venta)}>
+          <Text style={styles.btnOutlineTxt}>Imprimir Ticket</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.btn}
           onPress={() => router.replace("/caja" as any)}
@@ -444,6 +457,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: spacing.sm,
   },
+  btnOutline: {
+    height: sizes.button,
+    borderRadius: radius.button,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.md,
+  },
+  btnOutlineTxt: { color: colors.accent, fontFamily: fonts.bold, fontSize: 15.5 },
   btnDisabled: { backgroundColor: colors.disabled },
   btnTxt: { color: colors.onAccent, fontFamily: fonts.bold, fontSize: 15.5 },
   errorTxt: { fontFamily: fonts.medium, color: colors.error, textAlign: "center" },

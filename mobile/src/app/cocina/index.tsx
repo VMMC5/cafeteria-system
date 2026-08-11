@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { cambiarEstadoPedido, getEstados, getPedidos, Pedido } from "@/api/client";
-import { accionCocina, minutosDesde } from "@/lib/cocina";
+import { accionCocina, minutosDesde, nivelRetraso } from "@/lib/cocina";
 import { useAuth } from "@/store/auth";
 import { cardShadow, colors, fonts, radius, spacing } from "@/theme";
 import { Badge, BottomNav, PrimaryButton } from "@/ui";
@@ -95,12 +95,20 @@ export default function Cocina() {
           renderItem={({ item }) => {
             const accion = accionCocina(item.estado.nombre_estado);
             const pend = item.estado.nombre_estado === "Pendiente";
+            const mins = minutosDesde(item.fecha_pedido);
+            const nivel = nivelRetraso(mins);
             return (
               <View style={styles.card}>
                 <View style={styles.cardHead}>
                   <Text style={styles.mesa}>Mesa {item.mesa.numero_mesa}</Text>
-                  <Text style={styles.meta}>
-                    #{item.id_pedido} · hace {minutosDesde(item.fecha_pedido)} min
+                  <Text
+                    style={[
+                      styles.meta,
+                      nivel === "alerta" && styles.metaAlerta,
+                      nivel === "critico" && styles.metaCritico,
+                    ]}
+                  >
+                    #{item.id_pedido} · hace {mins} min
                   </Text>
                 </View>
                 <Badge label={item.estado.nombre_estado} variant={pend ? "warn" : "busy"} />
@@ -145,6 +153,8 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   mesa: { fontFamily: fonts.title, fontSize: 17, color: colors.coffee900 },
   meta: { fontFamily: fonts.body, color: colors.muted, fontSize: 12.5 },
+  metaAlerta: { fontFamily: fonts.bold, color: colors.warnFg },
+  metaCritico: { fontFamily: fonts.bold, color: colors.error },
   lineas: { gap: 2 },
   linea: { fontFamily: fonts.body, fontSize: 14, color: colors.coffee700 },
   obs: { fontFamily: fonts.body, color: colors.muted, fontStyle: "italic" },

@@ -1,4 +1,13 @@
-import { accionCocina, minutosDesde } from "./cocina";
+import { accionCocina, minutosDesde, nivelRetraso } from "./cocina";
+
+test("nivelRetraso escala ok → alerta (10 min) → critico (15 min)", () => {
+  expect(nivelRetraso(0)).toBe("ok");
+  expect(nivelRetraso(9)).toBe("ok");
+  expect(nivelRetraso(10)).toBe("alerta");
+  expect(nivelRetraso(14)).toBe("alerta");
+  expect(nivelRetraso(15)).toBe("critico");
+  expect(nivelRetraso(40)).toBe("critico");
+});
 
 test("minutosDesde calcula minutos enteros", () => {
   const ahora = new Date("2026-07-05T12:30:00Z");
