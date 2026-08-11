@@ -1,7 +1,7 @@
 # Progreso — Sistema de Cafetería
 
 **Repo:** [VMMC5/cafeteria-system](https://github.com/VMMC5/cafeteria-system) · **Rama principal:** `main`
-**Última actualización:** 2026-08-11 (**cuenta por mesa — venta multi-pedido mergeado a `main` — PR #32**, squash `35b01e2`; antes varios pedidos por mesa — PR #31 `6feed1e`; antes división de cuenta por artículos en Caja móvil — PR #30 `ddbca26`)
+**Última actualización:** 2026-08-11 (**logo oficial en el arranque del móvil — PR #33**, squash `4b022bc`; antes cuenta por mesa — PR #32 `35b01e2`; antes varios pedidos por mesa — PR #31 `6feed1e`; antes división de cuenta — PR #30 `ddbca26`)
 
 Stack: **FastAPI** (API) · **Flask** (web admin) · **React Native + Expo** (móvil) · **PostgreSQL** · **Docker Compose**.
 Metodología: cada slice pasa por brainstorming → spec → plan → implementación TDD → PR (specs y planes en `docs/superpowers/`).
@@ -152,6 +152,7 @@ Logo oficial en splash nativo (`#FEF8EA` muestreado del PNG), pantalla de carga 
 ## ⏳ Pendiente
 
 ### Próximo
+- **Logo oficial en el arranque del móvil mergeado a `main` (PR #33, squash `4b022bc`).** Verificado post-merge: móvil **113/113** + `tsc` limpio + `npx expo config` válida (backend 246 y web 127 sin cambios). Splash nativo (`#FEF8EA` muestreado del PNG), pantalla de carga e ícono adaptativo con el logo; verificación visual en dispositivo ejecutada y OK. Recordatorio vigente: el **ícono del launcher** solo se refleja en un **build nativo** (Expo Go no lo muestra).
 - **Cuenta por mesa (venta multi-pedido) mergeado a `main` (PR #32, squash `35b01e2`).** Verificado post-merge: backend **246/246**, web **127/127**, móvil **113/113** + `tsc --noEmit` limpio. La **migración `c3d5e7f9a1b2` se aplicó a la BD real** (`alembic upgrade head`) y el backfill quedó verificado: 646 ventas, **0** sin pedidos asociados (query de la nota de despliegue). Smoke en dispositivo **ejecutado y OK** (cuenta de 2 rondas con badge «ronda en cocina» → entrega → cobro con división → un folio y mesa liberada; ronda suelta cobrable por separado). Proceso: primera ejecución con subagentes (implementador + revisor por tarea + review final de rama); el review final cazó la pérdida del `UNIQUE` anti doble-cobro y se cerró con `FOR UPDATE OF pedidos` + test de carrera de dos conexiones. Se evaluaron y descartaron: cobro por lote en el móvil (N folios para un pago real) y entidad `Cuenta` formal (YAGNI).
 - **Candidato siguiente:** camino de "cerrar sin cobro" para el pedido entregado que nadie paga (ver Deuda técnica) — sigue siendo el pendiente con más prioridad operativa.
 - **Varios pedidos por mesa mergeado a `main` (PR #31, squash `6feed1e`).** Verificado post-merge: backend **239/239**, web **127/127**, móvil **109/109** + `tsc --noEmit` limpio. Smoke en dispositivo **ejecutado y OK** (dos rondas en la misma mesa → ambas en Cocina → cobradas por separado en Caja → la mesa se liberó solo tras la segunda; Reservada sigue sin ser tocable). Nota operativa que motivó el siguiente slice: cada ronda se cobra por separado — la cuenta única por mesa es el diseño de arriba.
