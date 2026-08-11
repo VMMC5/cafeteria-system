@@ -88,7 +88,9 @@ def crear(db: Session, data: PedidoCreate, id_usuario: int) -> Pedido:
     mesa = db.get(Mesa, data.id_mesa)
     if mesa is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Mesa no encontrada")
-    if mesa.estado != "Disponible":
+    # Una mesa Ocupada acepta rondas adicionales: cada pedido nuevo fluye
+    # completo por cocina y caja; la mesa se libera al cerrar el último.
+    if mesa.estado not in ("Disponible", "Ocupada"):
         raise HTTPException(status.HTTP_409_CONFLICT, "La mesa no está disponible")
 
     lineas = []

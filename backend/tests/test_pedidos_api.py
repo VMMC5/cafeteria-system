@@ -58,15 +58,50 @@ def test_precio_congelado(client, db, admin_headers):
     assert float(pedido["detalle"][0]["precio_unitario"]) == 50.0
 
 
-def test_mesa_ocupada_409(client, db, admin_headers):
+def test_segundo_pedido_sobre_mesa_ocupada_201(client, db, admin_headers):
+    """Una mesa Ocupada acepta otra ronda: pedido independiente, mesa sigue Ocupada."""
     mesa = _mesa(client, admin_headers, numero=203)
-    prod = _producto(client, db, admin_headers)
+    prod = _producto(client, db, admin_headers, precio=50.0)
     payload = {
         "id_mesa": mesa["id_mesa"],
         "items": [{"id_producto": prod["id_producto"], "cantidad": 1}],
     }
-    assert client.post("/api/v1/pedidos", headers=admin_headers, json=payload).status_code == 201
-    assert client.post("/api/v1/pedidos", headers=admin_headers, json=payload).status_code == 409
+    r1 = client.post("/api/v1/pedidos", headers=admin_headers, json=payload)
+    assert r1.status_code == 201
+    r2 = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={
+            "id_mesa": mesa["id_mesa"],
+            "items": [{"id_producto": prod["id_producto"], "cantidad": 2}],
+        },
+    )
+    assert r2.status_code == 201
+    assert r2.json()["id_pedido"] != r1.json()["id_pedido"]
+    assert float(r2.json()["total"]) == 100.0  # detalle propio, no acumulado
+    m = client.get(f"/api/v1/mesas/{mesa['id_mesa']}", headers=admin_headers).json()
+    assert m["estado"] == "Ocupada"
+
+
+def test_pedido_sobre_mesa_reservada_409(client, db, admin_headers):
+    """Solo Disponible y Ocupada aceptan pedidos; Reservada sigue rechazada."""
+    mesa = _mesa(client, admin_headers, numero=206)
+    prod = _producto(client, db, admin_headers)
+    r = client.patch(
+        f"/api/v1/mesas/{mesa['id_mesa']}",
+        headers=admin_headers,
+        json={"estado": "Reservada"},
+    )
+    assert r.status_code == 200
+    resp = client.post(
+        "/api/v1/pedidos",
+        headers=admin_headers,
+        json={
+            "id_mesa": mesa["id_mesa"],
+            "items": [{"id_producto": prod["id_producto"], "cantidad": 1}],
+        },
+    )
+    assert resp.status_code == 409
 
 
 def test_producto_no_disponible_422(client, db, admin_headers):
