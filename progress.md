@@ -70,7 +70,7 @@ Metodología: cada slice pasa por brainstorming → spec → plan → implementa
 
 **Contenido del PR #19 (mergeado a `main`):**
 - **Rediseño web "Cafetería Aroma"** (era PR #18, no llegó a `main`): tema café + sidebar, login split, reskin de Estadísticas/Usuarios/form de usuario. Plantillas + CSS.
-- **`seed_usuarios_demo`** — recrea las 3 cuentas demo (mesero/cajero/cocinero, `cafeteria123`) idempotentemente.
+- **`seed_usuarios_demo`** — recrea las 3 cuentas demo (mesero/cajero/cocinero, `Cafeteria123`) idempotentemente.
 - **Reportes filtrables + export (Slice B)**: base de `/reportes` con vista previa y descarga PDF (WeasyPrint) / XLSX (openpyxl tipado); ítem "Reportes" en sidebar; Dockerfile web con libs nativas (`pydyf==0.10.0`).
 - **Analítica avanzada (Estadísticas)**: `GET /reportes/{comparativo,inventario-niveles}`; **KPIs ▲/▼ % con color por beneficio**, **dona con total al centro + leyenda %**, **Ventas vs Gastos** (barras agrupadas, presets Mes/6meses/Año con **bucketing mensual**), **tendencia con degradado**, **barras de inventario**, chips de indicadores (toggle cliente) y botón "Exportar vista". Layout de gráficas en rejilla 2×2.
 - **`seed_demo`** (opt-in, `python -m app.db.seed_demo`): genera ~60 días de ventas/gastos/compras/insumos realistas (determinista, guard de idempotencia) para poblar reportes y estadísticas.
@@ -212,10 +212,10 @@ URLs: API `localhost:8000/docs` · Web `localhost:5000` · Adminer `localhost:80
 ## Credenciales de prueba
 | Rol | Correo | Contraseña |
 |-----|--------|-----------|
-| Administrador | `admin@cafeteria.com` | `cafeteria123` |
-| Mesero | `mesero@cafeteria.com` | `cafeteria123` |
-| Cajero | `cajero@cafeteria.com` | `cafeteria123` |
-| Cocinero | `cocinero@cafeteria.com` | `cafeteria123` |
+| Administrador | `admin@cafeteria.com` | `Cafeteria123` |
+| Mesero | `mesero@cafeteria.com` | `Cafeteria123` |
+| Cajero | `cajero@cafeteria.com` | `Cafeteria123` |
+| Cocinero | `cocinero@cafeteria.com` | `Cafeteria123` |
 
 > Las 4 cuentas las crea el seed (`seed_admin` + `seed_usuarios_demo`, idempotentes). El admin principal está **blindado**: su rol no se puede cambiar por API (400) y `seed_admin` lo restaura si quedara mal. El panel web es **admin-only** (rol Administrador).
 
