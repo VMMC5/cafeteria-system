@@ -166,10 +166,10 @@ URLs: API `localhost:8000/docs` · Web `localhost:5000` · Adminer `localhost:80
 ### Credenciales de prueba (creadas por el seed)
 | Rol | Correo | Contraseña |
 |---|---|---|
-| Administrador | `admin@cafeteria.com` | `cafeteria123` |
-| Mesero | `mesero@cafeteria.com` | `cafeteria123` |
-| Cajero | `cajero@cafeteria.com` | `cafeteria123` |
-| Cocinero | `cocinero@cafeteria.com` | `cafeteria123` |
+| Administrador | `admin@cafeteria.com` | `Cafeteria123` |
+| Mesero | `mesero@cafeteria.com` | `Cafeteria123` |
+| Cajero | `cajero@cafeteria.com` | `Cafeteria123` |
+| Cocinero | `cocinero@cafeteria.com` | `Cafeteria123` |
 
 ### Entorno (WSL2)
 - Docker Desktop con integración WSL activada.

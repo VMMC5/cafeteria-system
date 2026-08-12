@@ -131,7 +131,7 @@ PRODUCTOS_DEMO = [
 
 # Cuentas demo no-admin para probar los módulos móviles (contraseña conocida,
 # igual que el resto de datos demo). El Administrador se crea aparte desde .env.
-DEMO_PASSWORD = "cafeteria123"
+DEMO_PASSWORD = "Cafeteria123"
 USUARIOS_DEMO = [
     ("Mesero", "Demo", "mesero@cafeteria.com", "mesero", "Mesero"),
     ("Cajero", "Demo", "cajero@cafeteria.com", "cajero", "Cajero"),
